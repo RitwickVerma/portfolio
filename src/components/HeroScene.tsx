@@ -72,6 +72,20 @@ function GrabHandler() {
 const ACCENT = '#64ffda';
 const GATEWAY_ACCENT = '#ffd166';
 
+// Shared scene state — every component reads this for connected reactivity
+const sceneState = { spin: 0, dcRotY: 0, dcRotX: 0, mouseX: 0, mouseY: 0 };
+
+function SceneLighting() {
+  const lightRef = useRef<THREE.PointLight>(null);
+  useFrame(({ clock }) => {
+    if (lightRef.current) {
+      const pulse = Math.sin(clock.getElapsedTime() * 1.2) * 0.3 + 0.7;
+      lightRef.current.intensity = 10 + sceneState.spin * 30 + pulse * 2;
+    }
+  });
+  return <pointLight ref={lightRef} position={[0, 2.5, 0]} intensity={10} distance={18} color={ACCENT} />;
+}
+
 type RackDef = { id: string; name: string; x: number; z: number; gateway?: boolean };
 
 const RACKS: RackDef[] = [
@@ -124,10 +138,12 @@ function RackLights({ accent, phase }: { accent: string; phase: number }) {
   const refs = useRef<Array<THREE.Mesh | null>>([]);
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
+    const rate = 1.8 + sceneState.spin * 20;
+    const amp = 0.3 + sceneState.spin * 0.5;
     refs.current.forEach((mesh, i) => {
       if (!mesh) return;
       const mat = mesh.material as THREE.MeshStandardMaterial;
-      mat.emissiveIntensity = 0.55 + Math.sin(t * 1.8 + i * 2.2 + phase) * 0.3;
+      mat.emissiveIntensity = 0.55 + Math.sin(t * rate + i * 2.2 + phase) * amp;
     });
   });
   return (
@@ -170,12 +186,13 @@ function Rack({ rack }: { rack: RackDef }) {
   );
 }
 
-function Cable({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
+function Cable({ from, to, sway }: { from: THREE.Vector3; to: THREE.Vector3; sway: number }) {
   const geometry = useMemo(() => {
     const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
     mid.y += 0.55;
+    mid.x += sway * 0.5;
     return new THREE.TubeGeometry(new THREE.CatmullRomCurve3([from, mid, to]), 20, 0.022, 6, false);
-  }, [from, to]);
+  }, [from, to, sway]);
   return (
     <mesh geometry={geometry}>
       <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.55} transparent opacity={0.7} roughness={0.35} metalness={0.2} />
@@ -184,12 +201,16 @@ function Cable({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
 }
 
 function Cables() {
+  const swayRef = useRef(0);
+  useFrame(() => {
+    swayRef.current += (sceneState.spin * 0.5 - swayRef.current) * 0.08;
+  });
   const cables = useMemo(() =>
     CABLE_PAIRS.map(([ai, bi]) => {
       const [from, to] = cableEndpoints(RACKS[ai], RACKS[bi]);
       return { key: `${RACKS[ai].id}-${RACKS[bi].id}`, from, to };
     }), []);
-  return <group>{cables.map(c => <Cable key={c.key} from={c.from} to={c.to} />)}</group>;
+  return <group>{cables.map(c => <Cable key={c.key} from={c.from} to={c.to} sway={swayRef.current} />)}</group>;
 }
 
 /** Round particle texture */
@@ -272,6 +293,10 @@ function DriftParticles({ count = 300 }: { count?: number }) {
     const cz = (smoothedPointer.y - 0.5) * 5;
     const spin = Math.hypot(drag.velocityX, drag.velocityY);
 
+    // Orbital forces from datacenter rotation — particles swirl with the scene
+    const orbX = sceneState.dcRotY * 1.5;
+    const orbZ = sceneState.dcRotX * 1.5;
+
     const dt = Math.min(delta, 0.1);
     for (let i = 0; i < count; i++) {
       life[i] -= dt;
@@ -301,8 +326,8 @@ function DriftParticles({ count = 300 }: { count?: number }) {
       const vortexX = -pz * vortexForce;
       const vortexZ = px * vortexForce;
 
-      vel[idx] += (dx * cursorForce + curlX + vortexX) * dt;
-      vel[idx + 2] += (dz * cursorForce + curlZ + vortexZ) * dt;
+      vel[idx] += (dx * cursorForce + curlX + vortexX + orbX) * dt;
+      vel[idx + 2] += (dz * cursorForce + curlZ + vortexZ + orbZ) * dt;
       vel[idx + 1] += (0.15 + spin * 5) * dt;
 
       vel[idx] *= 0.995;
@@ -399,6 +424,11 @@ function Datacenter() {
     g.rotation.y = autoY + mouseY + drag.targetY;
     g.rotation.x = (smoothedPointer.y - 0.5) * -0.25 + drag.targetX;
     g.position.y = Math.sin(t * 0.55) * 0.06;
+    sceneState.dcRotY = g.rotation.y;
+    sceneState.dcRotX = g.rotation.x;
+    sceneState.spin = Math.hypot(drag.velocityX, drag.velocityY);
+    sceneState.mouseX = smoothedPointer.x;
+    sceneState.mouseY = smoothedPointer.y;
   });
   return (
     <group ref={group}>
@@ -422,7 +452,7 @@ export default function HeroScene() {
         <ambientLight intensity={0.4} />
         <directionalLight position={[6,9,5]} intensity={1.2} />
         <directionalLight position={[-6,5,-4]} intensity={0.35} color={ACCENT} />
-        <pointLight position={[0,2.5,0]} intensity={10} distance={18} color={ACCENT} />
+        <SceneLighting />
         <Datacenter />
         <DriftParticles />
       </Suspense>
