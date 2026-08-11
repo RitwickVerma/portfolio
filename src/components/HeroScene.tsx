@@ -381,11 +381,12 @@ function AirflowLayer() {
       const idx = i * 3;
       // Directed airflow through aisles — Z is the aisle direction
       const nx = n2d(seedX[i] + t * 0.06, seedY[i]) * 0.3;
-      const nz = 0.15 + n2d(seedX[i], seedY[i] + t * 0.06) * 0.2; // bias toward +Z
-      const nidle = n2d(seedX[i] + 5, seedY[i] + 5 + t * 0.05) * 0.08;
-      arr[idx] += (nx + orbX + nidle) * dt;
+      const nz = 0.15 + n2d(seedX[i], seedY[i] + t * 0.06) * 0.2;
+      const jitterX = n2d(seedX[i] + 5, seedY[i] + 5 + t * 0.05) * 0.08;
+      const jitterZ = n2d(seedX[i] + 8, seedY[i] + 8 + t * 0.05) * 0.08;
+      arr[idx] += (nx + orbX + jitterX) * dt;
       arr[idx + 1] += 0.04 * dt;
-      arr[idx + 2] += (nz + orbZ) * dt;
+      arr[idx + 2] += (nz + orbZ + jitterZ) * dt;
       if (arr[idx + 1] > 1.8) { arr[idx + 1] = -0.5; arr[idx] = (Math.random() - 0.5) * 10; arr[idx + 2] = (Math.random() - 0.5) * 5; }
       if (Math.abs(arr[idx]) > 7 || Math.abs(arr[idx + 2]) > 5) { arr[idx] = (Math.random() - 0.5) * 8; arr[idx + 1] = -0.3 + Math.random(); arr[idx + 2] = (Math.random() - 0.5) * 4; }
     }
