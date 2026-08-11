@@ -126,7 +126,7 @@ function CameraRig() {
 function SceneFog() {
   const scene = useThree((s) => s.scene);
   useEffect(() => {
-    scene.fog = new THREE.Fog('#0a0a0f', 8, 22);
+    scene.fog = new THREE.Fog('#0a0a0f', 6, 18);
     return () => { scene.fog = null; };
   }, [scene]);
   return null;
@@ -395,7 +395,7 @@ function AirflowLayer() {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getFlowTex()} color="#88ccff" size={0.05} sizeAttenuation transparent opacity={0.15} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={getFlowTex()} color={ACCENT} size={0.07} sizeAttenuation transparent opacity={0.22} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
@@ -500,7 +500,7 @@ function RackVents() {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getFlowTex()} color={HEAT_ACCENT} size={0.05} sizeAttenuation transparent opacity={0.35} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={getFlowTex()} color={HEAT_ACCENT} size={0.07} sizeAttenuation transparent opacity={0.55} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
