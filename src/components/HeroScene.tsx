@@ -231,7 +231,7 @@ function DriftParticles({ count = 400 }: { count?: number }) {
     const boost = 1 + windMag * 5;
 
     if (matRef.current) {
-      matRef.current.size += ((0.05 + windMag * 8) - matRef.current.size) * 0.1;
+      matRef.current.size += ((0.05 + windMag * 2) - matRef.current.size) * 0.1;
     }
 
     const dt = Math.min(delta, 0.1);
