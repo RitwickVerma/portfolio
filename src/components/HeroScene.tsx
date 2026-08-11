@@ -81,7 +81,7 @@ function SceneLighting() {
   useFrame(({ clock }) => {
     if (lightRef.current) {
       const pulse = Math.sin(clock.getElapsedTime() * 1.2) * 0.3 + 0.7;
-      lightRef.current.intensity = 10 + sceneState.spin * 30 + pulse * 2;
+      lightRef.current.intensity = 10 + sceneState.spin * 5 + pulse * 2;
     }
   });
   return <pointLight ref={lightRef} position={[0, 2.5, 0]} intensity={10} distance={18} color={ACCENT} />;
@@ -262,8 +262,8 @@ function RackLights({ accent, phase }: { accent: string; phase: number }) {
   const refs = useRef<Array<THREE.Mesh | null>>([]);
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    const rate = 1.8 + sceneState.spin * 20;
-    const amp = 0.3 + sceneState.spin * 0.5;
+    const rate = 1.8 + sceneState.spin * 4;
+    const amp = 0.3 + sceneState.spin * 0.15;
     refs.current.forEach((mesh, i) => {
       if (!mesh) return;
       const mat = mesh.material as THREE.MeshStandardMaterial;
@@ -284,9 +284,12 @@ function RackLights({ accent, phase }: { accent: string; phase: number }) {
 
 function Cable({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
   const meshRef = useRef<THREE.Mesh>(null);
+  const prevSway = useRef(-999);
   useFrame(() => {
     if (!meshRef.current) return;
     const sway = sceneState.spin * 0.3;
+    if (Math.abs(sway - prevSway.current) < 0.003) return;
+    prevSway.current = sway;
     const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
     mid.y += 0.55;
     mid.x += sway;
@@ -416,9 +419,9 @@ function DriftParticles({ count = 300 }: { count?: number }) {
 
       // Firefly blinking
       const pulse = Math.sin(t * blinkSpeed[i] + blinkPhase[i]) * 0.5 + 0.5;
-      const baseSize = 0.14 + spin * 4;
+      const baseSize = 0.14 + spin * 0.6;
       sizeArr[i] = baseSize * (0.5 + pulse * 0.5);
-      alphaArr[i] = 0.55 + pulse * 0.35 + spin * 5;
+      alphaArr[i] = Math.min(0.55 + pulse * 0.35 + spin * 0.4, 1.0);
 
       // Organic curling
       const curlX = Math.sin(py * 0.7 + t * 0.5 + curlPhase[i]) * 0.6;
@@ -428,13 +431,13 @@ function DriftParticles({ count = 300 }: { count?: number }) {
       const dist = Math.hypot(dx, dz) + 0.3;
       const cursorForce = 1.5 / (dist * dist + 0.5);
 
-      const vortexForce = spin * 15;
+      const vortexForce = spin * 3;
       const vortexX = -pz * vortexForce;
       const vortexZ = px * vortexForce;
 
       vel[idx] += (dx * cursorForce + curlX + vortexX + orbX + windX) * dt;
       vel[idx + 2] += (dz * cursorForce + curlZ + vortexZ + orbZ + windZ) * dt;
-      vel[idx + 1] += (0.15 + spin * 5) * dt;
+      vel[idx + 1] += (0.15 + spin * 0.8) * dt;
 
       vel[idx] *= 0.995;
       vel[idx + 1] *= 0.995;
@@ -500,7 +503,7 @@ function spawnFirefly(
   i: number, rand: () => number, spin: number
 ) {
   const idx = i * 3;
-  const r = 1 + spin * 2;
+  const r = 1 + spin * 0.3;
   arr[idx] = (rand() - 0.5) * 10 * r;
   arr[idx + 1] = -1.5 + rand() * 4.5;
   arr[idx + 2] = (rand() - 0.5) * 7 * r;
@@ -596,7 +599,7 @@ export default function HeroScene() {
         <Datacenter />
         <DriftParticles />
         <EffectComposer>
-          <Bloom intensity={0.4} luminanceThreshold={0.6} luminanceSmoothing={0.3} mipmapBlur radius={0.5} />
+          <Bloom intensity={0.25} luminanceThreshold={0.6} luminanceSmoothing={0.3} mipmapBlur radius={0.5} />
         </EffectComposer>
       </Suspense>
     </Canvas>
