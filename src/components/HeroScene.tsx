@@ -22,11 +22,57 @@ const drag = {
   active: false,
   prevX: 0,
   prevY: 0,
-  targetY: 0,   // accumulated manual rotation Y
-  targetX: 0,   // accumulated manual rotation X
+  targetY: 0,
+  targetX: 0,
   velocityY: 0,
   velocityX: 0,
 };
+
+function onDragMove(e: PointerEvent) {
+  if (!drag.active) return;
+  const dx = e.clientX - drag.prevX;
+  const dy = e.clientY - drag.prevY;
+  drag.targetY += dx * 0.005;
+  drag.targetX += dy * 0.005;
+  drag.velocityY = dx * 0.005;
+  drag.velocityX = dy * 0.005;
+  drag.prevX = e.clientX;
+  drag.prevY = e.clientY;
+}
+
+function onDragUp() {
+  drag.active = false;
+  window.removeEventListener('pointermove', onDragMove);
+  window.removeEventListener('pointerup', onDragUp);
+}
+
+/** Handles pointer-down on the Canvas for grab-and-spin. */
+function GrabHandler() {
+  const { gl } = useThree();
+
+  useEffect(() => {
+    const el = gl.domElement;
+    const onDown = (e: PointerEvent) => {
+      e.preventDefault();
+      drag.active = true;
+      drag.prevX = e.clientX;
+      drag.prevY = e.clientY;
+      drag.velocityX = 0;
+      drag.velocityY = 0;
+      window.addEventListener('pointermove', onDragMove, { passive: true });
+      window.addEventListener('pointerup', onDragUp, { once: true });
+    };
+
+    el.addEventListener('pointerdown', onDown);
+    return () => {
+      el.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointermove', onDragMove);
+      window.removeEventListener('pointerup', onDragUp);
+    };
+  }, [gl]);
+
+  return null;
+}
 
 const ACCENT = '#64ffda';
 const GATEWAY_ACCENT = '#ffd166';
@@ -292,50 +338,6 @@ function DriftParticles({ count = 180 }: { count?: number }) {
       />
     </points>
   );
-}
-
-/** Handles pointer-down/up/move on the Canvas for grab-and-spin. */
-function GrabHandler() {
-  const { gl } = useThree();
-  const el = gl.domElement;
-
-  useEffect(() => {
-    const onDown = (e: PointerEvent) => {
-      drag.active = true;
-      drag.prevX = e.clientX;
-      drag.prevY = e.clientY;
-      drag.velocityX = 0;
-      drag.velocityY = 0;
-      el.setPointerCapture(e.pointerId);
-    };
-    const onUp = () => {
-      drag.active = false;
-    };
-    const onMove = (e: PointerEvent) => {
-      if (!drag.active) return;
-      const dx = e.clientX - drag.prevX;
-      const dy = e.clientY - drag.prevY;
-      drag.targetY += dx * 0.005;
-      drag.targetX += dy * 0.005;
-      drag.velocityY = dx * 0.005;
-      drag.velocityX = dy * 0.005;
-      drag.prevX = e.clientX;
-      drag.prevY = e.clientY;
-    };
-
-    el.addEventListener('pointerdown', onDown);
-    el.addEventListener('pointerup', onUp);
-    el.addEventListener('pointerleave', onUp);
-    el.addEventListener('pointermove', onMove);
-    return () => {
-      el.removeEventListener('pointerdown', onDown);
-      el.removeEventListener('pointerup', onUp);
-      el.removeEventListener('pointerleave', onUp);
-      el.removeEventListener('pointermove', onMove);
-    };
-  }, [el]);
-
-  return null;
 }
 
 /** The rotating datacenter: slab floor, 8 racks, network cables. */
