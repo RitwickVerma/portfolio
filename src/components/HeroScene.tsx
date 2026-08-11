@@ -263,8 +263,8 @@ function DriftParticles({ count = 200 }: { count?: number }) {
       matRef.current.size += ((0.04 + spin * 6) - matRef.current.size) * 0.1;
     }
 
-    if (spin > 0.15 && !rickroll.triggered) {
-      rickroll.intensity = Math.min(1, rickroll.intensity + spin * 0.3);
+    if (spin > 0.3 && !rickroll.triggered) {
+      rickroll.intensity = Math.min(1, rickroll.intensity + spin * 0.08);
     } else if (!drag.active) {
       rickroll.intensity = Math.max(0, rickroll.intensity - 0.0008);
     }
@@ -305,7 +305,7 @@ function DriftParticles({ count = 200 }: { count?: number }) {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial ref={matRef} map={getParticleTex()} color={ACCENT} size={0.04} sizeAttenuation transparent opacity={0.45} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial ref={matRef} map={getParticleTex()} color={ACCENT} size={0.05} sizeAttenuation transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
@@ -316,7 +316,7 @@ function spawn(
 ) {
   const idx = i * 3;
   arr[idx] = (rand() - 0.5) * 10;
-  arr[idx + 1] = -3 - rand() * 1.5; // spawn below
+  arr[idx + 1] = -1 - rand() * 1.5; // spawn near scene, visible idle
   arr[idx + 2] = (rand() - 0.5) * 6;
   vel[idx] = (rand() - 0.5) * 0.5;
   vel[idx + 1] = 0.3 + rand() * 0.7;
