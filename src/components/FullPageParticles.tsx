@@ -96,9 +96,22 @@ function Particles() {
 
     const spin = sceneState.spin;
     const windAngle = sceneState.windAngle;
+
+    // Wind — matches hero: base + spin boost
     const baseWind = 0.35 + spin * 0.8;
     const wx = Math.cos(windAngle) * baseWind;
     const wy = Math.sin(windAngle) * baseWind;
+
+    // Cursor center in world coords (ortho maps [-w/2,w/2] x [-h/2,h/2])
+    const cx = (sceneState.mouseX - 0.5) * window.innerWidth;
+    const cy = (sceneState.mouseY - 0.5) * window.innerHeight;
+
+    // Vortex around screen center, scales with spin
+    const vortexForce = spin * 2.5;
+
+    // Orbital drift from datacenter rotation — subtle bias in 2D
+    const orbX = sceneState.dcRotY * 0.6;
+    const orbY = sceneState.dcRotX * 0.6;
 
     const cw = window.innerWidth;
     const ch = window.innerHeight;
@@ -119,9 +132,23 @@ function Particles() {
       }
 
       const idx = i * 3;
-      const turb = (rand() - 0.5) * (0.03 + spin * 0.15);
-      vel[idx] += (wx - vel[idx]) * dt * 1.0 + turb;
-      vel[idx + 1] += (wy - vel[idx + 1]) * dt * 1.0 + (rand() - 0.5) * 0.02;
+      const px = arr[idx];
+      const py = arr[idx + 1];
+
+      // Cursor attraction — inverse-distance pull, same math as hero
+      const dx = cx - px;
+      const dy = cy - py;
+      const dist = Math.hypot(dx, dy) + 0.3;
+      const cursorPull = 1.2 / (dist * dist + 0.5);
+
+      // Vortex swirl around screen center
+      const vx = -(py - 0) * vortexForce;
+      const vy = (px - 0) * vortexForce;
+
+      // Wind + cursor + vortex + orbital + turbulence
+      const turb = (rand() - 0.5) * (0.03 + spin * 0.12);
+      vel[idx] += (wx + dx * cursorPull + vx + orbX) * dt + turb;
+      vel[idx + 1] += (wy + dy * cursorPull + vy + orbY) * dt + (rand() - 0.5) * 0.02;
 
       const speed = Math.hypot(vel[idx], vel[idx + 1]);
       const maxSpeed = 0.5 + spin * 1.2;
