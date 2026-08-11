@@ -213,17 +213,16 @@ function getParticleTex() {
 }
 
 // Easter egg state
-const rickroll = { intensity: 0, triggered: false };
+const rickroll = { triggered: false };
 
 function mulberry32(seed: number) {
   let a = seed >>> 0;
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-/** Bubble particles — spawn below, drift up toward cursor, die, respawn */
+/** Bubble particles — fill the screen on violent spin, whiteout → rickroll */
 function DriftParticles({ count = 200 }: { count?: number }) {
   const rand = useMemo(() => mulberry32(0x64ffda), []);
-  const randB = useMemo(() => mulberry32(0xc0113), []);
 
   const geometry = useMemo(() => {
     const positions = new Float32Array(count * 3);
@@ -234,15 +233,13 @@ function DriftParticles({ count = 200 }: { count?: number }) {
 
   const vel = useMemo(() => new Float32Array(count * 3), [count]);
   const life = useMemo(() => new Float32Array(count), [count]);
-  const maxLife = useMemo(() => new Float32Array(count), [count]);
   const seeded = useRef(false);
 
-  // Seed initial state once
   if (!seeded.current) {
     seeded.current = true;
     const arr = (geometry.getAttribute('position') as THREE.BufferAttribute).array as Float32Array;
     for (let i = 0; i < count; i++) {
-      spawn(arr, vel, life, maxLife, i, rand);
+      spawn(arr, vel, life, i, rand, 0);
     }
   }
 
@@ -254,31 +251,32 @@ function DriftParticles({ count = 200 }: { count?: number }) {
 
     const cx = (smoothedPointer.x - 0.5) * 8;
     const cz = (smoothedPointer.y - 0.5) * 5;
-    const bounds = 7; // kill zone radius
 
     const spin = Math.hypot(drag.velocityX, drag.velocityY);
-    const boost = 1 + spin * 40;
+    const boost = 1 + spin * 60;
 
+    // Particle size: explodes with spin for whiteout
+    const targetSize = 0.05 + spin * 40;
     if (matRef.current) {
-      matRef.current.size += ((0.04 + spin * 6) - matRef.current.size) * 0.1;
+      matRef.current.size += (targetSize - matRef.current.size) * 0.15;
     }
 
-    if (spin > 0.3 && !rickroll.triggered) {
-      rickroll.intensity = Math.min(1, rickroll.intensity + spin * 0.08);
-    } else if (!drag.active) {
-      rickroll.intensity = Math.max(0, rickroll.intensity - 0.0008);
+    // Instant rickroll: trigger when particles are big enough to white out screen
+    if (matRef.current && matRef.current.size > 1.5 && !rickroll.triggered) {
+      rickroll.triggered = true;
     }
 
     const dt = Math.min(delta, 0.1);
     for (let i = 0; i < count; i++) {
-      life[i] -= dt;
+      // Faster respawn during spin
+      const lifeScale = 1 + spin * 30;
+      life[i] -= dt * lifeScale;
       if (life[i] <= 0) {
-        spawn(arr, vel, life, maxLife, i, rand);
+        spawn(arr, vel, life, i, rand, spin);
         continue;
       }
 
       const idx = i * 3;
-      // Cursor attraction (gentle, limited)
       const dx = cx - arr[idx];
       const dz = cz - arr[idx + 2];
       const dist = Math.hypot(dx, dz) + 0.1;
@@ -286,18 +284,16 @@ function DriftParticles({ count = 200 }: { count?: number }) {
       vel[idx] += dx / dist * force;
       vel[idx + 2] += dz / dist * force;
 
-      // Random jitter to prevent line formation
       vel[idx] += (rand() - 0.5) * dt * 0.3;
       vel[idx + 2] += (rand() - 0.5) * dt * 0.3;
 
-      // Move
       arr[idx] += vel[idx] * dt;
       arr[idx + 1] += vel[idx + 1] * dt * boost;
       arr[idx + 2] += vel[idx + 2] * dt;
 
-      // Kill if too far from center
-      if (Math.abs(arr[idx]) > bounds || Math.abs(arr[idx + 2]) > bounds || arr[idx + 1] > 4) {
-        spawn(arr, vel, life, maxLife, i, rand);
+      // Kill if way off screen
+      if (Math.abs(arr[idx]) > 10 || Math.abs(arr[idx + 2]) > 8 || arr[idx + 1] > 6) {
+        spawn(arr, vel, life, i, rand, spin);
       }
     }
     attr.needsUpdate = true;
@@ -311,19 +307,19 @@ function DriftParticles({ count = 200 }: { count?: number }) {
 }
 
 function spawn(
-  arr: Float32Array, vel: Float32Array, life: Float32Array, maxLife: Float32Array,
-  i: number, rand: () => number
+  arr: Float32Array, vel: Float32Array, life: Float32Array,
+  i: number, rand: () => number, spin: number
 ) {
   const idx = i * 3;
-  arr[idx] = (rand() - 0.5) * 10;
-  arr[idx + 1] = -1 - rand() * 1.5; // spawn near scene, visible idle
-  arr[idx + 2] = (rand() - 0.5) * 6;
-  vel[idx] = (rand() - 0.5) * 0.5;
-  vel[idx + 1] = 0.3 + rand() * 0.7;
-  vel[idx + 2] = (rand() - 0.5) * 0.5;
-  const ml = 2 + rand() * 4;
-  life[i] = ml;
-  maxLife[i] = ml;
+  // Spread wider during spin
+  const spread = 1 + spin * 3;
+  arr[idx] = (rand() - 0.5) * 12 * spread;
+  arr[idx + 1] = -2 + rand() * 5 * (1 + spin * 2);
+  arr[idx + 2] = (rand() - 0.5) * 8 * spread;
+  vel[idx] = (rand() - 0.5) * (0.5 + spin * 4);
+  vel[idx + 1] = (0.3 + rand() * 0.7) * (1 + spin * 10);
+  vel[idx + 2] = (rand() - 0.5) * (0.5 + spin * 4);
+  life[i] = (2 + rand() * 4) / (1 + spin * 10);
 }
 
 function Datacenter() {
@@ -362,18 +358,15 @@ export default function HeroScene() {
   initPointer();
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Easter egg: poll rickroll intensity, show overlay when triggered
+  // Easter egg: poll rickroll trigger, flash overlay instantly
   useEffect(() => {
     const check = () => {
       const el = overlayRef.current;
       if (!el) return;
-      const ri = rickroll.intensity;
-      if (ri >= 0.95 && !rickroll.triggered) {
-        rickroll.triggered = true;
+      if (rickroll.triggered) {
         el.style.opacity = '1';
         el.style.pointerEvents = 'auto';
       }
-      el.style.opacity = String(Math.min(ri * 2, 1));
     };
     const id = setInterval(check, 100);
     return () => clearInterval(id);
@@ -387,10 +380,9 @@ export default function HeroScene() {
         style={{
           position: 'absolute', inset: 0, zIndex: 100,
           opacity: 0, pointerEvents: 'none',
-          transition: 'opacity 0.3s',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          background: '#000',
-          color: '#fff', fontFamily: 'Impact, sans-serif', fontSize: 'clamp(2rem, 8vw, 6rem)',
+          background: '#fff',
+          color: '#000', fontFamily: 'Impact, sans-serif', fontSize: 'clamp(2rem, 8vw, 6rem)',
         }}
       >
         <div style={{ animation: 'rickrollSpin 0.5s linear infinite' }}>🌀</div>
