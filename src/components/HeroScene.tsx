@@ -241,32 +241,39 @@ function DriftParticles({ count = 180 }: { count?: number }) {
     return arr;
   }, [count]);
 
+  const matRef = useRef<THREE.PointsMaterial>(null);
+
   useFrame((_, delta) => {
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
 
-    // Cursor position in world-ish coords
     const cx = (smoothedPointer.x - 0.5) * 8;
     const cz = (smoothedPointer.y - 0.5) * 5;
 
-    // Easter egg: build intensity on fast spin
+    // Spin-reactive particle size + speed
     const spin = Math.hypot(drag.velocityX, drag.velocityY);
-    if (spin > 0.02 && !rickroll.triggered) {
-      rickroll.intensity = Math.min(1, rickroll.intensity + spin * 3);
+    const boost = 1 + spin * 40;  // speed multiplier when spinning
+
+    if (matRef.current) {
+      matRef.current.size += ((0.06 + spin * 8) - matRef.current.size) * 0.1;
+    }
+
+    // Easter egg: only trigger at sustained VERY fast spin
+    if (spin > 0.15 && !rickroll.triggered) {
+      rickroll.intensity = Math.min(1, rickroll.intensity + spin * 0.3);
     } else if (!drag.active) {
-      rickroll.intensity = Math.max(0, rickroll.intensity - 0.002);
+      rickroll.intensity = Math.max(0, rickroll.intensity - 0.0008);
     }
 
     const dt = Math.min(delta, 0.1);
     for (let i = 0; i < count; i++) {
       const idx = i * 3;
-      // Cursor pull force
       const dx = cx - arr[idx];
       const dz = cz - arr[idx + 2];
       arr[idx] += dx * dt * 0.4;
       arr[idx + 2] += dz * dt * 0.4;
 
-      let y = arr[idx + 1] + speeds[i] * dt;
+      let y = arr[idx + 1] + speeds[i] * dt * boost;
       if (y > 2.6) y = -2.2;
       arr[idx + 1] = y;
     }
@@ -275,7 +282,7 @@ function DriftParticles({ count = 180 }: { count?: number }) {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getParticleTex()} color={ACCENT} size={0.06} sizeAttenuation transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial ref={matRef} map={getParticleTex()} color={ACCENT} size={0.06} sizeAttenuation transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
