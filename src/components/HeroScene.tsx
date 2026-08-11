@@ -575,7 +575,6 @@ export default function HeroScene() {
         <SceneLighting />
         <AirflowLayer />
         <Datacenter />
-        <CursorTrail />
       </Suspense>
     </Canvas>
   );
