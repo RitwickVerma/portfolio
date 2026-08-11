@@ -73,7 +73,7 @@ const ACCENT = '#64ffda';
 const GATEWAY_ACCENT = '#ffd166';
 
 // Shared scene state — every component reads this for connected reactivity
-const sceneState = { spin: 0, dcRotY: 0, dcRotX: 0, mouseX: 0, mouseY: 0 };
+const sceneState = { spin: 0, dcRotY: 0, dcRotX: 0, mouseX: 0, mouseY: 0, windAngle: 0 };
 
 function SceneLighting() {
   const lightRef = useRef<THREE.PointLight>(null);
@@ -302,9 +302,10 @@ function DriftParticles({ count = 300 }: { count?: number }) {
     const orbX = sceneState.dcRotY * 1.5;
     const orbZ = sceneState.dcRotX * 1.5;
 
-    // Wind — subtle breath, barely perceptible
-    const windX = Math.sin(t * 0.25 + 1.7) * 0.04 + Math.sin(t * 0.6) * 0.03;
-    const windZ = Math.cos(t * 0.35 + 2.1) * 0.04 + Math.cos(t * 0.7) * 0.03;
+    // Wind — follows evolving windAngle from sceneState
+    const windStrength = 0.04;
+    const windX = Math.cos(sceneState.windAngle) * windStrength;
+    const windZ = Math.sin(sceneState.windAngle) * windStrength;
 
     const dt = Math.min(delta, 0.1);
     for (let i = 0; i < count; i++) {
@@ -437,6 +438,17 @@ function Datacenter() {
     sceneState.spin = Math.hypot(drag.velocityX, drag.velocityY);
     sceneState.mouseX = smoothedPointer.x;
     sceneState.mouseY = smoothedPointer.y;
+    // Wind angle: meanders slowly, gets pushed by spin direction
+    const baseAngle = t * 0.15 + Math.sin(t * 0.07) * 1.2;
+    const spinAngle = Math.atan2(drag.velocityY, drag.velocityX);
+    const targetAngle = isNaN(spinAngle) || sceneState.spin < 0.001
+      ? baseAngle
+      : spinAngle;
+    const lerpSpeed = 0.02 + sceneState.spin * 0.15;
+    let diff = targetAngle - sceneState.windAngle;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    sceneState.windAngle += diff * lerpSpeed;
   });
   return (
     <group ref={group}>
