@@ -186,37 +186,44 @@ function Rack({ rack }: { rack: RackDef }) {
   );
 }
 
-function Cable({ from, to, sway }: { from: THREE.Vector3; to: THREE.Vector3; sway: number }) {
+function Cable({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    if (!meshRef.current) return;
+    const sway = sceneState.spin * 0.3;
+    const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
+    mid.y += 0.55;
+    mid.x += sway;
+    const geom = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([from, mid, to]), 20, 0.022, 6, false);
+    meshRef.current.geometry.dispose();
+    meshRef.current.geometry = geom;
+  });
   const geometry = useMemo(() => {
     const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
     mid.y += 0.55;
-    mid.x += sway * 0.5;
     return new THREE.TubeGeometry(new THREE.CatmullRomCurve3([from, mid, to]), 20, 0.022, 6, false);
-  }, [from, to, sway]);
+  }, [from, to]);
   return (
-    <mesh geometry={geometry}>
+    <mesh ref={meshRef} geometry={geometry}>
       <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.55} transparent opacity={0.7} roughness={0.35} metalness={0.2} />
     </mesh>
   );
 }
 
 function Cables() {
-  const swayRef = useRef(0);
-  useFrame(() => {
-    swayRef.current += (sceneState.spin * 0.5 - swayRef.current) * 0.08;
-  });
   const cables = useMemo(() =>
     CABLE_PAIRS.map(([ai, bi]) => {
       const [from, to] = cableEndpoints(RACKS[ai], RACKS[bi]);
       return { key: `${RACKS[ai].id}-${RACKS[bi].id}`, from, to };
     }), []);
-  return <group>{cables.map(c => <Cable key={c.key} from={c.from} to={c.to} sway={swayRef.current} />)}</group>;
+  return <group>{cables.map(c => <Cable key={c.key} from={c.from} to={c.to} />)}</group>;
 }
 
-/** Round particle texture */
+/** Round particle texture — guarded against SSR where document is undefined */
 let _particleTex: THREE.Texture | null = null;
 function getParticleTex() {
   if (_particleTex) return _particleTex;
+  if (typeof document === 'undefined') return new THREE.Texture(); // SSR fallback
   const size = 32;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
@@ -242,7 +249,7 @@ function mulberry32(seed: number) {
 function DriftParticles({ count = 300 }: { count?: number }) {
   const rand = useMemo(() => mulberry32(0x64ffda), []);
 
-  const { geometry, sizesRef, alphasRef } = useMemo(() => {
+  const geometry = useMemo(() => {
     const positions = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
     const alphas = new Float32Array(count);
@@ -250,7 +257,7 @@ function DriftParticles({ count = 300 }: { count?: number }) {
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
     geo.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
-    return { geometry: geo, sizesRef: sizes, alphasRef: alphas };
+    return geo;
   }, [count]);
 
   const vel = useMemo(() => new Float32Array(count * 3), [count]);
@@ -278,8 +285,6 @@ function DriftParticles({ count = 300 }: { count?: number }) {
     for (let i = 0; i < count; i++) spawnFirefly(arr, vel, life, i, rand, 0);
   }
 
-  const matRef = useRef<THREE.ShaderMaterial>(null);
-
   useFrame((state, delta) => {
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
@@ -297,6 +302,10 @@ function DriftParticles({ count = 300 }: { count?: number }) {
     const orbX = sceneState.dcRotY * 1.5;
     const orbZ = sceneState.dcRotX * 1.5;
 
+    // Wind — gentle floating drift even without cursor/spin
+    const windX = Math.sin(t * 0.3) * 0.25;
+    const windZ = Math.cos(t * 0.4) * 0.25;
+
     const dt = Math.min(delta, 0.1);
     for (let i = 0; i < count; i++) {
       life[i] -= dt;
@@ -308,11 +317,11 @@ function DriftParticles({ count = 300 }: { count?: number }) {
       const idx = i * 3;
       const px = arr[idx], py = arr[idx + 1], pz = arr[idx + 2];
 
-      // Firefly blinking: sinusoidal pulse + random jitter
+      // Firefly blinking
       const pulse = Math.sin(t * blinkSpeed[i] + blinkPhase[i]) * 0.5 + 0.5;
-      const baseSize = 0.06 + spin * 3;
+      const baseSize = 0.08 + spin * 3;
       sizeArr[i] = baseSize * (0.4 + pulse * 0.6);
-      alphaArr[i] = 0.25 + pulse * 0.45 + spin * 5;
+      alphaArr[i] = 0.35 + pulse * 0.35 + spin * 5;
 
       // Organic curling
       const curlX = Math.sin(py * 0.7 + t * 0.5 + curlPhase[i]) * 0.6;
@@ -326,8 +335,8 @@ function DriftParticles({ count = 300 }: { count?: number }) {
       const vortexX = -pz * vortexForce;
       const vortexZ = px * vortexForce;
 
-      vel[idx] += (dx * cursorForce + curlX + vortexX + orbX) * dt;
-      vel[idx + 2] += (dz * cursorForce + curlZ + vortexZ + orbZ) * dt;
+      vel[idx] += (dx * cursorForce + curlX + vortexX + orbX + windX) * dt;
+      vel[idx + 2] += (dz * cursorForce + curlZ + vortexZ + orbZ + windZ) * dt;
       vel[idx + 1] += (0.15 + spin * 5) * dt;
 
       vel[idx] *= 0.995;
@@ -378,7 +387,6 @@ function DriftParticles({ count = 300 }: { count?: number }) {
   return (
     <points geometry={geometry}>
       <shaderMaterial
-        ref={matRef}
         uniforms={shader.uniforms}
         vertexShader={shader.vertexShader}
         fragmentShader={shader.fragmentShader}
