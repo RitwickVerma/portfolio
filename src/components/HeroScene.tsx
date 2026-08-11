@@ -448,82 +448,70 @@ function CursorTrail() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// LAYER 3: RACK VENTS — heat streaks from active servers
+// LAYER 3: CABLE PULSES — data packets traveling between racks
 // ════════════════════════════════════════════════════════════════════════════
 
-let _ventTex: THREE.Texture | null = null;
-function getVentTex() {
-  if (_ventTex) return _ventTex;
-  if (typeof document === 'undefined') return new THREE.Texture();
-  const w = 16, h = 48;
-  const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext('2d')!;
-  const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, 'rgba(255,200,100,0.9)');
-  g.addColorStop(0.15, 'rgba(255,140,66,0.6)');
-  g.addColorStop(0.5, 'rgba(255,100,50,0.2)');
-  g.addColorStop(1, 'rgba(255,80,40,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(2, 0, w - 4, h);
-  _ventTex = new THREE.CanvasTexture(canvas);
-  _ventTex.needsUpdate = true;
-  return _ventTex;
-}
+const PULSE_COUNT = 8;
+const PULSE_SPEED = 0.25; // units/sec along the curve
 
-const VENT_COUNT = 12;
-
-function RackVents() {
-  const rackIndices = useMemo(() => RACKS
-    .map((r, i) => (r.vents ? i : -1))
-    .filter(i => i >= 0), []);
-
+function CablePulses() {
   const geometry = useMemo(() => {
-    const pos = new Float32Array(VENT_COUNT * 3);
+    const pos = new Float32Array(PULSE_COUNT * 3);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     return geo;
   }, []);
 
-  const timers = useMemo(() => {
-    const arr = new Float32Array(VENT_COUNT);
-    for (let i = 0; i < VENT_COUNT; i++) arr[i] = Math.random() * 3;
-    return arr;
-  }, []);
-  const assignedRack = useMemo(() => {
-    const arr = new Int32Array(VENT_COUNT);
-    for (let i = 0; i < VENT_COUNT; i++) arr[i] = rackIndices[i % rackIndices.length];
-    return arr;
-  }, [rackIndices]);
+  // Precompute cable curves for all pairs
+  const curves = useMemo(() =>
+    CABLE_PAIRS.map(([ai, bi]) => {
+      const [from, to] = cableEndpoints(RACKS[ai], RACKS[bi]);
+      const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
+      mid.y += 0.55;
+      return new THREE.CatmullRomCurve3([from, mid, to]);
+    }), []);
+
+  const pulses = useRef<Array<{ pair: number; t: number; speed: number; alive: boolean }>>([]);
 
   useFrame((_, delta) => {
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
     const dt = Math.min(delta, 0.1);
 
-    for (let i = 0; i < VENT_COUNT; i++) {
-      timers[i] -= dt;
-      if (timers[i] <= 0) {
-        const rack = RACKS[assignedRack[i]];
-        arr[i * 3] = rack.x + (Math.random() - 0.5) * 0.3;
-        arr[i * 3 + 1] = rack.height + 0.05;
-        arr[i * 3 + 2] = rack.z + (Math.random() - 0.5) * 0.2;
-        timers[i] = 1.5 + Math.random() * 4;
+    // Spawn new pulses occasionally
+    if (pulses.current.length < PULSE_COUNT && Math.random() < dt * 2) {
+      pulses.current.push({
+        pair: Math.floor(Math.random() * curves.length),
+        t: 0,
+        speed: PULSE_SPEED * (0.7 + Math.random() * 0.6),
+        alive: true,
+      });
+    }
+
+    // Move existing pulses
+    for (let i = pulses.current.length - 1; i >= 0; i--) {
+      const p = pulses.current[i];
+      p.t += p.speed * dt;
+      if (p.t >= 1) {
+        pulses.current.splice(i, 1);
+        continue;
       }
-      // Fast rise with lateral wobble — not a uniform bubble
-      arr[i * 3 + 1] += dt * 2.5;
-      arr[i * 3] += (Math.random() - 0.5) * dt * 0.8;
-      arr[i * 3 + 2] += (Math.random() - 0.5) * dt * 0.8;
-      if (arr[i * 3 + 1] > RACKS[assignedRack[i]].height + 2.0) {
-        timers[i] = -1;
-      }
+      const pt = curves[p.pair].getPointAt(p.t);
+      arr[i * 3] = pt.x;
+      arr[i * 3 + 1] = pt.y;
+      arr[i * 3 + 2] = pt.z;
+    }
+
+    // Zero out unused slots
+    for (let i = pulses.current.length; i < PULSE_COUNT; i++) {
+      arr[i * 3] = arr[i * 3 + 1] = arr[i * 3 + 2] = -100;
     }
     attr.needsUpdate = true;
   });
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getVentTex()} color={HEAT_ACCENT} size={0.08} sizeAttenuation transparent opacity={0.7} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={getFlowTex()} color="#ffffff" size={0.08} sizeAttenuation transparent opacity={0.8} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
@@ -563,7 +551,7 @@ function Datacenter() {
       </mesh>
       {RACKS.map(rack => <Rack key={rack.id} rack={rack} />)}
       <Cables />
-      <RackVents />
+      <CablePulses />
     </group>
   );
 }
