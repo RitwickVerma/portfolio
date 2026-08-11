@@ -5,8 +5,17 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 
-// Shared pointer state — updated by Canvas onPointerMove, read by inner components
+// Shared pointer state — updated by window listener + Canvas fallback
 const pointer = { x: 0.5, y: 0.5 };
+let pointerInit = false;
+function initPointer() {
+  if (pointerInit) return;
+  pointerInit = true;
+  window.addEventListener('pointermove', (e: PointerEvent) => {
+    pointer.x = e.clientX / window.innerWidth;
+    pointer.y = 1.0 - e.clientY / window.innerHeight;
+  }, { passive: true });
+}
 
 const ACCENT = '#64ffda';
 const GATEWAY_ACCENT = '#ffd166';
@@ -314,6 +323,7 @@ function Datacenter() {
 }
 
 export default function HeroScene() {
+  initPointer();
   return (
     <Canvas
       flat
@@ -321,14 +331,6 @@ export default function HeroScene() {
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }}
       style={{ width: '100%', height: '100%' }}
-      onPointerMove={(e) => {
-        const target = e.target as HTMLElement;
-        const rect = target?.getBoundingClientRect?.();
-        if (rect) {
-          pointer.x = (e.clientX - rect.left) / rect.width;
-          pointer.y = (e.clientY - rect.top) / rect.height;
-        }
-      }}
     >
       <Suspense fallback={null}>
         <CameraRig />
