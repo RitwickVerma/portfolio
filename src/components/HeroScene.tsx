@@ -192,7 +192,7 @@ function Cables() {
   return <group>{cables.map(c => <Cable key={c.key} from={c.from} to={c.to} />)}</group>;
 }
 
-/** Round particle texture — canvas-drawn circle, no square artifacts */
+/** Round particle texture */
 let _particleTex: THREE.Texture | null = null;
 function getParticleTex() {
   if (_particleTex) return _particleTex;
@@ -212,16 +212,13 @@ function getParticleTex() {
   return _particleTex;
 }
 
-// Easter egg state
-const rickroll = { triggered: false };
-
 function mulberry32(seed: number) {
   let a = seed >>> 0;
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-/** Bubble particles — fill the screen on violent spin, whiteout → rickroll */
-function DriftParticles({ count = 200 }: { count?: number }) {
+/** Organic swirling particles — alive, interactive, beautiful */
+function DriftParticles({ count = 250 }: { count?: number }) {
   const rand = useMemo(() => mulberry32(0x64ffda), []);
 
   const geometry = useMemo(() => {
@@ -233,66 +230,79 @@ function DriftParticles({ count = 200 }: { count?: number }) {
 
   const vel = useMemo(() => new Float32Array(count * 3), [count]);
   const life = useMemo(() => new Float32Array(count), [count]);
-  const seeded = useRef(false);
+  const maxLife = useMemo(() => new Float32Array(count), [count]);
+  const phase = useMemo(() => {
+    const arr = new Float32Array(count);
+    for (let i = 0; i < count; i++) arr[i] = rand() * Math.PI * 2;
+    return arr;
+  }, [count, rand]);
 
+  const seeded = useRef(false);
   if (!seeded.current) {
     seeded.current = true;
     const arr = (geometry.getAttribute('position') as THREE.BufferAttribute).array as Float32Array;
-    for (let i = 0; i < count; i++) {
-      spawn(arr, vel, life, i, rand, 0);
-    }
+    for (let i = 0; i < count; i++) spawnParticle(arr, vel, life, maxLife, phase, i, rand, 0);
   }
 
   const matRef = useRef<THREE.PointsMaterial>(null);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
+    const t = state.clock.getElapsedTime();
 
     const cx = (smoothedPointer.x - 0.5) * 8;
     const cz = (smoothedPointer.y - 0.5) * 5;
-
     const spin = Math.hypot(drag.velocityX, drag.velocityY);
-    const boost = 1 + spin * 20;
 
-    // Particle size grows with spin — needs sustained hard sling to whiteout
-    const targetSize = 0.05 + spin * 20;
+    // Particle size pulses with spin
     if (matRef.current) {
-      matRef.current.size += (targetSize - matRef.current.size) * 0.1;
-    }
-
-    // Trigger when particles fill screen (size > 2.5)
-    if (matRef.current && matRef.current.size > 2.5 && !rickroll.triggered) {
-      rickroll.triggered = true;
+      matRef.current.size += ((0.04 + spin * 4) - matRef.current.size) * 0.08;
     }
 
     const dt = Math.min(delta, 0.1);
     for (let i = 0; i < count; i++) {
-      const lifeScale = 1 + spin * 8;
-      life[i] -= dt * lifeScale;
+      life[i] -= dt;
       if (life[i] <= 0) {
-        spawn(arr, vel, life, i, rand, spin);
+        spawnParticle(arr, vel, life, maxLife, phase, i, rand, spin);
         continue;
       }
 
       const idx = i * 3;
-      const dx = cx - arr[idx];
-      const dz = cz - arr[idx + 2];
-      const dist = Math.hypot(dx, dz) + 0.1;
-      const force = Math.min(1, 2 / (dist + 1)) * dt * 0.8;
-      vel[idx] += dx / dist * force;
-      vel[idx + 2] += dz / dist * force;
+      const px = arr[idx], py = arr[idx + 1], pz = arr[idx + 2];
 
-      vel[idx] += (rand() - 0.5) * dt * 0.3;
-      vel[idx + 2] += (rand() - 0.5) * dt * 0.3;
+      // Organic swirling motion using sinusoidal forces
+      const curlX = Math.sin(py * 0.7 + t * 0.5 + phase[i]) * 0.6;
+      const curlZ = Math.cos(px * 0.7 + t * 0.5 + phase[i]) * 0.6;
+
+      // Cursor attraction — stronger when close
+      const dx = cx - px, dz = cz - pz;
+      const dist = Math.hypot(dx, dz) + 0.3;
+      const cursorForce = 1.5 / (dist * dist + 0.5);
+
+      // Vortex spiral during spin
+      const vortexForce = spin * 15;
+      const vortexX = -pz * vortexForce;
+      const vortexZ = px * vortexForce;
+
+      vel[idx] += (dx * cursorForce + curlX + vortexX) * dt;
+      vel[idx + 2] += (dz * cursorForce + curlZ + vortexZ) * dt;
+
+      // Gentle upward drift with spin boost
+      vel[idx + 1] += (0.15 + spin * 5) * dt;
+
+      // Dampen velocity
+      vel[idx] *= 0.995;
+      vel[idx + 1] *= 0.995;
+      vel[idx + 2] *= 0.995;
 
       arr[idx] += vel[idx] * dt;
-      arr[idx + 1] += vel[idx + 1] * dt * boost;
+      arr[idx + 1] += vel[idx + 1] * dt;
       arr[idx + 2] += vel[idx + 2] * dt;
 
-      // Kill if way off screen
-      if (Math.abs(arr[idx]) > 10 || Math.abs(arr[idx + 2]) > 8 || arr[idx + 1] > 6) {
-        spawn(arr, vel, life, i, rand, spin);
+      // Bounds check
+      if (Math.abs(arr[idx]) > 8 || arr[idx + 1] > 5 || arr[idx + 1] < -3 || Math.abs(arr[idx + 2]) > 6) {
+        spawnParticle(arr, vel, life, maxLife, phase, i, rand, spin);
       }
     }
     attr.needsUpdate = true;
@@ -300,24 +310,26 @@ function DriftParticles({ count = 200 }: { count?: number }) {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial ref={matRef} map={getParticleTex()} color={ACCENT} size={0.05} sizeAttenuation transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial ref={matRef} map={getParticleTex()} color={ACCENT} size={0.04} sizeAttenuation transparent opacity={0.45} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
 
-function spawn(
-  arr: Float32Array, vel: Float32Array, life: Float32Array,
-  i: number, rand: () => number, spin: number
+function spawnParticle(
+  arr: Float32Array, vel: Float32Array, life: Float32Array, maxLife: Float32Array,
+  phase: Float32Array, i: number, rand: () => number, spin: number
 ) {
   const idx = i * 3;
-  const spread = 1 + spin * 1.5;
-  arr[idx] = (rand() - 0.5) * 12 * spread;
-  arr[idx + 1] = -2 + rand() * 5 * (1 + spin);
-  arr[idx + 2] = (rand() - 0.5) * 8 * spread;
-  vel[idx] = (rand() - 0.5) * (0.5 + spin * 2);
-  vel[idx + 1] = (0.3 + rand() * 0.7) * (1 + spin * 4);
-  vel[idx + 2] = (rand() - 0.5) * (0.5 + spin * 2);
-  life[i] = (2 + rand() * 4) / (1 + spin * 3);
+  const r = 1 + spin * 2;
+  arr[idx] = (rand() - 0.5) * 10 * r;
+  arr[idx + 1] = -1.5 + rand() * 4.5;
+  arr[idx + 2] = (rand() - 0.5) * 7 * r;
+  vel[idx] = (rand() - 0.5) * 0.3;
+  vel[idx + 1] = 0.1 + rand() * 0.4;
+  vel[idx + 2] = (rand() - 0.5) * 0.3;
+  const ml = 3 + rand() * 5;
+  life[i] = ml;
+  maxLife[i] = ml;
 }
 
 function Datacenter() {
@@ -354,40 +366,7 @@ function Datacenter() {
 
 export default function HeroScene() {
   initPointer();
-  const overlayRef = useRef<HTMLDivElement>(null);
-
-  // Easter egg: poll rickroll trigger, flash overlay instantly
-  useEffect(() => {
-    const check = () => {
-      const el = overlayRef.current;
-      if (!el) return;
-      if (rickroll.triggered) {
-        el.style.opacity = '1';
-        el.style.pointerEvents = 'auto';
-      }
-    };
-    const id = setInterval(check, 100);
-    return () => clearInterval(id);
-  }, []);
-
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {/* Rickroll overlay */}
-      <div
-        ref={overlayRef}
-        style={{
-          position: 'absolute', inset: 0, zIndex: 100,
-          opacity: 0, pointerEvents: 'none',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          background: '#fff',
-          color: '#000', fontFamily: 'Impact, sans-serif', fontSize: 'clamp(2rem, 8vw, 6rem)',
-        }}
-      >
-        <div style={{ animation: 'rickrollSpin 0.5s linear infinite' }}>🌀</div>
-        <div style={{ marginTop: '1rem' }}>YOU GOT</div>
-        <div style={{ color: '#ff4444', fontSize: '1.5em' }}>RICKROLL'D</div>
-        <style>{`@keyframes rickrollSpin { to { transform: rotate(360deg); } }`}</style>
-      </div>
     <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} camera={{ position: [7,7,7], fov: 35, near: 0.1, far: 200 }} style={{ width:'100%', height:'100%' }}>
       <Suspense fallback={null}>
         <GrabHandler />
@@ -400,6 +379,5 @@ export default function HeroScene() {
         <DriftParticles />
       </Suspense>
     </Canvas>
-    </div>
   );
 }
