@@ -5,8 +5,10 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 
-// Shared pointer state — updated by window listener
+// Shared pointer state — lerped for smooth entry, no snap
 const pointer = { x: 0.5, y: 0.5 };
+const smoothedPointer = { x: 0.5, y: 0.5 };
+const LERP = 0.08; // smoothing factor per frame
 let pointerInit = false;
 function initPointer() {
   if (pointerInit) return;
@@ -32,10 +34,10 @@ function onDragMove(e: PointerEvent) {
   if (!drag.active) return;
   const dx = e.clientX - drag.prevX;
   const dy = e.clientY - drag.prevY;
-  drag.targetY += dx * 0.005;
-  drag.targetX += dy * 0.005;
-  drag.velocityY = dx * 0.005;
-  drag.velocityX = dy * 0.005;
+  drag.targetY += dx * 0.01;
+  drag.targetX += dy * 0.01;
+  drag.velocityY = dx * 0.01;
+  drag.velocityX = dy * 0.01;
   drag.prevX = e.clientX;
   drag.prevY = e.clientY;
 }
@@ -349,20 +351,24 @@ function Datacenter() {
     const g = group.current;
     if (!g) return;
 
+    // Lerp smoothed pointer toward raw pointer (no snap on entry)
+    smoothedPointer.x += (pointer.x - smoothedPointer.x) * LERP;
+    smoothedPointer.y += (pointer.y - smoothedPointer.y) * LERP;
+
     // Inertia decay when not dragging
     if (!drag.active) {
       drag.targetY += drag.velocityY;
       drag.targetX += drag.velocityX;
-      drag.velocityY *= 0.95;
-      drag.velocityX *= 0.95;
+      drag.velocityY *= 0.985;
+      drag.velocityX *= 0.985;
     }
 
     // Auto-rotation always runs — drag just adds an offset
     const autoY = Math.sin(t * 0.12) * 0.4;
-    const mouseY = (pointer.x - 0.5) * 0.8;
+    const mouseY = (smoothedPointer.x - 0.5) * 0.8;
 
     g.rotation.y = autoY + mouseY + drag.targetY;
-    g.rotation.x = (pointer.y - 0.5) * -0.25 + drag.targetX;
+    g.rotation.x = (smoothedPointer.y - 0.5) * -0.25 + drag.targetX;
     g.position.y = Math.sin(t * 0.55) * 0.06;
   });
 
