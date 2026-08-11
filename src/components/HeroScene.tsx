@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 // Shared pointer state — lerped for smooth entry, no snap
 const pointer = { x: 0.5, y: 0.5 };
@@ -131,6 +132,13 @@ function CameraRig() {
     cam.lookAt(0, 0.55, 0);
     cam.updateProjectionMatrix();
   }, [camera, size]);
+  useFrame(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    // FOV kick on spin — lens feels the inertia, settles back
+    const target = 35 + sceneState.spin * 14;
+    cam.fov += (target - cam.fov) * 0.06;
+    cam.updateProjectionMatrix();
+  });
   return null;
 }
 
@@ -158,6 +166,59 @@ function RackLights({ accent, phase }: { accent: string; phase: number }) {
   );
 }
 
+function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    canvasRef.current = canvas;
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.minFilter = THREE.LinearFilter;
+    if (matRef.current) {
+      matRef.current.map = tex;
+      matRef.current.needsUpdate = true;
+    }
+  }, []);
+  useFrame(({ clock }) => {
+    const canvas = canvasRef.current;
+    const mat = matRef.current;
+    if (!canvas || !mat) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const t = clock.getElapsedTime();
+    const rows = 7;
+    const rowH = 256 / rows;
+    // Scanline sweep — moves with scene life
+    const sweep = (t * 0.25 + sceneState.spin * 0.8) % 1;
+    ctx.fillStyle = '#05070c';
+    ctx.fillRect(0, 0, 256, 256);
+    ctx.font = '12px monospace';
+    ctx.textBaseline = 'middle';
+    for (let r = 0; r < rows; r++) {
+      // Scroll text by time — looks like live logs
+      const scroll = Math.floor(t * 2.2 + r * 3.7 + sceneState.spin * 40);
+      const msg = `${rackId} [${String((scroll * 7) % 100).padStart(3, '0')}] ${Math.abs(Math.sin(scroll * 0.13) * 100).toFixed(1)}%`;
+      ctx.fillStyle = accent;
+      ctx.globalAlpha = 0.55 + 0.45 * Math.sin(t * 0.8 + r * 0.9);
+      ctx.fillText(msg, 6, r * rowH + rowH * 0.5);
+      ctx.globalAlpha = 1;
+    }
+    // Scanline highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(0, sweep * 256, 256, 2);
+    mat.map!.needsUpdate = true;
+  });
+  return (
+    <mesh position={[0, 0.1, 0.457]}>
+      <planeGeometry args={[0.72, 1.6]} />
+      <meshBasicMaterial ref={matRef} color="#0a0f14" />
+    </mesh>
+  );
+}
+
 function Rack({ rack }: { rack: RackDef }) {
   const accent = rack.gateway ? GATEWAY_ACCENT : ACCENT;
   const bodyColor = rack.gateway ? '#221f2e' : '#17171f';
@@ -167,10 +228,7 @@ function Rack({ rack }: { rack: RackDef }) {
         <boxGeometry args={[1, 2.2, 0.9]} />
         <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.35} emissive={accent} emissiveIntensity={0.08} />
       </mesh>
-      <mesh position={[0, 0.1, 0.455]}>
-        <boxGeometry args={[0.72, 1.6, 0.015]} />
-        <meshStandardMaterial color="#1e1e28" metalness={0.5} roughness={0.5} emissive={accent} emissiveIntensity={0.04} />
-      </mesh>
+      <RackScreen accent={accent} rackId={rack.id} />
       <RackLights accent={accent} phase={rack.x * 1.9} />
       <mesh position={[0, 1.18, 0]}>
         <sphereGeometry args={[0.055, 12, 12]} />
@@ -414,6 +472,29 @@ function spawnFirefly(
   life[i] = 3 + rand() * 5;
 }
 
+function GridFloor() {
+  const gridRef = useRef<THREE.GridHelper>(null);
+  useFrame(({ clock }) => {
+    if (gridRef.current) {
+      const t = clock.getElapsedTime();
+      // Grid pulses with scene energy
+      const mat = gridRef.current.material as THREE.Material;
+      mat.transparent = true;
+      mat.opacity = 0.22 + Math.min(sceneState.spin * 2, 0.35) + Math.sin(t * 0.6) * 0.04;
+      gridRef.current.position.y = -0.06 + Math.sin(t * 0.4) * 0.015;
+    }
+  });
+  return (
+    <group>
+      <gridHelper ref={gridRef} args={[16, 24, ACCENT, '#1a2b33']} position={[0, -0.06, 0]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
+        <planeGeometry args={[20, 14]} />
+        <meshBasicMaterial color="#04070c" transparent opacity={0.6} />
+      </mesh>
+    </group>
+  );
+}
+
 function Datacenter() {
   const group = useRef<THREE.Group>(null);
   useFrame((state) => {
@@ -473,8 +554,12 @@ export default function HeroScene() {
         <directionalLight position={[6,9,5]} intensity={1.2} />
         <directionalLight position={[-6,5,-4]} intensity={0.35} color={ACCENT} />
         <SceneLighting />
+        <GridFloor />
         <Datacenter />
         <DriftParticles />
+        <EffectComposer>
+          <Bloom intensity={0.85} luminanceThreshold={0.55} luminanceSmoothing={0.3} mipmapBlur radius={0.7} />
+        </EffectComposer>
       </Suspense>
     </Canvas>
   );
