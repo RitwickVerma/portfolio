@@ -4,7 +4,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import ClientShell from "@/components/ClientShell";
 import ShaderBackground from "@/components/ShaderBackground";
-import ParticleOverlay from "@/components/ParticleOverlay";
+import FullPageParticles from "@/components/FullPageParticles";
 import { PointerProvider } from "@/components/PointerProvider";
 import "./globals.css";
 
@@ -41,7 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full bg-[#0a0a0f] text-fg flex flex-col">
         <PointerProvider>
         <ShaderBackground />
-        <ParticleOverlay />
+        <FullPageParticles />
         <ClientShell>
         <Nav />
         <main className="flex-1">{children}</main>
