@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 
-// Shared pointer state — updated by window listener + Canvas fallback
+// Shared pointer state — updated by window listener
 const pointer = { x: 0.5, y: 0.5 };
 let pointerInit = false;
 function initPointer() {
@@ -16,6 +16,17 @@ function initPointer() {
     pointer.y = 1.0 - e.clientY / window.innerHeight;
   }, { passive: true });
 }
+
+// Drag state — grab-and-spin with inertia
+const drag = {
+  active: false,
+  prevX: 0,
+  prevY: 0,
+  targetY: 0,   // accumulated manual rotation Y
+  targetX: 0,   // accumulated manual rotation X
+  velocityY: 0,
+  velocityX: 0,
+};
 
 const ACCENT = '#64ffda';
 const GATEWAY_ACCENT = '#ffd166';
@@ -283,19 +294,73 @@ function DriftParticles({ count = 180 }: { count?: number }) {
   );
 }
 
+/** Handles pointer-down/up/move on the Canvas for grab-and-spin. */
+function GrabHandler() {
+  const { gl } = useThree();
+  const el = gl.domElement;
+
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      drag.active = true;
+      drag.prevX = e.clientX;
+      drag.prevY = e.clientY;
+      drag.velocityX = 0;
+      drag.velocityY = 0;
+      el.setPointerCapture(e.pointerId);
+    };
+    const onUp = () => {
+      drag.active = false;
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!drag.active) return;
+      const dx = e.clientX - drag.prevX;
+      const dy = e.clientY - drag.prevY;
+      drag.targetY += dx * 0.005;
+      drag.targetX += dy * 0.005;
+      drag.velocityY = dx * 0.005;
+      drag.velocityX = dy * 0.005;
+      drag.prevX = e.clientX;
+      drag.prevY = e.clientY;
+    };
+
+    el.addEventListener('pointerdown', onDown);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointerleave', onUp);
+    el.addEventListener('pointermove', onMove);
+    return () => {
+      el.removeEventListener('pointerdown', onDown);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointerleave', onUp);
+      el.removeEventListener('pointermove', onMove);
+    };
+  }, [el]);
+
+  return null;
+}
+
 /** The rotating datacenter: slab floor, 8 racks, network cables. */
 function Datacenter() {
   const group = useRef<THREE.Group>(null);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, delta }) => {
     const t = clock.getElapsedTime();
     const g = group.current;
     if (!g) return;
-    // gentle sway around Y — blend auto-rotation with mouse position
-    const autoY = Math.sin(t * 0.12) * 0.4;
-    const mouseY = (pointer.x - 0.5) * 0.8; // mouse X → Y rotation
-    g.rotation.y = autoY + mouseY;
-    g.rotation.x = (pointer.y - 0.5) * -0.25; // subtle pitch from mouse Y
+
+    // Inertia decay when not dragging
+    if (!drag.active) {
+      drag.targetY += drag.velocityY;
+      drag.targetX += drag.velocityX;
+      drag.velocityY *= 0.95;
+      drag.velocityX *= 0.95;
+    }
+
+    // Auto-rotation (reduced when dragging)
+    const autoY = drag.active ? 0 : Math.sin(t * 0.12) * 0.4;
+    const mouseY = drag.active ? 0 : (pointer.x - 0.5) * 0.8;
+
+    g.rotation.y = autoY + mouseY + drag.targetY;
+    g.rotation.x = (pointer.y - 0.5) * -0.25 + drag.targetX;
     g.position.y = Math.sin(t * 0.55) * 0.06;
   });
 
@@ -333,6 +398,7 @@ export default function HeroScene() {
       style={{ width: '100%', height: '100%' }}
     >
       <Suspense fallback={null}>
+        <GrabHandler />
         <CameraRig />
         <ambientLight intensity={0.4} />
         <directionalLight position={[6, 9, 5]} intensity={1.2} />
