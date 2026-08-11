@@ -1,113 +1,107 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { skills } from "@/lib/data";
 
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
 export default function AboutSection() {
-  const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e?.isIntersecting) setVisible(true);
-      },
-      { threshold: 0.15 },
-    );
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-
   return (
-    <section
-      id="about"
-      ref={ref}
-      className="max-w-6xl mx-auto px-6 py-24 sm:py-32"
-    >
-      <h2 className="font-mono text-accent text-sm mb-6 tracking-widest uppercase">
+    <section id="about" className="max-w-6xl mx-auto px-6 py-24 sm:py-32">
+      <motion.h2
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        className="font-mono text-accent text-sm mb-6 tracking-widest uppercase"
+      >
         About
-      </h2>
+      </motion.h2>
 
       <div className="grid lg:grid-cols-2 gap-12">
         {/* Bio */}
-        <div className="space-y-4">
-          <p className="text-fg/80 leading-relaxed">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-50px" }}
+          className="space-y-4"
+        >
+          <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             I&apos;m a software engineer at{" "}
             <span className="text-accent">eBay</span> in San Francisco, where I
             build backend services at scale. I earned my MCS from{" "}
             <span className="text-accent">UC Irvine</span> and my BTech in CS
             from SRM Institute.
-          </p>
-          <p className="text-fg/80 leading-relaxed">
+          </motion.p>
+          <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             I thrive at the intersection of systems and software — I&apos;ve
             built everything from a custom C++ game engine to a production
             quantitative trading bot. My Android app{" "}
             <span className="text-accent">ShutUp</span> has over 26,000
             downloads on the Play Store.
-          </p>
-          <p className="text-fg/80 leading-relaxed">
+          </motion.p>
+          <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             Outside of work, I run a{" "}
             <span className="text-accent">14-service homelab</span> on Proxmox
             with a NixOS gateway, self-host everything from my password manager
             to my photo library, and obsess over infrastructure automation.
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
         {/* Skills */}
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-sm font-mono text-muted mb-3 tracking-widest uppercase">
-              Languages
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {skills.languages.map((s) => (
-                <span
-                  key={s}
-                  className="px-3 py-1 rounded-full text-xs glass border-white/[0.08] text-fg/70"
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h3 className="text-sm font-mono text-muted mb-3 tracking-widest uppercase">
-              Domains
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {skills.domains.map((s) => (
-                <span
-                  key={s}
-                  className="px-3 py-1 rounded-full text-xs glass border-white/[0.08] text-fg/70"
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h3 className="text-sm font-mono text-muted mb-3 tracking-widest uppercase">
-              Tools &amp; Platforms
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {skills.tools.map((s) => (
-                <span
-                  key={s}
-                  className="px-3 py-1 rounded-full text-xs glass border-white/[0.08] text-fg/70"
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-50px" }}
+          className="space-y-6"
+        >
+          {[
+            { label: "Languages", items: skills.languages },
+            { label: "Domains", items: skills.domains },
+            { label: "Tools & Platforms", items: skills.tools },
+          ].map((group) => (
+            <motion.div key={group.label} variants={fadeUp}>
+              <h3 className="text-sm font-mono text-muted mb-3 tracking-widest uppercase">
+                {group.label}
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {group.items.map((s) => (
+                  <span
+                    key={s}
+                    className="px-3 py-1 rounded-full text-xs glass border-white/[0.08] text-fg/70 hover:text-accent hover:border-accent/20 transition-colors"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
 
       {/* Timeline */}
-      <div className="mt-16">
-        <h3 className="text-sm font-mono text-muted mb-8 tracking-widest uppercase">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: "-50px" }}
+        className="mt-16"
+      >
+        <motion.h3
+          variants={fadeUp}
+          className="text-sm font-mono text-muted mb-8 tracking-widest uppercase"
+        >
           Experience
-        </h3>
+        </motion.h3>
         <div className="space-y-0">
           {[
             {
@@ -135,8 +129,9 @@ export default function AboutSection() {
               desc: "Library management system in Java EE — 2ms response times.",
             },
           ].map((exp, i) => (
-            <div
+            <motion.div
               key={i}
+              variants={fadeUp}
               className="relative pl-8 pb-8 border-l border-white/[0.08] last:pb-0"
             >
               <div className="absolute left-[-4px] top-1 w-2 h-2 rounded-full bg-accent/60" />
@@ -150,10 +145,13 @@ export default function AboutSection() {
                 </div>
                 <p className="text-fg/60 text-sm">{exp.desc}</p>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
-        <div className="relative pl-8 border-l border-white/[0.08]">
+        <motion.div
+          variants={fadeUp}
+          className="relative pl-8 border-l border-white/[0.08]"
+        >
           <div className="absolute left-[-4px] top-1 w-2 h-2 rounded-full bg-accent/30" />
           <div className="space-y-1">
             <div className="flex items-baseline gap-3 flex-wrap">
@@ -162,8 +160,8 @@ export default function AboutSection() {
               <span className="text-muted text-xs">2019 — 2020</span>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }

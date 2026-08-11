@@ -1,181 +1,314 @@
-"use client";
+'use client';
 
-import { useRef, useMemo } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Sparkles } from "@react-three/drei";
-import * as THREE from "three";
+import { Suspense, useEffect, useMemo, useRef } from 'react';
+import * as THREE from 'three';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 
-const services = [
-  { id: "VM110", name: "Gateway", color: "#ff6b6b" },
-  { id: "CT101", name: "Hermes", color: "#64ffda" },
-  { id: "CT102", name: "DNS", color: "#64ffda" },
-  { id: "CT104", name: "VWarden", color: "#64ffda" },
-  { id: "CT106", name: "Immich", color: "#64ffda" },
-  { id: "CT107", name: "Paperless", color: "#64ffda" },
-  { id: "CT111", name: "Jellyfin", color: "#64ffda" },
-  { id: "CT113", name: "Syncthing", color: "#64ffda" },
+// Shared pointer state — updated by Canvas onPointerMove, read by inner components
+const pointer = { x: 0.5, y: 0.5 };
+
+const ACCENT = '#64ffda';
+const GATEWAY_ACCENT = '#ffd166';
+
+type RackDef = {
+  id: string;
+  name: string;
+  x: number;
+  z: number;
+  gateway?: boolean;
+};
+
+/** 2 rows × 4 columns of racks — the homelab services */
+const RACKS: RackDef[] = [
+  { id: 'VM110', name: 'VM110 Gateway', x: -3.3, z: -1.25, gateway: true },
+  { id: 'CT101', name: 'CT101 Hermes', x: -1.1, z: -1.25 },
+  { id: 'CT102', name: 'CT102 DNS', x: 1.1, z: -1.25 },
+  { id: 'CT104', name: 'CT104 Vaultwarden', x: 3.3, z: -1.25 },
+  { id: 'CT106', name: 'CT106 Immich', x: -3.3, z: 1.25 },
+  { id: 'CT107', name: 'CT107 Paperless', x: -1.1, z: 1.25 },
+  { id: 'CT111', name: 'CT111 Jellyfin', x: 1.1, z: 1.25 },
+  { id: 'CT113', name: 'CT113 Syncthing', x: 3.3, z: 1.25 },
 ];
 
-function Rack({
-  position,
-  label,
-  color,
-}: {
-  position: [number, number, number];
-  label: string;
-  color: string;
-}) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const emissiveColor = useMemo(() => new THREE.Color(color), [color]);
+/** Index pairs into RACKS: row links + column (cross-row) links */
+const CABLE_PAIRS: Array<[number, number]> = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [4, 5],
+  [5, 6],
+  [6, 7],
+  [0, 4],
+  [1, 5],
+  [2, 6],
+  [3, 7],
+];
+
+// World-space footprint the camera must keep framed on any viewport
+const FIT_WIDTH = 9.6;
+const FIT_HEIGHT = 7.2;
+
+/** Endpoints of a "network cable" on the facing sides of two racks. */
+function cableEndpoints(a: RackDef, b: RackDef): [THREE.Vector3, THREE.Vector3] {
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
+  const len = Math.hypot(dx, dz) || 1;
+  const nx = dx / len;
+  const nz = dz / len;
+  const half = 0.54;
+  const y = 0.85;
+  return [
+    new THREE.Vector3(a.x + nx * half, y, a.z + nz * half),
+    new THREE.Vector3(b.x - nx * half, y, b.z - nz * half),
+  ];
+}
+
+/** Responsive camera — moves back/forward so the scene always fits the viewport. */
+function CameraRig() {
+  const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
+
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    const aspect = size.width / Math.max(size.height, 1);
+    const tanHalf = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
+    // keep the full datacenter in frame: isometric direction (1,1,1)
+    const dist = Math.max(
+      FIT_WIDTH / (2 * tanHalf * aspect),
+      FIT_HEIGHT / (2 * tanHalf),
+    );
+    const dir = new THREE.Vector3(1, 1, 1).normalize();
+    cam.position.copy(dir.multiplyScalar(dist));
+    cam.lookAt(0, 0.55, 0);
+    cam.updateProjectionMatrix();
+  }, [camera, size]);
+
+  return null;
+}
+
+/** Blinking status LEDs on a rack's front face. */
+function RackLights({ accent, phase }: { accent: string; phase: number }) {
+  const refs = useRef<Array<THREE.Mesh | null>>([]);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    refs.current.forEach((mesh, i) => {
+      if (!mesh) return;
+      const mat = mesh.material as THREE.MeshStandardMaterial;
+      mat.emissiveIntensity = 0.55 + Math.sin(t * 1.8 + i * 2.2 + phase) * 0.3;
+    });
+  });
 
   return (
-    <group position={position}>
-      {/* Main rack box */}
-      <mesh ref={meshRef} castShadow>
-        <boxGeometry args={[0.6, 1.8, 0.4]} />
-        <meshStandardMaterial
-          color="#1a1a2e"
-          metalness={0.4}
-          roughness={0.6}
-          emissive={emissiveColor}
-          emissiveIntensity={0.15}
-        />
-      </mesh>
-      {/* Top indicator light */}
-      <mesh position={[0, 0.95, 0.21]}>
-        <boxGeometry args={[0.12, 0.05, 0.02]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={emissiveColor}
-          emissiveIntensity={0.9}
-        />
-      </mesh>
-      {/* Label text via small plane — simplified as colored dot */}
-      <mesh position={[0, -1.05, 0.21]}>
-        <circleGeometry args={[0.06, 16]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={emissiveColor}
-          emissiveIntensity={0.5}
-        />
-      </mesh>
+    <group position={[0, 0.4, 0.46]}>
+      {[0, 1, 2].map((i) => (
+        <mesh
+          key={i}
+          ref={(m) => {
+            refs.current[i] = m;
+          }}
+          position={[-0.24 + i * 0.24, 0, 0]}
+        >
+          <sphereGeometry args={[0.032, 8, 8]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.6} />
+        </mesh>
+      ))}
     </group>
   );
 }
 
-function Cable({
-  start,
-  end,
-}: {
-  start: [number, number, number];
-  end: [number, number, number];
-}) {
-  const points = useMemo(() => {
-    const mid: [number, number, number] = [
-      (start[0] + end[0]) / 2,
-      Math.max(start[1], end[1]) + 0.5,
-      (start[2] + end[2]) / 2,
-    ];
-    const curve = new THREE.QuadraticBezierCurve3(
-      new THREE.Vector3(...start),
-      new THREE.Vector3(...mid),
-      new THREE.Vector3(...end),
-    );
-    return curve.getPoints(20);
-  }, [start, end]);
-
-  const lineGeo = useMemo(
-    () => new THREE.BufferGeometry().setFromPoints(points),
-    [points],
-  );
+/** A single server rack: body, front panel, LEDs, top indicator + name label. */
+function Rack({ rack }: { rack: RackDef }) {
+  const accent = rack.gateway ? GATEWAY_ACCENT : ACCENT;
+  const bodyColor = rack.gateway ? '#221f2e' : '#17171f';
 
   return (
-    <line geometry={lineGeo}>
-      <lineBasicMaterial
-        color="#64ffda"
-        transparent
-        opacity={0.15}
-        linewidth={1}
-      />
-    </line>
+    <group position={[rack.x, 0, rack.z]}>
+      {/* rack body */}
+      <mesh>
+        <boxGeometry args={[1, 2.2, 0.9]} />
+        <meshStandardMaterial
+          color={bodyColor}
+          metalness={0.6}
+          roughness={0.35}
+          emissive={accent}
+          emissiveIntensity={0.08}
+        />
+      </mesh>
+      {/* front panel */}
+      <mesh position={[0, 0.1, 0.455]}>
+        <boxGeometry args={[0.72, 1.6, 0.015]} />
+        <meshStandardMaterial
+          color="#1e1e28"
+          metalness={0.5}
+          roughness={0.5}
+          emissive={accent}
+          emissiveIntensity={0.04}
+        />
+      </mesh>
+      {/* blinking status LEDs */}
+      <RackLights accent={accent} phase={rack.x * 1.9} />
+      {/* top indicator dot */}
+      <mesh position={[0, 1.18, 0]}>
+        <sphereGeometry args={[0.055, 12, 12]} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.3} />
+      </mesh>
+      {/* name label */}
+      <Html position={[0, 1.62, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }}>
+        <div className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }}
+          />
+          <span className="text-[10px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
+        </div>
+      </Html>
+    </group>
   );
 }
 
-function Scene() {
-  const groupRef = useRef<THREE.Group>(null);
-
-  useFrame((_, delta) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.08;
-    }
-  });
-
-  const rackPositions = useMemo(() => {
-    const positions: {
-      position: [number, number, number];
-      label: string;
-      color: string;
-    }[] = [];
-    // 2 rows of 4
-    for (let row = 0; row < 2; row++) {
-      for (let col = 0; col < 4; col++) {
-        const idx = row * 4 + col;
-        if (idx >= services.length) break;
-        positions.push({
-          position: [
-            (col - 1.5) * 1.2,
-            0,
-            (row - 0.5) * 1.8,
-          ] as [number, number, number],
-          label: services[idx].id,
-          color: services[idx].color,
-        });
-      }
-    }
-    return positions;
-  }, []);
-
-  const cables = useMemo(() => {
-    const result: { start: [number, number, number]; end: [number, number, number] }[] = [];
-    // Connect rows in a bus topology
-    for (let i = 0; i < rackPositions.length - 1; i++) {
-      const a = rackPositions[i].position;
-      const b = rackPositions[i + 1].position;
-      result.push({
-        start: [a[0], a[1] + 0.3, a[2]],
-        end: [b[0], b[1] + 0.3, b[2]],
-      });
-    }
-    return result;
-  }, [rackPositions]);
+/** One thin glowing "network cable" arching between two racks. */
+function Cable({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
+  const geometry = useMemo(() => {
+    const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
+    mid.y += 0.55;
+    const curve = new THREE.CatmullRomCurve3([from, mid, to]);
+    return new THREE.TubeGeometry(curve, 20, 0.022, 6, false);
+  }, [from, to]);
 
   return (
-    <group ref={groupRef}>
-      {/* Floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, 0]}>
-        <planeGeometry args={[8, 8]} />
-        <meshStandardMaterial color="#0d0d1a" transparent opacity={0.4} />
-      </mesh>
-
-      {/* Racks */}
-      {rackPositions.map((r, i) => (
-        <Rack key={i} position={r.position} label={r.label} color={r.color} />
-      ))}
-
-      {/* Network cables */}
-      {cables.map((c, i) => (
-        <Cable key={i} start={c.start} end={c.end} />
-      ))}
-
-      {/* Particles */}
-      <Sparkles
-        count={200}
-        scale={6}
-        size={2}
-        speed={0.3}
-        color="#64ffda"
-        opacity={0.15}
+    <mesh geometry={geometry}>
+      <meshStandardMaterial
+        color={ACCENT}
+        emissive={ACCENT}
+        emissiveIntensity={0.55}
+        transparent
+        opacity={0.7}
+        roughness={0.35}
+        metalness={0.2}
       />
+    </mesh>
+  );
+}
+
+function Cables() {
+  const cables = useMemo(
+    () =>
+      CABLE_PAIRS.map(([ai, bi]) => {
+        const a = RACKS[ai];
+        const b = RACKS[bi];
+        const [from, to] = cableEndpoints(a, b);
+        return { key: `${a.id}-${b.id}`, from, to };
+      }),
+    [],
+  );
+
+  return (
+    <group>
+      {cables.map((c) => (
+        <Cable key={c.key} from={c.from} to={c.to} />
+      ))}
+    </group>
+  );
+}
+
+/** Deterministic PRNG so the particle field is stable across re-renders. */
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** ~180 particles slowly drifting upward around the datacenter. */
+function DriftParticles({ count = 180 }: { count?: number }) {
+  const geometry = useMemo(() => {
+    const rand = mulberry32(0x64ffda);
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (rand() - 0.5) * 9;
+      positions[i * 3 + 1] = -2 + rand() * 4.4;
+      positions[i * 3 + 2] = (rand() - 0.5) * 5;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.computeBoundingSphere();
+    return geo;
+  }, [count]);
+
+  const speeds = useMemo(() => {
+    const rand = mulberry32(0xc0113);
+    const arr = new Float32Array(count);
+    for (let i = 0; i < count; i++) arr[i] = 0.12 + rand() * 0.28;
+    return arr;
+  }, [count]);
+
+  useFrame((_, delta) => {
+    const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
+    const arr = attr.array as Float32Array;
+    for (let i = 0; i < count; i++) {
+      let y = arr[i * 3 + 1] + speeds[i] * delta;
+      if (y > 2.6) y = -2.2;
+      arr[i * 3 + 1] = y;
+    }
+    attr.needsUpdate = true;
+  });
+
+  return (
+    <points geometry={geometry}>
+      <pointsMaterial
+        color={ACCENT}
+        size={0.06}
+        sizeAttenuation
+        transparent
+        opacity={0.5}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
+/** The rotating datacenter: slab floor, 8 racks, network cables. */
+function Datacenter() {
+  const group = useRef<THREE.Group>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const g = group.current;
+    if (!g) return;
+    // gentle sway around Y — blend auto-rotation with mouse position
+    const autoY = Math.sin(t * 0.12) * 0.4;
+    const mouseY = (pointer.x - 0.5) * 0.8; // mouse X → Y rotation
+    g.rotation.y = autoY + mouseY;
+    g.rotation.x = (pointer.y - 0.5) * -0.25; // subtle pitch from mouse Y
+    g.position.y = Math.sin(t * 0.55) * 0.06;
+  });
+
+  return (
+    <group ref={group}>
+      {/* floating slab floor */}
+      <mesh position={[0, -0.05, 0]}>
+        <boxGeometry args={[9.4, 0.08, 4.2]} />
+        <meshStandardMaterial
+          color="#0d0d14"
+          metalness={0.4}
+          roughness={0.6}
+          transparent
+          opacity={0.55}
+          emissive={ACCENT}
+          emissiveIntensity={0.03}
+        />
+      </mesh>
+      {RACKS.map((rack) => (
+        <Rack key={rack.id} rack={rack} />
+      ))}
+      <Cables />
     </group>
   );
 }
@@ -183,13 +316,29 @@ function Scene() {
 export default function HeroScene() {
   return (
     <Canvas
-      camera={{ position: [3, 4, 5], fov: 40 }}
-      gl={{ antialias: true, alpha: true }}
+      flat
+      dpr={[1, 1.75]}
+      gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+      camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }}
+      style={{ width: '100%', height: '100%' }}
+      onPointerMove={(e) => {
+        const target = e.target as HTMLElement;
+        const rect = target?.getBoundingClientRect?.();
+        if (rect) {
+          pointer.x = (e.clientX - rect.left) / rect.width;
+          pointer.y = (e.clientY - rect.top) / rect.height;
+        }
+      }}
     >
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 8, 5]} intensity={0.8} />
-      <pointLight position={[0, 3, 0]} intensity={0.3} color="#64ffda" />
-      <Scene />
+      <Suspense fallback={null}>
+        <CameraRig />
+        <ambientLight intensity={0.4} />
+        <directionalLight position={[6, 9, 5]} intensity={1.2} />
+        <directionalLight position={[-6, 5, -4]} intensity={0.35} color={ACCENT} />
+        <pointLight position={[0, 2.5, 0]} intensity={10} distance={18} color={ACCENT} />
+        <Datacenter />
+        <DriftParticles />
+      </Suspense>
     </Canvas>
   );
 }
