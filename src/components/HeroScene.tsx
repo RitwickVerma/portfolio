@@ -197,15 +197,15 @@ function mulberry32(seed: number) {
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-/** 400 reactive particles — wind-driven by drag velocity, faster when slinging */
-function DriftParticles({ count = 400 }: { count?: number }) {
+/** ~180 particles slowly drifting upward around the datacenter. */
+function DriftParticles({ count = 180 }: { count?: number }) {
   const geometry = useMemo(() => {
     const rand = mulberry32(0x64ffda);
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      positions[i*3] = (rand() - 0.5) * 10;
-      positions[i*3+1] = -2.5 + rand() * 5.5;
-      positions[i*3+2] = (rand() - 0.5) * 6;
+      positions[i * 3] = (rand() - 0.5) * 9;
+      positions[i * 3 + 1] = -2 + rand() * 4.4;
+      positions[i * 3 + 2] = (rand() - 0.5) * 5;
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -215,44 +215,24 @@ function DriftParticles({ count = 400 }: { count?: number }) {
   const speeds = useMemo(() => {
     const rand = mulberry32(0xc0113);
     const arr = new Float32Array(count);
-    for (let i = 0; i < count; i++) arr[i] = 0.18 + rand() * 0.45;
+    for (let i = 0; i < count; i++) arr[i] = 0.12 + rand() * 0.28;
     return arr;
   }, [count]);
-
-  const matRef = useRef<THREE.PointsMaterial>(null);
 
   useFrame((_, delta) => {
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
-
-    const windX = drag.velocityY * 3;
-    const windZ = -drag.velocityX * 3;
-    const windMag = Math.hypot(windX, windZ);
-    const boost = 1 + windMag * 5;
-
-    if (matRef.current) {
-      matRef.current.size += ((0.025 + windMag * 1.5) - matRef.current.size) * 0.15;
-    }
-
-    const dt = Math.min(delta, 0.1);
     for (let i = 0; i < count; i++) {
-      const idx = i * 3;
-      let y = arr[idx+1] + speeds[i] * dt * boost;
-      if (y > 3.2) y = -2.5;
-      arr[idx+1] = y;
-      arr[idx] += windX * dt * (0.5 + speeds[i] * 2);
-      arr[idx+2] += windZ * dt * (0.5 + speeds[i] * 2);
-      if (arr[idx] > 5.5) arr[idx] = -5.5;
-      if (arr[idx] < -5.5) arr[idx] = 5.5;
-      if (arr[idx+2] > 3.5) arr[idx+2] = -3.5;
-      if (arr[idx+2] < -3.5) arr[idx+2] = 3.5;
+      let y = arr[i * 3 + 1] + speeds[i] * delta;
+      if (y > 2.6) y = -2.2;
+      arr[i * 3 + 1] = y;
     }
     attr.needsUpdate = true;
   });
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial ref={matRef} color={ACCENT} size={0.025} sizeAttenuation transparent opacity={0.6} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial color={ACCENT} size={0.06} sizeAttenuation transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
