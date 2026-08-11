@@ -395,7 +395,7 @@ function AirflowLayer() {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getFlowTex()} color={ACCENT} size={0.07} sizeAttenuation transparent opacity={0.22} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={getFlowTex()} color={ACCENT} size={0.12} sizeAttenuation transparent opacity={0.35} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
@@ -442,7 +442,7 @@ function CursorTrail() {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getFlowTex()} color="#ffffff" size={0.04} sizeAttenuation transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={getFlowTex()} color="#ffffff" size={0.06} sizeAttenuation transparent opacity={0.65} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
@@ -500,7 +500,7 @@ function RackVents() {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getFlowTex()} color={HEAT_ACCENT} size={0.07} sizeAttenuation transparent opacity={0.55} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={getFlowTex()} color={HEAT_ACCENT} size={0.10} sizeAttenuation transparent opacity={0.7} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
