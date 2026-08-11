@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { projects } from "@/lib/data";
 import { usePointer } from "./PointerProvider";
@@ -10,7 +10,6 @@ function TiltCard({ project }: { project: (typeof projects)[0] }) {
   const pointer = usePointer();
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [glow, setGlow] = useState({ x: 50, y: 50 });
-  const [active, setActive] = useState(false);
 
   const updateFromPointer = useCallback(() => {
     if (!cardRef.current) return;
@@ -28,7 +27,6 @@ function TiltCard({ project }: { project: (typeof projects)[0] }) {
   }, [pointer]);
 
   const handleLeave = () => {
-    setActive(false);
     setTilt({ x: 0, y: 0 });
     setGlow({ x: 50, y: 50 });
   };
@@ -36,10 +34,12 @@ function TiltCard({ project }: { project: (typeof projects)[0] }) {
   // Poll pointer position when card is active
   const rafRef = useRef(0);
   const pollPointer = useRef(updateFromPointer);
-  pollPointer.current = updateFromPointer;
+
+  useEffect(() => {
+    pollPointer.current = updateFromPointer;
+  });
 
   const handleEnter = () => {
-    setActive(true);
     const loop = () => {
       pollPointer.current();
       rafRef.current = requestAnimationFrame(loop);

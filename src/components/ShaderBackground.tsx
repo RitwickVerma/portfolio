@@ -51,7 +51,6 @@ function ShaderPlane() {
   }, []);
 
   useFrame(({ clock }) => {
-    // eslint-disable-next-line
     const mat = meshRef.current?.material as THREE.ShaderMaterial | undefined;
     if (!mat) return;
     mat.uniforms.uTime.value = clock.getElapsedTime();

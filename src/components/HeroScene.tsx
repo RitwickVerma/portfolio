@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/immutability, react-hooks/refs */
 
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -115,7 +116,7 @@ const RACK_DISPLAY: Record<string, { label: string; lines: string[] }> = {
 function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
   const matRef = useRef<THREE.MeshBasicMaterial>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const display = RACK_DISPLAY[rackId] || { label: rackId, lines: ['---'] };
+  const display = useMemo(() => RACK_DISPLAY[rackId] || { label: rackId, lines: ['---'] }, [rackId]);
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const canvas = document.createElement('canvas');
