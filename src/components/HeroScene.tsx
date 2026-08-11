@@ -448,8 +448,28 @@ function CursorTrail() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// LAYER 3: RACK VENTS — occasional heat sparks from active servers
+// LAYER 3: RACK VENTS — heat streaks from active servers
 // ════════════════════════════════════════════════════════════════════════════
+
+let _ventTex: THREE.Texture | null = null;
+function getVentTex() {
+  if (_ventTex) return _ventTex;
+  if (typeof document === 'undefined') return new THREE.Texture();
+  const w = 16, h = 48;
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, 'rgba(255,200,100,0.9)');
+  g.addColorStop(0.15, 'rgba(255,140,66,0.6)');
+  g.addColorStop(0.5, 'rgba(255,100,50,0.2)');
+  g.addColorStop(1, 'rgba(255,80,40,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(2, 0, w - 4, h);
+  _ventTex = new THREE.CanvasTexture(canvas);
+  _ventTex.needsUpdate = true;
+  return _ventTex;
+}
 
 const VENT_COUNT = 12;
 
@@ -485,13 +505,16 @@ function RackVents() {
       timers[i] -= dt;
       if (timers[i] <= 0) {
         const rack = RACKS[assignedRack[i]];
-        arr[i * 3] = rack.x + (Math.random() - 0.5) * 0.4;
-        arr[i * 3 + 1] = rack.height + 0.1;
-        arr[i * 3 + 2] = rack.z + (Math.random() - 0.5) * 0.3;
+        arr[i * 3] = rack.x + (Math.random() - 0.5) * 0.3;
+        arr[i * 3 + 1] = rack.height + 0.05;
+        arr[i * 3 + 2] = rack.z + (Math.random() - 0.5) * 0.2;
         timers[i] = 1.5 + Math.random() * 4;
       }
-      arr[i * 3 + 1] += dt * 1.5;
-      if (arr[i * 3 + 1] > RACKS[assignedRack[i]].height + 1.5) {
+      // Fast rise with lateral wobble — not a uniform bubble
+      arr[i * 3 + 1] += dt * 2.5;
+      arr[i * 3] += (Math.random() - 0.5) * dt * 0.8;
+      arr[i * 3 + 2] += (Math.random() - 0.5) * dt * 0.8;
+      if (arr[i * 3 + 1] > RACKS[assignedRack[i]].height + 2.0) {
         timers[i] = -1;
       }
     }
@@ -500,7 +523,7 @@ function RackVents() {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getFlowTex()} color={HEAT_ACCENT} size={0.10} sizeAttenuation transparent opacity={0.7} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={getVentTex()} color={HEAT_ACCENT} size={0.08} sizeAttenuation transparent opacity={0.7} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
