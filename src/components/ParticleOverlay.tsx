@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { sceneState } from "@/lib/sceneState";
 
 const COUNT = 120;
-const ACCENT_R = 100;
-const ACCENT_G = 255;
-const ACCENT_B = 218;
+const R = 100;
+const G = 255;
+const B = 218;
 
 interface Particle {
   x: number;
@@ -15,6 +16,7 @@ interface Particle {
   size: number;
   alpha: number;
   phase: number;
+  blinkSpeed: number;
 }
 
 export default function ParticleOverlay() {
@@ -27,7 +29,6 @@ export default function ParticleOverlay() {
     if (!ctx) return;
 
     const particles: Particle[] = [];
-    let windAngle = 0;
     let animId = 0;
     let lastT = 0;
 
@@ -40,14 +41,12 @@ export default function ParticleOverlay() {
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // Re-spread particles within new bounds
       for (const p of particles) {
         p.x = Math.random() * w;
         p.y = Math.random() * h;
       }
     };
 
-    // Spawn
     const w = window.innerWidth;
     const h = window.innerHeight;
     const dpr = window.devicePixelRatio || 1;
@@ -61,11 +60,12 @@ export default function ParticleOverlay() {
       particles.push({
         x: Math.random() * w,
         y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: Math.random() * 0.3 - 0.6,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: Math.random() * 0.2 - 0.4,
         size: 1.2 + Math.random() * 2.8,
         alpha: 0.18 + Math.random() * 0.32,
         phase: Math.random() * Math.PI * 2,
+        blinkSpeed: 0.5 + Math.random() * 2.5,
       });
     }
 
@@ -75,10 +75,12 @@ export default function ParticleOverlay() {
       const dt = Math.min((t - lastT) / 1000, 0.1);
       lastT = t;
 
-      // Wind: slowly rotating direction, subtle speed changes
-      windAngle += dt * 0.12;
-      const wx = Math.cos(windAngle) * 0.5;
-      const wy = Math.sin(windAngle) * 0.15 - 0.25; // slight upward bias
+      // Wind from shared sceneState — rotates with drag direction
+      const windAngle = sceneState.windAngle;
+      const spin = sceneState.spin;
+      const baseWind = 0.3 + spin * 0.8;
+      const wx = Math.cos(windAngle) * baseWind;
+      const wy = Math.sin(windAngle) * baseWind;
 
       const cw = window.innerWidth;
       const ch = window.innerHeight;
@@ -86,41 +88,38 @@ export default function ParticleOverlay() {
       ctx.clearRect(0, 0, cw, ch);
 
       for (const p of particles) {
-        // Smooth wind following + gentle turbulence
-        p.vx += (wx - p.vx) * dt * 1.2 + (Math.random() - 0.5) * 0.04;
-        p.vy += (wy - p.vy) * dt * 1.2 + (Math.random() - 0.5) * 0.03;
+        // Wind following + turbulence amplified by spin
+        const turb = (Math.random() - 0.5) * (0.03 + spin * 0.15);
+        p.vx += (wx - p.vx) * dt * 1.2 + turb;
+        p.vy += (wy - p.vy) * dt * 1.2 + (Math.random() - 0.5) * 0.02;
 
-        // Dampen
+        // Speed cap
         const speed = Math.hypot(p.vx, p.vy);
-        const maxSpeed = 0.8;
+        const maxSpeed = 0.6 + spin * 1.5;
         if (speed > maxSpeed) {
-          const scale = maxSpeed / speed;
-          p.vx *= scale;
-          p.vy *= scale;
+          const s = maxSpeed / speed;
+          p.vx *= s;
+          p.vy *= s;
         }
 
         p.x += p.vx * dt * 60;
         p.y += p.vy * dt * 60;
 
-        // Wrap viewport
         const margin = 40;
         if (p.x < -margin) p.x = cw + margin;
         if (p.x > cw + margin) p.x = -margin;
         if (p.y < -margin) p.y = ch + margin;
         if (p.y > ch + margin) p.y = -margin;
 
-        // Organic blink — soft, never fully off
-        const blink = Math.sin(t * 0.0015 + p.phase) * 0.35 + 0.65;
-        const a = p.alpha * blink;
+        // Firefly blink — independent per particle
+        const blink = Math.sin(t * 0.001 * p.blinkSpeed + p.phase) * 0.35 + 0.65;
+        const spinBoost = 1 + spin * 1.5;
+        const a = Math.min(p.alpha * blink * spinBoost, 0.85);
 
-        // Glow: radial gradient
-        const outerR = p.size * 3;
-        const gradient = ctx.createRadialGradient(
-          p.x, p.y, 0,
-          p.x, p.y, outerR,
-        );
-        gradient.addColorStop(0, `rgba(${ACCENT_R},${ACCENT_G},${ACCENT_B},${a.toFixed(3)})`);
-        gradient.addColorStop(0.4, `rgba(${ACCENT_R},${ACCENT_G},${ACCENT_B},${(a * 0.5).toFixed(3)})`);
+        const outerR = p.size * (2.5 + spin * 2);
+        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, outerR);
+        gradient.addColorStop(0, `rgba(${R},${G},${B},${a.toFixed(3)})`);
+        gradient.addColorStop(0.35, `rgba(${R},${G},${B},${(a * 0.4).toFixed(3)})`);
         gradient.addColorStop(1, "rgba(100,255,218,0)");
 
         ctx.beginPath();

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { sceneState } from '@/lib/sceneState';
 
 // Shared pointer state — lerped for smooth entry, no snap
 const pointer = { x: 0.5, y: 0.5 };
@@ -73,9 +74,6 @@ function GrabHandler() {
 
 const ACCENT = '#64ffda';
 const GATEWAY_ACCENT = '#ffd166';
-
-// Shared scene state — every component reads this for connected reactivity
-const sceneState = { spin: 0, dcRotY: 0, dcRotX: 0, mouseX: 0, mouseY: 0, windAngle: 0 };
 
 function SceneLighting() {
   const lightRef = useRef<THREE.PointLight>(null);
