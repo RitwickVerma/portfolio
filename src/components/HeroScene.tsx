@@ -217,21 +217,34 @@ function mulberry32(seed: number) {
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-/** Organic swirling particles — alive, interactive, beautiful */
-function DriftParticles({ count = 250 }: { count?: number }) {
+/** Organic firefly particles — each blinks independently, swells with spin */
+function DriftParticles({ count = 300 }: { count?: number }) {
   const rand = useMemo(() => mulberry32(0x64ffda), []);
 
-  const geometry = useMemo(() => {
+  const { geometry, sizesRef, alphasRef } = useMemo(() => {
     const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const alphas = new Float32Array(count);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    return geo;
+    geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geo.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
+    return { geometry: geo, sizesRef: sizes, alphasRef: alphas };
   }, [count]);
 
   const vel = useMemo(() => new Float32Array(count * 3), [count]);
   const life = useMemo(() => new Float32Array(count), [count]);
-  const maxLife = useMemo(() => new Float32Array(count), [count]);
-  const phase = useMemo(() => {
+  const blinkSpeed = useMemo(() => {
+    const arr = new Float32Array(count);
+    for (let i = 0; i < count; i++) arr[i] = 0.5 + rand() * 3;
+    return arr;
+  }, [count, rand]);
+  const blinkPhase = useMemo(() => {
+    const arr = new Float32Array(count);
+    for (let i = 0; i < count; i++) arr[i] = rand() * Math.PI * 2;
+    return arr;
+  }, [count, rand]);
+  const curlPhase = useMemo(() => {
     const arr = new Float32Array(count);
     for (let i = 0; i < count; i++) arr[i] = rand() * Math.PI * 2;
     return arr;
@@ -241,57 +254,57 @@ function DriftParticles({ count = 250 }: { count?: number }) {
   if (!seeded.current) {
     seeded.current = true;
     const arr = (geometry.getAttribute('position') as THREE.BufferAttribute).array as Float32Array;
-    for (let i = 0; i < count; i++) spawnParticle(arr, vel, life, maxLife, phase, i, rand, 0);
+    for (let i = 0; i < count; i++) spawnFirefly(arr, vel, life, i, rand, 0);
   }
 
-  const matRef = useRef<THREE.PointsMaterial>(null);
+  const matRef = useRef<THREE.ShaderMaterial>(null);
 
   useFrame((state, delta) => {
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
+    const sizeAttr = geometry.getAttribute('size') as THREE.BufferAttribute;
+    const sizeArr = sizeAttr.array as Float32Array;
+    const alphaAttr = geometry.getAttribute('alpha') as THREE.BufferAttribute;
+    const alphaArr = alphaAttr.array as Float32Array;
     const t = state.clock.getElapsedTime();
 
     const cx = (smoothedPointer.x - 0.5) * 8;
     const cz = (smoothedPointer.y - 0.5) * 5;
     const spin = Math.hypot(drag.velocityX, drag.velocityY);
 
-    // Particle size pulses with spin
-    if (matRef.current) {
-      matRef.current.size += ((0.04 + spin * 4) - matRef.current.size) * 0.08;
-    }
-
     const dt = Math.min(delta, 0.1);
     for (let i = 0; i < count; i++) {
       life[i] -= dt;
       if (life[i] <= 0) {
-        spawnParticle(arr, vel, life, maxLife, phase, i, rand, spin);
+        spawnFirefly(arr, vel, life, i, rand, spin);
         continue;
       }
 
       const idx = i * 3;
       const px = arr[idx], py = arr[idx + 1], pz = arr[idx + 2];
 
-      // Organic swirling motion using sinusoidal forces
-      const curlX = Math.sin(py * 0.7 + t * 0.5 + phase[i]) * 0.6;
-      const curlZ = Math.cos(px * 0.7 + t * 0.5 + phase[i]) * 0.6;
+      // Firefly blinking: sinusoidal pulse + random jitter
+      const pulse = Math.sin(t * blinkSpeed[i] + blinkPhase[i]) * 0.5 + 0.5;
+      const baseSize = 0.06 + spin * 3;
+      sizeArr[i] = baseSize * (0.4 + pulse * 0.6);
+      alphaArr[i] = 0.25 + pulse * 0.45 + spin * 5;
 
-      // Cursor attraction — stronger when close
+      // Organic curling
+      const curlX = Math.sin(py * 0.7 + t * 0.5 + curlPhase[i]) * 0.6;
+      const curlZ = Math.cos(px * 0.7 + t * 0.5 + curlPhase[i]) * 0.6;
+
       const dx = cx - px, dz = cz - pz;
       const dist = Math.hypot(dx, dz) + 0.3;
       const cursorForce = 1.5 / (dist * dist + 0.5);
 
-      // Vortex spiral during spin
       const vortexForce = spin * 15;
       const vortexX = -pz * vortexForce;
       const vortexZ = px * vortexForce;
 
       vel[idx] += (dx * cursorForce + curlX + vortexX) * dt;
       vel[idx + 2] += (dz * cursorForce + curlZ + vortexZ) * dt;
-
-      // Gentle upward drift with spin boost
       vel[idx + 1] += (0.15 + spin * 5) * dt;
 
-      // Dampen velocity
       vel[idx] *= 0.995;
       vel[idx + 1] *= 0.995;
       vel[idx + 2] *= 0.995;
@@ -300,24 +313,61 @@ function DriftParticles({ count = 250 }: { count?: number }) {
       arr[idx + 1] += vel[idx + 1] * dt;
       arr[idx + 2] += vel[idx + 2] * dt;
 
-      // Bounds check
       if (Math.abs(arr[idx]) > 8 || arr[idx + 1] > 5 || arr[idx + 1] < -3 || Math.abs(arr[idx + 2]) > 6) {
-        spawnParticle(arr, vel, life, maxLife, phase, i, rand, spin);
+        spawnFirefly(arr, vel, life, i, rand, spin);
       }
     }
     attr.needsUpdate = true;
+    sizeAttr.needsUpdate = true;
+    alphaAttr.needsUpdate = true;
   });
+
+  const shader = useMemo(() => ({
+    uniforms: {
+      uColor: { value: new THREE.Color(ACCENT) },
+      uTexture: { value: getParticleTex() },
+    },
+    vertexShader: /* glsl */`
+      attribute float size;
+      attribute float alpha;
+      varying float vAlpha;
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = size * (300.0 / -mvPosition.z);
+        gl_Position = projectionMatrix * mvPosition;
+        vAlpha = alpha;
+      }
+    `,
+    fragmentShader: /* glsl */`
+      uniform vec3 uColor;
+      uniform sampler2D uTexture;
+      varying float vAlpha;
+      void main() {
+        vec4 tex = texture2D(uTexture, gl_PointCoord);
+        float a = tex.a * clamp(vAlpha, 0.0, 1.0);
+        gl_FragColor = vec4(uColor * 1.4, a);
+      }
+    `,
+  }), []);
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial ref={matRef} map={getParticleTex()} color={ACCENT} size={0.04} sizeAttenuation transparent opacity={0.45} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <shaderMaterial
+        ref={matRef}
+        uniforms={shader.uniforms}
+        vertexShader={shader.vertexShader}
+        fragmentShader={shader.fragmentShader}
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
     </points>
   );
 }
 
-function spawnParticle(
-  arr: Float32Array, vel: Float32Array, life: Float32Array, maxLife: Float32Array,
-  phase: Float32Array, i: number, rand: () => number, spin: number
+function spawnFirefly(
+  arr: Float32Array, vel: Float32Array, life: Float32Array,
+  i: number, rand: () => number, spin: number
 ) {
   const idx = i * 3;
   const r = 1 + spin * 2;
@@ -327,9 +377,7 @@ function spawnParticle(
   vel[idx] = (rand() - 0.5) * 0.3;
   vel[idx + 1] = 0.1 + rand() * 0.4;
   vel[idx + 2] = (rand() - 0.5) * 0.3;
-  const ml = 3 + rand() * 5;
-  life[i] = ml;
-  maxLife[i] = ml;
+  life[i] = 3 + rand() * 5;
 }
 
 function Datacenter() {
