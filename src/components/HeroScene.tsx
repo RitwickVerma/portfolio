@@ -92,7 +92,7 @@ function SceneLighting() {
 // ─── Camera rig ────────────────────────────────────────────────────────────
 
 const FIT_WIDTH = 9.6;
-const FIT_HEIGHT = 7.2;
+const FIT_HEIGHT = 9.0;  // was 7.2 — extra headroom for tilted scene
 
 function CameraRig() {
   const camera = useThree((s) => s.camera);
