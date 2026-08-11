@@ -165,7 +165,7 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
     mat.color.set(accent);
   });
   return (
-    <mesh position={[0, 0.1, 0.457]}>
+    <mesh position={[0, 0, 0.457]}>
       <planeGeometry args={[0.72, 1.6]} />
       <meshBasicMaterial ref={matRef} color="#04060a" />
     </mesh>
@@ -184,7 +184,7 @@ function RackIndicator({ accent, rackId }: { accent: string; rackId: string }) {
     mat.emissiveIntensity = 1.0 + Math.sin(t * rate + blink.current) * 0.7;
   });
   return (
-    <mesh ref={ref} position={[0, 1.18, 0]}>
+    <mesh ref={ref} position={[0, 0.65, 0]}>
       <sphereGeometry args={[0.055, 12, 12]} />
       <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.3} />
     </mesh>
@@ -202,10 +202,12 @@ function Rack({ rack }: { rack: RackDef }) {
         <boxGeometry args={[1, h, 0.9]} />
         <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.35} emissive={accent} emissiveIntensity={0.08} />
       </mesh>
-      <RackScreen accent={accent} rackId={rack.id} />
-      <RackIndicator accent={accent} rackId={rack.id} />
+      <group position={[0, halfH, 0]}>
+        <RackScreen accent={accent} rackId={rack.id} />
+        <RackIndicator accent={accent} rackId={rack.id} />
+      </group>
       <RackLights accent={accent} phase={rack.x * 1.9} />
-      <Html position={[0, h / 2 + 0.7, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }}>
+      <Html position={[0, h + 0.7, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }}>
         <div className="pointer-events-none hidden sm:flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
           <span className="text-[10px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
@@ -593,7 +595,7 @@ function Datacenter() {
 export default function HeroScene() {
   initPointer();
   return (
-    <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} camera={{ position: [7,7,7], fov: 35, near: 0.1, far: 200 }} style={{ touchAction: 'none', width:'100%', height:'100%' }}>
+    <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} camera={{ position: [7,7,7], fov: 35, near: 0.1, far: 200 }} style={{ touchAction: 'pan-y', width:'100%', height:'100%' }}>
       <Suspense fallback={null}>
         <GrabHandler />
         <CameraRig />
