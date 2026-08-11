@@ -219,19 +219,19 @@ function Cables() {
   return <group>{cables.map(c => <Cable key={c.key} from={c.from} to={c.to} />)}</group>;
 }
 
-/** Round particle texture — guarded against SSR where document is undefined */
+/** Round particle texture — built lazily on client after mount */
 let _particleTex: THREE.Texture | null = null;
 function getParticleTex() {
   if (_particleTex) return _particleTex;
-  if (typeof document === 'undefined') return new THREE.Texture(); // SSR fallback
-  const size = 32;
+  if (typeof document === 'undefined') return new THREE.Texture(); // SSR fallback, NOT cached
+  const size = 64;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d')!;
   const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
   gradient.addColorStop(0, 'rgba(255,255,255,1)');
-  gradient.addColorStop(0.15, 'rgba(255,255,255,0.9)');
-  gradient.addColorStop(0.5, 'rgba(255,255,255,0.3)');
+  gradient.addColorStop(0.08, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.3, 'rgba(255,255,255,0.5)');
   gradient.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, size, size);
@@ -319,9 +319,9 @@ function DriftParticles({ count = 300 }: { count?: number }) {
 
       // Firefly blinking
       const pulse = Math.sin(t * blinkSpeed[i] + blinkPhase[i]) * 0.5 + 0.5;
-      const baseSize = 0.08 + spin * 3;
-      sizeArr[i] = baseSize * (0.4 + pulse * 0.6);
-      alphaArr[i] = 0.35 + pulse * 0.35 + spin * 5;
+      const baseSize = 0.14 + spin * 4;
+      sizeArr[i] = baseSize * (0.5 + pulse * 0.5);
+      alphaArr[i] = 0.55 + pulse * 0.35 + spin * 5;
 
       // Organic curling
       const curlX = Math.sin(py * 0.7 + t * 0.5 + curlPhase[i]) * 0.6;
@@ -367,7 +367,7 @@ function DriftParticles({ count = 300 }: { count?: number }) {
       varying float vAlpha;
       void main() {
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = size * (300.0 / -mvPosition.z);
+        gl_PointSize = size * (500.0 / -mvPosition.z);
         gl_Position = projectionMatrix * mvPosition;
         vAlpha = alpha;
       }
