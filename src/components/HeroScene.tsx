@@ -302,9 +302,9 @@ function DriftParticles({ count = 300 }: { count?: number }) {
     const orbX = sceneState.dcRotY * 1.5;
     const orbZ = sceneState.dcRotX * 1.5;
 
-    // Wind — gentle floating drift even without cursor/spin
-    const windX = Math.sin(t * 0.3) * 0.25;
-    const windZ = Math.cos(t * 0.4) * 0.25;
+    // Wind — subtle breath, barely perceptible
+    const windX = Math.sin(t * 0.25 + 1.7) * 0.04 + Math.sin(t * 0.6) * 0.03;
+    const windZ = Math.cos(t * 0.35 + 2.1) * 0.04 + Math.cos(t * 0.7) * 0.03;
 
     const dt = Math.min(delta, 0.1);
     for (let i = 0; i < count; i++) {
