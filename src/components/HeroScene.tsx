@@ -325,13 +325,7 @@ function GridFloor() {
     }
   });
   return (
-    <group>
-      <gridHelper ref={gridRef} args={[16, 24, ACCENT, '#1a2b33']} position={[0, -0.06, 0]} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.6, 0]}>
-        <planeGeometry args={[40, 30]} />
-        <meshBasicMaterial color="#04070c" transparent opacity={0.85} />
-      </mesh>
-    </group>
+    <gridHelper ref={gridRef} args={[16, 24, ACCENT, '#1a2b33']} position={[0, -0.06, 0]} />
   );
 }
 
@@ -583,7 +577,7 @@ function Datacenter() {
 export default function HeroScene() {
   initPointer();
   return (
-    <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }} style={{ touchAction: 'pan-y', width: '100%', height: '100%' }}>
+    <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }} style={{ touchAction: 'pan-y', width: '100%', height: '100%', background: '#0a0a0f' }}>
       <Suspense fallback={null}>
         <GrabHandler />
         <CameraRig />
