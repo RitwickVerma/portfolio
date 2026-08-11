@@ -192,12 +192,34 @@ function Cables() {
   return <group>{cables.map(c => <Cable key={c.key} from={c.from} to={c.to} />)}</group>;
 }
 
+/** Round particle texture — canvas-drawn circle, no square artifacts */
+let _particleTex: THREE.Texture | null = null;
+function getParticleTex() {
+  if (_particleTex) return _particleTex;
+  const size = 32;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.15, 'rgba(255,255,255,0.9)');
+  gradient.addColorStop(0.5, 'rgba(255,255,255,0.3)');
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  _particleTex = new THREE.CanvasTexture(canvas);
+  _particleTex.needsUpdate = true;
+  return _particleTex;
+}
+
+// Easter egg state
+const rickroll = { intensity: 0, triggered: false };
+
 function mulberry32(seed: number) {
   let a = seed >>> 0;
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-/** ~180 particles slowly drifting upward around the datacenter. */
 function DriftParticles({ count = 180 }: { count?: number }) {
   const geometry = useMemo(() => {
     const rand = mulberry32(0x64ffda);
@@ -222,17 +244,38 @@ function DriftParticles({ count = 180 }: { count?: number }) {
   useFrame((_, delta) => {
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
+
+    // Cursor position in world-ish coords
+    const cx = (smoothedPointer.x - 0.5) * 8;
+    const cz = (smoothedPointer.y - 0.5) * 5;
+
+    // Easter egg: build intensity on fast spin
+    const spin = Math.hypot(drag.velocityX, drag.velocityY);
+    if (spin > 0.02 && !rickroll.triggered) {
+      rickroll.intensity = Math.min(1, rickroll.intensity + spin * 3);
+    } else if (!drag.active) {
+      rickroll.intensity = Math.max(0, rickroll.intensity - 0.002);
+    }
+
+    const dt = Math.min(delta, 0.1);
     for (let i = 0; i < count; i++) {
-      let y = arr[i * 3 + 1] + speeds[i] * delta;
+      const idx = i * 3;
+      // Cursor pull force
+      const dx = cx - arr[idx];
+      const dz = cz - arr[idx + 2];
+      arr[idx] += dx * dt * 0.4;
+      arr[idx + 2] += dz * dt * 0.4;
+
+      let y = arr[idx + 1] + speeds[i] * dt;
       if (y > 2.6) y = -2.2;
-      arr[i * 3 + 1] = y;
+      arr[idx + 1] = y;
     }
     attr.needsUpdate = true;
   });
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial color={ACCENT} size={0.06} sizeAttenuation transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={getParticleTex()} color={ACCENT} size={0.06} sizeAttenuation transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
@@ -271,7 +314,44 @@ function Datacenter() {
 
 export default function HeroScene() {
   initPointer();
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  // Easter egg: poll rickroll intensity, show overlay when triggered
+  useEffect(() => {
+    const check = () => {
+      const el = overlayRef.current;
+      if (!el) return;
+      const ri = rickroll.intensity;
+      if (ri >= 0.95 && !rickroll.triggered) {
+        rickroll.triggered = true;
+        el.style.opacity = '1';
+        el.style.pointerEvents = 'auto';
+      }
+      el.style.opacity = String(Math.min(ri * 2, 1));
+    };
+    const id = setInterval(check, 100);
+    return () => clearInterval(id);
+  }, []);
+
   return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {/* Rickroll overlay */}
+      <div
+        ref={overlayRef}
+        style={{
+          position: 'absolute', inset: 0, zIndex: 100,
+          opacity: 0, pointerEvents: 'none',
+          transition: 'opacity 0.3s',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          background: '#000',
+          color: '#fff', fontFamily: 'Impact, sans-serif', fontSize: 'clamp(2rem, 8vw, 6rem)',
+        }}
+      >
+        <div style={{ animation: 'rickrollSpin 0.5s linear infinite' }}>🌀</div>
+        <div style={{ marginTop: '1rem' }}>YOU GOT</div>
+        <div style={{ color: '#ff4444', fontSize: '1.5em' }}>RICKROLL'D</div>
+        <style>{`@keyframes rickrollSpin { to { transform: rotate(360deg); } }`}</style>
+      </div>
     <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} camera={{ position: [7,7,7], fov: 35, near: 0.1, far: 200 }} style={{ width:'100%', height:'100%' }}>
       <Suspense fallback={null}>
         <GrabHandler />
@@ -284,5 +364,6 @@ export default function HeroScene() {
         <DriftParticles />
       </Suspense>
     </Canvas>
+    </div>
   );
 }
