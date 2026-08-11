@@ -5,7 +5,6 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { createNoise2D } from 'simplex-noise';
 import { sceneState } from '@/lib/sceneState';
 
@@ -75,6 +74,7 @@ function GrabHandler() {
 const ACCENT = '#64ffda';
 const GATEWAY_ACCENT = '#ffd166';
 const HEAT_ACCENT = '#ff8c42';
+const WARN_ACCENT = '#ff4444';
 
 // ─── Scene lighting ───────────────────────────────────────────────────────
 
@@ -89,7 +89,7 @@ function SceneLighting() {
   return <pointLight ref={lightRef} position={[0, 2.5, 0]} intensity={10} distance={18} color={ACCENT} />;
 }
 
-// ─── Camera rig ────────────────────────────────────────────────────────────
+// ─── Camera rig — asymmetric framing, not mathematically perfect ──────────
 
 const FIT_WIDTH = 9.6;
 const FIT_HEIGHT = 7.2;
@@ -107,7 +107,7 @@ function CameraRig() {
     cam.fov = fov;
     const tanHalf = Math.tan(THREE.MathUtils.degToRad(fov / 2));
     const dist = Math.max(FIT_WIDTH / (2 * tanHalf * aspect), FIT_HEIGHT / (2 * tanHalf));
-    const dir = new THREE.Vector3(1, 1, 1).normalize();
+    const dir = new THREE.Vector3(1.0, 0.88, 1.15).normalize();
     cam.position.copy(dir.multiplyScalar(dist));
     cam.lookAt(0, 0.55, 0);
     cam.updateProjectionMatrix();
@@ -121,19 +121,30 @@ function CameraRig() {
   return null;
 }
 
-// ─── Rack definitions ─────────────────────────────────────────────────────
+// ─── Depth fog — near crisp, far soft. Real room atmosphere ────────────────
 
-type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean };
+function SceneFog() {
+  const scene = useThree((s) => s.scene);
+  useEffect(() => {
+    scene.fog = new THREE.Fog('#0a0a0f', 8, 22);
+    return () => { scene.fog = null; };
+  }, [scene]);
+  return null;
+}
+
+// ─── Rack definitions — asymmetric positions, no perfect grid ─────────────
+
+type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean; warning?: boolean };
 
 const RACKS: RackDef[] = [
-  { id: 'VM110', name: 'VM110 Gateway', x: -3.3, z: -1.25, height: 2.5, gateway: true, vents: true },
-  { id: 'CT101', name: 'CT101 Hermes', x: -1.1, z: -1.25, height: 2.2 },
-  { id: 'CT102', name: 'CT102 DNS', x: 1.1, z: -1.25, height: 1.9 },
-  { id: 'CT104', name: 'CT104 Vaultwarden', x: 3.3, z: -1.25, height: 1.8 },
-  { id: 'CT106', name: 'CT106 Immich', x: -3.3, z: 1.25, height: 2.3, vents: true },
-  { id: 'CT107', name: 'CT107 Paperless', x: -1.1, z: 1.25, height: 2.0 },
-  { id: 'CT111', name: 'CT111 Jellyfin', x: 1.1, z: 1.25, height: 2.4, vents: true },
-  { id: 'CT113', name: 'CT113 Syncthing', x: 3.3, z: 1.25, height: 1.8 },
+  { id: 'VM110', name: 'VM110 Gateway',  x: -3.20, z: -1.30, height: 2.5, gateway: true, vents: true },
+  { id: 'CT101', name: 'CT101 Hermes',    x: -1.00, z: -1.20, height: 2.2 },
+  { id: 'CT102', name: 'CT102 DNS',       x:  1.15, z: -1.28, height: 1.9 },
+  { id: 'CT104', name: 'CT104 Vaultwarden',x:  3.35, z: -1.15, height: 1.8, warning: true },
+  { id: 'CT106', name: 'CT106 Immich',    x: -3.15, z:  1.20, height: 2.3, vents: true },
+  { id: 'CT107', name: 'CT107 Paperless',  x: -1.05, z:  1.30, height: 2.0 },
+  { id: 'CT111', name: 'CT111 Jellyfin',   x:  1.20, z:  1.18, height: 2.4, vents: true },
+  { id: 'CT113', name: 'CT113 Syncthing',  x:  3.28, z:  1.35, height: 1.8 },
 ];
 
 const RACK_DISPLAY: Record<string, { label: string; lines: string[] }> = {
@@ -184,13 +195,14 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
 
 // ─── Rack indicator (unique per-rack blink pattern) ────────────────────────
 
-function RackIndicator({ accent, rackId }: { accent: string; rackId: string }) {
+function RackIndicator({ accent, rackId, warning }: { accent: string; rackId: string; warning?: boolean }) {
   const ref = useRef<THREE.Mesh>(null);
   const blinkOffset = useRef(rackId.charCodeAt(2) * 0.3 % 2);
+  const color = warning ? WARN_ACCENT : accent;
   useFrame(({ clock }) => {
     if (!ref.current) return;
     const t = clock.getElapsedTime();
-    const baseRate = 1.2 + (rackId.charCodeAt(1) % 7) * 0.25;  // 1.2–2.7 Hz range
+    const baseRate = warning ? 3.5 : 1.2 + (rackId.charCodeAt(1) % 7) * 0.25;
     const rate = baseRate + sceneState.spin * 8;
     const mat = ref.current.material as THREE.MeshStandardMaterial;
     mat.emissiveIntensity = 1.0 + Math.sin(t * rate + blinkOffset.current) * 0.7;
@@ -198,22 +210,22 @@ function RackIndicator({ accent, rackId }: { accent: string; rackId: string }) {
   return (
     <mesh ref={ref} position={[0, 0.65, 0]}>
       <sphereGeometry args={[0.055, 12, 12]} />
-      <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.3} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.3} />
     </mesh>
   );
 }
 
-// ─── Rack LEDs (layered waveforms per rack, no single sin() pattern) ──────
+// ─── Rack LEDs (layered waveforms, unique per rack) ────────────────────────
 
 const RACK_LED_PATTERNS: Record<string, number[]> = {
-  VM110: [0.5, 0.3, 0.7],    // gateway — fast triple beat
-  CT101: [0.3, 0.2, 0.4],    // hermes — rhythmic pulse
-  CT102: [0.7, 0.0, 0.2],    // dns — slow one dominant
-  CT104: [1.0, 0.0, 0.0],    // vault — single slow blink
-  CT106: [0.4, 0.5, 0.3],    // immich — heartbeat
-  CT107: [0.2, 0.6, 0.1],    // paperless — irregular
-  CT111: [0.35, 0.15, 0.5],  // jellyfin — slow wave
-  CT113: [0.0, 0.0, 0.0],    // syncthing — steady on
+  VM110: [0.5, 0.3, 0.7],
+  CT101: [0.3, 0.2, 0.4],
+  CT102: [0.7, 0.0, 0.2],
+  CT104: [1.0, 0.0, 0.0],
+  CT106: [0.4, 0.5, 0.3],
+  CT107: [0.2, 0.6, 0.1],
+  CT111: [0.35, 0.15, 0.5],
+  CT113: [0.0, 0.0, 0.0],
 };
 
 function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
@@ -225,7 +237,6 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
     refs.current.forEach((mesh, i) => {
       if (!mesh) return;
       const mat = mesh.material as THREE.MeshStandardMaterial;
-      // Layered waveform: base sine + harmonic + spin modulation
       const base = Math.sin(t * (1.0 + pattern[i] * 2) + i) * 0.3;
       const harmonic = Math.sin(t * (2.5 + pattern[i] * 0.8) + i * 2.7) * 0.12;
       const activity = Math.min(sceneState.spin * 0.2, 0.3);
@@ -244,7 +255,7 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
   );
 }
 
-// ─── Rack (body + screen + indicator + lights + 3D label) ──────────────────
+// ─── Rack (body + screen + indicator + lights + label) ─────────────────────
 
 function Rack({ rack }: { rack: RackDef }) {
   const accent = rack.gateway ? GATEWAY_ACCENT : ACCENT;
@@ -259,12 +270,12 @@ function Rack({ rack }: { rack: RackDef }) {
       </mesh>
       <group position={[0, halfH, 0]}>
         <RackScreen accent={accent} rackId={rack.id} />
-        <RackIndicator accent={accent} rackId={rack.id} />
+        <RackIndicator accent={accent} rackId={rack.id} warning={rack.warning} />
       </group>
       <RackLights accent={accent} rackId={rack.id} />
       <Html position={[0, h + 0.5, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }} className="hidden sm:block">
         <div className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
+          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: rack.warning ? WARN_ACCENT : accent, boxShadow: `0 0 6px ${rack.warning ? WARN_ACCENT : accent}` }} />
           <span className="text-[10px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
         </div>
       </Html>
@@ -311,31 +322,13 @@ function Cables() {
   return <group>{cables.map(c => <StaticCable key={c.key} from={c.from} to={c.to} />)}</group>;
 }
 
-// ─── Grid floor ────────────────────────────────────────────────────────────
-
-function GridFloor() {
-  const gridRef = useRef<THREE.GridHelper>(null);
-  useFrame(({ clock }) => {
-    if (gridRef.current) {
-      const t = clock.getElapsedTime();
-      const mat = gridRef.current.material as THREE.Material;
-      mat.transparent = true;
-      mat.opacity = 0.22 + Math.min(sceneState.spin * 2, 0.35) + Math.sin(t * 0.6) * 0.04;
-      gridRef.current.position.y = -0.06 + Math.sin(t * 0.4) * 0.015;
-    }
-  });
-  return (
-    <gridHelper ref={gridRef} args={[16, 24, ACCENT, '#1a2b33']} position={[0, -0.06, 0]} />
-  );
-}
-
 // ════════════════════════════════════════════════════════════════════════════
-// LAYER 1: DUST  — ambient floor-level particles, organic simplex drift
+// LAYER 1: AIRFLOW — directed cold-air drift through rack aisles
 // ════════════════════════════════════════════════════════════════════════════
 
-let _dustTex: THREE.Texture | null = null;
-function getDustTex() {
-  if (_dustTex) return _dustTex;
+let _flowTex: THREE.Texture | null = null;
+function getFlowTex() {
+  if (_flowTex) return _flowTex;
   if (typeof document === 'undefined') return new THREE.Texture();
   const size = 32;
   const canvas = document.createElement('canvas');
@@ -346,34 +339,34 @@ function getDustTex() {
   g.addColorStop(0.4, 'rgba(255,255,255,0.2)');
   g.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
-  _dustTex = new THREE.CanvasTexture(canvas);
-  _dustTex.needsUpdate = true;
-  return _dustTex;
+  _flowTex = new THREE.CanvasTexture(canvas);
+  _flowTex.needsUpdate = true;
+  return _flowTex;
 }
 
-const DUST_COUNT = 200;
+const FLOW_COUNT = 200;
 let _noise2d: ReturnType<typeof createNoise2D> | null = null;
 function noise2d() {
   if (!_noise2d) _noise2d = createNoise2D();
   return _noise2d;
 }
 
-function DustLayer() {
+function AirflowLayer() {
   const geometry = useMemo(() => {
-    const pos = new Float32Array(DUST_COUNT * 3);
-    for (let i = 0; i < DUST_COUNT; i++) {
+    const pos = new Float32Array(FLOW_COUNT * 3);
+    for (let i = 0; i < FLOW_COUNT; i++) {
       pos[i * 3] = (Math.random() - 0.5) * 12;
-      pos[i * 3 + 1] = -1.5 + Math.random() * 3;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 8;
+      pos[i * 3 + 1] = -0.5 + Math.random() * 1.5;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 6;
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     return geo;
   }, []);
 
-  const seedX = useMemo(() => new Float32Array(DUST_COUNT), []);
-  const seedY = useMemo(() => new Float32Array(DUST_COUNT), []);
-  if (!seedX[0]) { for (let i = 0; i < DUST_COUNT; i++) { seedX[i] = Math.random() * 100; seedY[i] = Math.random() * 100; } }
+  const seedX = useMemo(() => new Float32Array(FLOW_COUNT), []);
+  const seedY = useMemo(() => new Float32Array(FLOW_COUNT), []);
+  if (!seedX[0]) { for (let i = 0; i < FLOW_COUNT; i++) { seedX[i] = Math.random() * 100; seedY[i] = Math.random() * 100; } }
 
   useFrame((state, delta) => {
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
@@ -381,38 +374,27 @@ function DustLayer() {
     const t = state.clock.getElapsedTime();
     const dt = Math.min(delta, 0.1);
     const n2d = noise2d();
+    const orbX = sceneState.dcRotY * 0.15;
+    const orbZ = sceneState.dcRotX * 0.15;
 
-    // Orbital tilt — subtle, dust drifts with the datacenter
-    const orbX = sceneState.dcRotY * 0.2;
-    const orbZ = sceneState.dcRotX * 0.2;
-
-    for (let i = 0; i < DUST_COUNT; i++) {
+    for (let i = 0; i < FLOW_COUNT; i++) {
       const idx = i * 3;
-      // Simplex noise for organic drift — each particle has unique trajectory
-      const nx = n2d(seedX[i] + t * 0.08, seedY[i]) * 0.4;
-      const nz = n2d(seedX[i], seedY[i] + t * 0.08) * 0.4;
-      arr[idx] += (nx + orbX) * dt;
-      arr[idx + 1] += 0.06 * dt; // gentle rise
+      // Directed airflow through aisles — Z is the aisle direction
+      const nx = n2d(seedX[i] + t * 0.06, seedY[i]) * 0.3;
+      const nz = 0.15 + n2d(seedX[i], seedY[i] + t * 0.06) * 0.2; // bias toward +Z
+      const nidle = n2d(seedX[i] + 5, seedY[i] + 5 + t * 0.05) * 0.08;
+      arr[idx] += (nx + orbX + nidle) * dt;
+      arr[idx + 1] += 0.04 * dt;
       arr[idx + 2] += (nz + orbZ) * dt;
-
-      // Respawn at floor when too high
-      if (arr[idx + 1] > 2.5) {
-        arr[idx] = (Math.random() - 0.5) * 12;
-        arr[idx + 1] = -1.5;
-        arr[idx + 2] = (Math.random() - 0.5) * 8;
-      }
-      if (Math.abs(arr[idx]) > 7 || Math.abs(arr[idx + 2]) > 5) {
-        arr[idx] = (Math.random() - 0.5) * 10;
-        arr[idx + 1] = -1.5 + Math.random() * 1.5;
-        arr[idx + 2] = (Math.random() - 0.5) * 6;
-      }
+      if (arr[idx + 1] > 1.8) { arr[idx + 1] = -0.5; arr[idx] = (Math.random() - 0.5) * 10; arr[idx + 2] = (Math.random() - 0.5) * 5; }
+      if (Math.abs(arr[idx]) > 7 || Math.abs(arr[idx + 2]) > 5) { arr[idx] = (Math.random() - 0.5) * 8; arr[idx + 1] = -0.3 + Math.random(); arr[idx + 2] = (Math.random() - 0.5) * 4; }
     }
     attr.needsUpdate = true;
   });
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getDustTex()} color={ACCENT} size={0.06} sizeAttenuation transparent opacity={0.2} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={getFlowTex()} color="#88ccff" size={0.05} sizeAttenuation transparent opacity={0.15} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
@@ -432,28 +414,23 @@ function CursorTrail() {
   }, []);
 
   const ages = useMemo(() => new Float32Array(TRAIL_COUNT), []);
-  // Initialize ages spread out for immediate trail on load
   if (!ages[0]) for (let i = 0; i < TRAIL_COUNT; i++) ages[i] = i / TRAIL_COUNT;
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
     const dt = Math.min(delta, 0.1);
-
-    // Cursor position in 3D space (on a plane at y~0.5)
     const cx = (smoothedPointer.x - 0.5) * 10;
     const cz = (smoothedPointer.y - 0.5) * 6;
 
     for (let i = 0; i < TRAIL_COUNT; i++) {
-      ages[i] += dt * 0.8; // age from 0→1 over ~1.25s
+      ages[i] += dt * 0.8;
       if (ages[i] >= 1) {
-        // Respawn at cursor
         arr[i * 3] = cx + (Math.random() - 0.5) * 0.3;
         arr[i * 3 + 1] = 0.5 + Math.random() * 0.2;
         arr[i * 3 + 2] = cz + (Math.random() - 0.5) * 0.3;
         ages[i] = 0;
       } else {
-        // Drift slightly, fade outward
         arr[i * 3] += (Math.random() - 0.5) * dt * 0.5;
         arr[i * 3 + 1] += dt * 0.1;
         arr[i * 3 + 2] += (Math.random() - 0.5) * dt * 0.5;
@@ -464,7 +441,7 @@ function CursorTrail() {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getDustTex()} color="#ffffff" size={0.04} sizeAttenuation transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={getFlowTex()} color="#ffffff" size={0.04} sizeAttenuation transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
@@ -473,7 +450,7 @@ function CursorTrail() {
 // LAYER 3: RACK VENTS — occasional heat sparks from active servers
 // ════════════════════════════════════════════════════════════════════════════
 
-const VENT_COUNT = 12; // total across all racks
+const VENT_COUNT = 12;
 
 function RackVents() {
   const rackIndices = useMemo(() => RACKS
@@ -489,7 +466,7 @@ function RackVents() {
 
   const timers = useMemo(() => {
     const arr = new Float32Array(VENT_COUNT);
-    for (let i = 0; i < VENT_COUNT; i++) arr[i] = Math.random() * 3; // staggered start
+    for (let i = 0; i < VENT_COUNT; i++) arr[i] = Math.random() * 3;
     return arr;
   }, []);
   const assignedRack = useMemo(() => {
@@ -506,18 +483,15 @@ function RackVents() {
     for (let i = 0; i < VENT_COUNT; i++) {
       timers[i] -= dt;
       if (timers[i] <= 0) {
-        // Spawn at rack top
         const rack = RACKS[assignedRack[i]];
         arr[i * 3] = rack.x + (Math.random() - 0.5) * 0.4;
         arr[i * 3 + 1] = rack.height + 0.1;
         arr[i * 3 + 2] = rack.z + (Math.random() - 0.5) * 0.3;
-        timers[i] = 1.5 + Math.random() * 4; // next spark in 1.5–5.5s
+        timers[i] = 1.5 + Math.random() * 4;
       }
-      // Rise + fade
       arr[i * 3 + 1] += dt * 1.5;
-      // Kill when too high
       if (arr[i * 3 + 1] > RACKS[assignedRack[i]].height + 1.5) {
-        timers[i] = -1; // force respawn next tick
+        timers[i] = -1;
       }
     }
     attr.needsUpdate = true;
@@ -525,7 +499,7 @@ function RackVents() {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getDustTex()} color={HEAT_ACCENT} size={0.05} sizeAttenuation transparent opacity={0.35} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial map={getFlowTex()} color={HEAT_ACCENT} size={0.05} sizeAttenuation transparent opacity={0.35} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
@@ -570,8 +544,8 @@ function Datacenter() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// EXPORT — four distinct layers: dust → background, vents → active machines,
-//          cursor → interactive, datacenter → the heavy physical object
+// EXPORT — three intentional layers: airflow → atmosphere, vents → machines,
+//          cursor → interaction, datacenter → physical object
 // ════════════════════════════════════════════════════════════════════════════
 
 export default function HeroScene() {
@@ -581,18 +555,15 @@ export default function HeroScene() {
       <Suspense fallback={null}>
         <GrabHandler />
         <CameraRig />
+        <SceneFog />
         <ambientLight intensity={0.4} />
         <directionalLight position={[6, 9, 5]} intensity={1.2} />
         <directionalLight position={[-6, 5, -4]} intensity={0.35} color={ACCENT} />
         <SceneLighting />
-        <GridFloor />
-        <DustLayer />
+        <AirflowLayer />
         <Datacenter />
         <RackVents />
         <CursorTrail />
-        <EffectComposer>
-          <Bloom intensity={0.25} luminanceThreshold={0.6} luminanceSmoothing={0.3} mipmapBlur radius={0.5} />
-        </EffectComposer>
       </Suspense>
     </Canvas>
   );
