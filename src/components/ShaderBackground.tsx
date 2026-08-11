@@ -44,17 +44,17 @@ function ShaderPlane() {
       sectionRef.current = currentSection / Math.max(sections.length - 1, 1);
     };
 
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       mouseRef.current.x = e.clientX / window.innerWidth;
       mouseRef.current.y = 1.0 - e.clientY / window.innerHeight;
     };
 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("mousemove", onMove, { passive: true });
+    window.addEventListener("pointermove", onMove, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("pointermove", onMove);
     };
   }, []);
 

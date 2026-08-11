@@ -9,15 +9,15 @@ function TiltCard({ project }: { project: (typeof projects)[0] }) {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [glow, setGlow] = useState({ x: 50, y: 50 });
 
-  const handleMove = (e: React.MouseEvent) => {
+  const handleMove = (clientX: number, clientY: number) => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+    const x = ((clientX - rect.left) / rect.width - 0.5) * 2;
+    const y = ((clientY - rect.top) / rect.height - 0.5) * 2;
     setTilt({ x: -y * 8, y: x * 8 });
     setGlow({
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
+      x: ((clientX - rect.left) / rect.width) * 100,
+      y: ((clientY - rect.top) / rect.height) * 100,
     });
   };
 
@@ -29,8 +29,8 @@ function TiltCard({ project }: { project: (typeof projects)[0] }) {
   return (
     <div
       ref={cardRef}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
+      onPointerMove={(e) => handleMove(e.clientX, e.clientY)}
+      onPointerLeave={handleLeave}
       className="relative perspective-[800px] group"
     >
       <motion.div
