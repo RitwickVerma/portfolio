@@ -205,7 +205,7 @@ function Rack({ rack }: { rack: RackDef }) {
       <RackIndicator accent={accent} rackId={rack.id} />
       <RackLights accent={accent} phase={rack.x * 1.9} />
       <Html position={[0, h / 2 + 0.7, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }}>
-        <div className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
+        <div className="pointer-events-none hidden sm:flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
           <span className="text-[10px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
         </div>
@@ -238,10 +238,15 @@ function cableEndpoints(a: RackDef, b: RackDef): [THREE.Vector3, THREE.Vector3] 
 function CameraRig() {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
+  const baseFov = useRef(35);
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
     const aspect = size.width / Math.max(size.height, 1);
-    const tanHalf = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
+    const isMobile = size.width < 768;
+    const fov = isMobile ? 50 : 35;
+    baseFov.current = fov;
+    cam.fov = fov;
+    const tanHalf = Math.tan(THREE.MathUtils.degToRad(fov / 2));
     const dist = Math.max(FIT_WIDTH / (2 * tanHalf * aspect), FIT_HEIGHT / (2 * tanHalf));
     const dir = new THREE.Vector3(1, 1, 1).normalize();
     cam.position.copy(dir.multiplyScalar(dist));
@@ -251,7 +256,7 @@ function CameraRig() {
   useFrame(() => {
     const cam = camera as THREE.PerspectiveCamera;
     // FOV kick on spin — lens feels the inertia, settles back
-    const target = 35 + sceneState.spin * 14;
+    const target = baseFov.current + sceneState.spin * 14;
     cam.fov += (target - cam.fov) * 0.06;
     cam.updateProjectionMatrix();
   });
@@ -587,7 +592,7 @@ function Datacenter() {
 export default function HeroScene() {
   initPointer();
   return (
-    <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} camera={{ position: [7,7,7], fov: 35, near: 0.1, far: 200 }} style={{ width:'100%', height:'100%' }}>
+    <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} camera={{ position: [7,7,7], fov: 35, near: 0.1, far: 200 }} style={{ touchAction: 'none', width:'100%', height:'100%' }}>
       <Suspense fallback={null}>
         <GrabHandler />
         <CameraRig />
