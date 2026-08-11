@@ -342,8 +342,8 @@ function GrabHandler() {
 function Datacenter() {
   const group = useRef<THREE.Group>(null);
 
-  useFrame(({ clock, delta }) => {
-    const t = clock.getElapsedTime();
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
     const g = group.current;
     if (!g) return;
 
