@@ -327,7 +327,7 @@ function GridFloor() {
   return (
     <group>
       <gridHelper ref={gridRef} args={[16, 24, ACCENT, '#1a2b33']} position={[0, -0.06, 0]} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.6, 0]}>
         <planeGeometry args={[40, 30]} />
         <meshBasicMaterial color="#04070c" transparent opacity={0.85} />
       </mesh>
