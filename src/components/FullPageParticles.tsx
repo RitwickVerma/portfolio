@@ -150,6 +150,10 @@ function Particles() {
       vel[idx] += (wx + dx * cursorPull + vx + orbX) * dt + turb;
       vel[idx + 1] += (wy + dy * cursorPull + vy + orbY) * dt + (rand() - 0.5) * 0.02;
 
+      // Damping — matches hero vel *= 0.995
+      vel[idx] *= 0.995;
+      vel[idx + 1] *= 0.995;
+
       const speed = Math.hypot(vel[idx], vel[idx + 1]);
       const maxSpeed = 0.5 + spin * 1.2;
       if (speed > maxSpeed) {
