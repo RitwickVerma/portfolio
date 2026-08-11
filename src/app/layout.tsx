@@ -4,6 +4,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import ClientShell from "@/components/ClientShell";
 import ShaderBackground from "@/components/ShaderBackground";
+import { PointerProvider } from "@/components/PointerProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,12 +38,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#0a0a0f] text-fg flex flex-col">
+        <PointerProvider>
         <ShaderBackground />
         <ClientShell>
         <Nav />
         <main className="flex-1">{children}</main>
         <Footer />
         </ClientShell>
+        </PointerProvider>
       </body>
     </html>
   );

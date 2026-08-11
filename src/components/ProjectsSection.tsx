@@ -1,36 +1,62 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { projects } from "@/lib/data";
+import { usePointer } from "./PointerProvider";
 
 function TiltCard({ project }: { project: (typeof projects)[0] }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const pointer = usePointer();
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [glow, setGlow] = useState({ x: 50, y: 50 });
+  const [active, setActive] = useState(false);
 
-  const handleMove = (clientX: number, clientY: number) => {
+  const updateFromPointer = useCallback(() => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
-    const x = ((clientX - rect.left) / rect.width - 0.5) * 2;
-    const y = ((clientY - rect.top) / rect.height - 0.5) * 2;
+    const cx = pointer.current.x * window.innerWidth;
+    const cy = (1 - pointer.current.y) * window.innerHeight;
+    if (cx < rect.left || cx > rect.right || cy < rect.top || cy > rect.bottom) return;
+    const x = ((cx - rect.left) / rect.width - 0.5) * 2;
+    const y = ((cy - rect.top) / rect.height - 0.5) * 2;
     setTilt({ x: -y * 8, y: x * 8 });
     setGlow({
-      x: ((clientX - rect.left) / rect.width) * 100,
-      y: ((clientY - rect.top) / rect.height) * 100,
+      x: ((cx - rect.left) / rect.width) * 100,
+      y: ((cy - rect.top) / rect.height) * 100,
     });
-  };
+  }, [pointer]);
 
   const handleLeave = () => {
+    setActive(false);
     setTilt({ x: 0, y: 0 });
     setGlow({ x: 50, y: 50 });
+  };
+
+  // Poll pointer position when card is active
+  const rafRef = useRef(0);
+  const pollPointer = useRef(updateFromPointer);
+  pollPointer.current = updateFromPointer;
+
+  const handleEnter = () => {
+    setActive(true);
+    const loop = () => {
+      pollPointer.current();
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+  };
+
+  const handleExit = () => {
+    cancelAnimationFrame(rafRef.current);
+    handleLeave();
   };
 
   return (
     <div
       ref={cardRef}
-      onPointerMove={(e) => handleMove(e.clientX, e.clientY)}
-      onPointerLeave={handleLeave}
+      onPointerEnter={handleEnter}
+      onPointerLeave={handleExit}
       className="relative perspective-[800px] group"
     >
       <motion.div

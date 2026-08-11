@@ -5,11 +5,12 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { vertexShader, fragmentShader } from "@/lib/shaders";
+import { usePointer } from "./PointerProvider";
 
 function ShaderPlane() {
   const meshRef = useRef<THREE.Mesh>(null);
   const { size, viewport } = useThree();
-  const mouseRef = useRef({ x: 0.5, y: 0.5 });
+  const pointer = usePointer();
   const scrollRef = useRef(0);
   const sectionRef = useRef(0);
 
@@ -44,18 +45,9 @@ function ShaderPlane() {
       sectionRef.current = currentSection / Math.max(sections.length - 1, 1);
     };
 
-    const onMove = (e: PointerEvent) => {
-      mouseRef.current.x = e.clientX / window.innerWidth;
-      mouseRef.current.y = 1.0 - e.clientY / window.innerHeight;
-    };
-
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("pointermove", onMove, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("pointermove", onMove);
-    };
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useFrame(({ clock }) => {
@@ -63,7 +55,7 @@ function ShaderPlane() {
     const mat = meshRef.current?.material as THREE.ShaderMaterial | undefined;
     if (!mat) return;
     mat.uniforms.uTime.value = clock.getElapsedTime();
-    mat.uniforms.uMouse.value.set(mouseRef.current.x, mouseRef.current.y);
+    mat.uniforms.uMouse.value.set(pointer.current.x, pointer.current.y);
     mat.uniforms.uScroll.value = scrollRef.current;
     mat.uniforms.uSection.value = sectionRef.current;
   });
