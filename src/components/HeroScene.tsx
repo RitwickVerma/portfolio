@@ -1,12 +1,11 @@
 'use client';
-/* eslint-disable react-hooks/immutability */
+/* eslint-disable react-hooks/immutability, react-hooks/refs */
 
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { sceneState } from '@/lib/sceneState';
 
 // Shared pointer state — lerped for smooth entry, no snap
 const pointer = { x: 0.5, y: 0.5 };
@@ -74,6 +73,9 @@ function GrabHandler() {
 
 const ACCENT = '#64ffda';
 const GATEWAY_ACCENT = '#ffd166';
+
+// Shared scene state — every component reads this for connected reactivity
+const sceneState = { spin: 0, dcRotY: 0, dcRotX: 0, mouseX: 0, mouseY: 0, windAngle: 0 };
 
 function SceneLighting() {
   const lightRef = useRef<THREE.PointLight>(null);
@@ -324,6 +326,201 @@ function Cables() {
   return <group>{cables.map(c => <Cable key={c.key} from={c.from} to={c.to} />)}</group>;
 }
 
+/** Round particle texture — built lazily on client after mount */
+let _particleTex: THREE.Texture | null = null;
+function getParticleTex() {
+  if (_particleTex) return _particleTex;
+  if (typeof document === 'undefined') return new THREE.Texture(); // SSR fallback, NOT cached
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.08, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.3, 'rgba(255,255,255,0.5)');
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  _particleTex = new THREE.CanvasTexture(canvas);
+  _particleTex.needsUpdate = true;
+  return _particleTex;
+}
+
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
+/** Organic firefly particles — each blinks independently, swells with spin */
+function DriftParticles({ count = 300 }: { count?: number }) {
+  const rand = useMemo(() => mulberry32(0x64ffda), []);
+
+  const geometry = useMemo(() => {
+    const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const alphas = new Float32Array(count);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geo.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
+    return geo;
+  }, [count]);
+
+  const vel = useMemo(() => new Float32Array(count * 3), [count]);
+  const life = useMemo(() => new Float32Array(count), [count]);
+  const blinkSpeed = useMemo(() => {
+    const arr = new Float32Array(count);
+    for (let i = 0; i < count; i++) arr[i] = 0.5 + rand() * 3;
+    return arr;
+  }, [count, rand]);
+  const blinkPhase = useMemo(() => {
+    const arr = new Float32Array(count);
+    for (let i = 0; i < count; i++) arr[i] = rand() * Math.PI * 2;
+    return arr;
+  }, [count, rand]);
+  const curlPhase = useMemo(() => {
+    const arr = new Float32Array(count);
+    for (let i = 0; i < count; i++) arr[i] = rand() * Math.PI * 2;
+    return arr;
+  }, [count, rand]);
+
+  const seeded = useRef(false);
+  if (!seeded.current) {
+    seeded.current = true;
+    const arr = (geometry.getAttribute('position') as THREE.BufferAttribute).array as Float32Array;
+    for (let i = 0; i < count; i++) spawnFirefly(arr, vel, life, i, rand, 0);
+  }
+
+  useFrame((state, delta) => {
+    const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
+    const arr = attr.array as Float32Array;
+    const sizeAttr = geometry.getAttribute('size') as THREE.BufferAttribute;
+    const sizeArr = sizeAttr.array as Float32Array;
+    const alphaAttr = geometry.getAttribute('alpha') as THREE.BufferAttribute;
+    const alphaArr = alphaAttr.array as Float32Array;
+    const t = state.clock.getElapsedTime();
+
+    const cx = (smoothedPointer.x - 0.5) * 8;
+    const cz = (smoothedPointer.y - 0.5) * 5;
+    const spin = Math.hypot(drag.velocityX, drag.velocityY);
+
+    // Orbital forces from datacenter rotation — particles swirl with the scene
+    const orbX = sceneState.dcRotY * 1.5;
+    const orbZ = sceneState.dcRotX * 1.5;
+
+    // Wind — follows evolving windAngle from sceneState
+    const windStrength = 0.04;
+    const windX = Math.cos(sceneState.windAngle) * windStrength;
+    const windZ = Math.sin(sceneState.windAngle) * windStrength;
+
+    const dt = Math.min(delta, 0.1);
+    for (let i = 0; i < count; i++) {
+      life[i] -= dt;
+      if (life[i] <= 0) {
+        spawnFirefly(arr, vel, life, i, rand, spin);
+        continue;
+      }
+
+      const idx = i * 3;
+      const px = arr[idx], py = arr[idx + 1], pz = arr[idx + 2];
+
+      // Firefly blinking
+      const pulse = Math.sin(t * blinkSpeed[i] + blinkPhase[i]) * 0.5 + 0.5;
+      const baseSize = 0.14 + spin * 0.6;
+      sizeArr[i] = baseSize * (0.5 + pulse * 0.5);
+      alphaArr[i] = Math.min(0.55 + pulse * 0.35 + spin * 0.4, 1.0);
+
+      // Organic curling
+      const curlX = Math.sin(py * 0.7 + t * 0.5 + curlPhase[i]) * 0.6;
+      const curlZ = Math.cos(px * 0.7 + t * 0.5 + curlPhase[i]) * 0.6;
+
+      const dx = cx - px, dz = cz - pz;
+      const dist = Math.hypot(dx, dz) + 0.3;
+      const cursorForce = 1.5 / (dist * dist + 0.5);
+
+      const vortexForce = spin * 3;
+      const vortexX = -pz * vortexForce;
+      const vortexZ = px * vortexForce;
+
+      vel[idx] += (dx * cursorForce + curlX + vortexX + orbX + windX) * dt;
+      vel[idx + 2] += (dz * cursorForce + curlZ + vortexZ + orbZ + windZ) * dt;
+      vel[idx + 1] += (0.15 + spin * 0.8) * dt;
+
+      vel[idx] *= 0.995;
+      vel[idx + 1] *= 0.995;
+      vel[idx + 2] *= 0.995;
+
+      arr[idx] += vel[idx] * dt;
+      arr[idx + 1] += vel[idx + 1] * dt;
+      arr[idx + 2] += vel[idx + 2] * dt;
+
+      if (Math.abs(arr[idx]) > 8 || arr[idx + 1] > 5 || arr[idx + 1] < -3 || Math.abs(arr[idx + 2]) > 6) {
+        spawnFirefly(arr, vel, life, i, rand, spin);
+      }
+    }
+    attr.needsUpdate = true;
+    sizeAttr.needsUpdate = true;
+    alphaAttr.needsUpdate = true;
+  });
+
+  const shader = useMemo(() => ({
+    uniforms: {
+      uColor: { value: new THREE.Color(ACCENT) },
+      uTexture: { value: getParticleTex() },
+    },
+    vertexShader: /* glsl */`
+      attribute float size;
+      attribute float alpha;
+      varying float vAlpha;
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = size * (500.0 / -mvPosition.z);
+        gl_Position = projectionMatrix * mvPosition;
+        vAlpha = alpha;
+      }
+    `,
+    fragmentShader: /* glsl */`
+      uniform vec3 uColor;
+      uniform sampler2D uTexture;
+      varying float vAlpha;
+      void main() {
+        vec4 tex = texture2D(uTexture, gl_PointCoord);
+        float a = tex.a * clamp(vAlpha, 0.0, 1.0);
+        gl_FragColor = vec4(uColor * 1.4, a);
+      }
+    `,
+  }), []);
+
+  return (
+    <points geometry={geometry}>
+      <shaderMaterial
+        uniforms={shader.uniforms}
+        vertexShader={shader.vertexShader}
+        fragmentShader={shader.fragmentShader}
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
+function spawnFirefly(
+  arr: Float32Array, vel: Float32Array, life: Float32Array,
+  i: number, rand: () => number, spin: number
+) {
+  const idx = i * 3;
+  const r = 1 + spin * 0.3;
+  arr[idx] = (rand() - 0.5) * 10 * r;
+  arr[idx + 1] = -1.5 + rand() * 4.5;
+  arr[idx + 2] = (rand() - 0.5) * 7 * r;
+  vel[idx] = (rand() - 0.5) * 0.3;
+  vel[idx + 1] = 0.1 + rand() * 0.4;
+  vel[idx + 2] = (rand() - 0.5) * 0.3;
+  life[i] = 3 + rand() * 5;
+}
+
 function GridFloor() {
   const gridRef = useRef<THREE.GridHelper>(null);
   useFrame(({ clock }) => {
@@ -408,6 +605,7 @@ export default function HeroScene() {
         <SceneLighting />
         <GridFloor />
         <Datacenter />
+        <DriftParticles />
         <EffectComposer>
           <Bloom intensity={0.25} luminanceThreshold={0.6} luminanceSmoothing={0.3} mipmapBlur radius={0.5} />
         </EffectComposer>
