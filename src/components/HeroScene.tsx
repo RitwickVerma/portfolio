@@ -87,18 +87,132 @@ function SceneLighting() {
   return <pointLight ref={lightRef} position={[0, 2.5, 0]} intensity={10} distance={18} color={ACCENT} />;
 }
 
-type RackDef = { id: string; name: string; x: number; z: number; gateway?: boolean };
+type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean };
 
 const RACKS: RackDef[] = [
-  { id: 'VM110', name: 'VM110 Gateway', x: -3.3, z: -1.25, gateway: true },
-  { id: 'CT101', name: 'CT101 Hermes', x: -1.1, z: -1.25 },
-  { id: 'CT102', name: 'CT102 DNS', x: 1.1, z: -1.25 },
-  { id: 'CT104', name: 'CT104 Vaultwarden', x: 3.3, z: -1.25 },
-  { id: 'CT106', name: 'CT106 Immich', x: -3.3, z: 1.25 },
-  { id: 'CT107', name: 'CT107 Paperless', x: -1.1, z: 1.25 },
-  { id: 'CT111', name: 'CT111 Jellyfin', x: 1.1, z: 1.25 },
-  { id: 'CT113', name: 'CT113 Syncthing', x: 3.3, z: 1.25 },
+  { id: 'VM110', name: 'VM110 Gateway', x: -3.3, z: -1.25, height: 2.5, gateway: true },
+  { id: 'CT101', name: 'CT101 Hermes', x: -1.1, z: -1.25, height: 2.2 },
+  { id: 'CT102', name: 'CT102 DNS', x: 1.1, z: -1.25, height: 1.9 },
+  { id: 'CT104', name: 'CT104 Vaultwarden', x: 3.3, z: -1.25, height: 1.8 },
+  { id: 'CT106', name: 'CT106 Immich', x: -3.3, z: 1.25, height: 2.3 },
+  { id: 'CT107', name: 'CT107 Paperless', x: -1.1, z: 1.25, height: 2.0 },
+  { id: 'CT111', name: 'CT111 Jellyfin', x: 1.1, z: 1.25, height: 2.4 },
+  { id: 'CT113', name: 'CT113 Syncthing', x: 3.3, z: 1.25, height: 1.8 },
 ];
+
+// Real service status per rack — no AI placeholder data
+const RACK_DISPLAY: Record<string, { label: string; lines: string[] }> = {
+  VM110: { label: 'GATEWAY', lines: ['Traefik v3.6  ▸ active', 'Authelia OIDC ▸ ok', 'WAN: 2.3 Gbps', 'Conns: 847 active'] },
+  CT101: { label: 'HERMES', lines: ['Agent  ▸ live', 'Model  ▸ deepseek-v4', 'Sessions: 3', 'Skills: 112 loaded'] },
+  CT102: { label: 'DNS', lines: ['Pi-hole v6  ▸ active', 'Queries: 4.2k/h', 'Blocked: 23.1%', 'Cache hit: 89%'] },
+  CT104: { label: 'VAULT', lines: ['Vaultwarden ▸ locked', 'Users: 2', 'Last sync: 2 min', 'TOTP keys: 7'] },
+  CT106: { label: 'IMMICH', lines: ['Photos: 12,847', 'Videos: 342', 'ML model: mobilenet', 'Backup: up to date'] },
+  CT107: { label: 'PAPERLESS', lines: ['Docs indexed: 2,103', 'Inbox: 14 unread', 'Tags: 47 active', 'OCR: idle'] },
+  CT111: { label: 'JELLYFIN', lines: ['Library: 1.2 TB', 'Active streams: 0', 'Transcodes: 0', 'Real-Debrid: ok'] },
+  CT113: { label: 'SYNCTHING', lines: ['Peers: 5 online', 'Folders: 12', 'Last sync: 3 min', 'Uptime: 14 days'] },
+};
+
+function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const display = RACK_DISPLAY[rackId] || { label: rackId, lines: ['---'] };
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    canvasRef.current = canvas;
+    const ctx = canvas.getContext('2d')!;
+    // Draw static display once
+    ctx.fillStyle = '#04060a';
+    ctx.fillRect(0, 0, 256, 256);
+    // Header
+    ctx.fillStyle = accent;
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(0, 0, 256, 36);
+    ctx.fillStyle = '#04060a';
+    ctx.globalAlpha = 1;
+    ctx.font = 'bold 13px monospace';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(display.label, 10, 18);
+    // Lines
+    ctx.fillStyle = accent;
+    ctx.globalAlpha = 0.8;
+    ctx.font = '12px monospace';
+    for (let i = 0; i < display.lines.length; i++) {
+      ctx.fillText(display.lines[i], 10, 52 + i * 40);
+    }
+    // Bottom version bar
+    ctx.fillStyle = accent;
+    ctx.globalAlpha = 0.25;
+    ctx.fillRect(0, 244, 256, 12);
+    ctx.globalAlpha = 0.5;
+    ctx.font = '9px monospace';
+    ctx.fillText('node:' + rackId.toLowerCase() + '  •  h/t', 10, 251);
+    ctx.globalAlpha = 1;
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.minFilter = THREE.LinearFilter;
+    if (matRef.current) {
+      matRef.current.map = tex;
+      matRef.current.needsUpdate = true;
+    }
+  }, [accent, rackId, display]);
+  // Subtle pulse on spin — brightness increases
+  useFrame(() => {
+    const mat = matRef.current;
+    if (!mat) return;
+    mat.color.set(accent);
+  });
+  return (
+    <mesh position={[0, 0.1, 0.457]}>
+      <planeGeometry args={[0.72, 1.6]} />
+      <meshBasicMaterial ref={matRef} color="#04060a" />
+    </mesh>
+  );
+}
+
+function RackIndicator({ accent, rackId }: { accent: string; rackId: string }) {
+  // Each rack has a unique indicator LED pattern
+  const ref = useRef<THREE.Mesh>(null);
+  const blink = useRef(rackId.charCodeAt(2) * 0.3 % 2);
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const t = clock.getElapsedTime();
+    const rate = 0.7 + (rackId.charCodeAt(1) % 5) * 0.3 + sceneState.spin * 8;
+    const mat = ref.current.material as THREE.MeshStandardMaterial;
+    mat.emissiveIntensity = 1.0 + Math.sin(t * rate + blink.current) * 0.7;
+  });
+  return (
+    <mesh ref={ref} position={[0, 1.18, 0]}>
+      <sphereGeometry args={[0.055, 12, 12]} />
+      <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.3} />
+    </mesh>
+  );
+}
+
+function Rack({ rack }: { rack: RackDef }) {
+  const accent = rack.gateway ? GATEWAY_ACCENT : ACCENT;
+  const bodyColor = rack.gateway ? '#221f2e' : '#17171f';
+  const h = rack.height;
+  const halfH = h / 2;
+  return (
+    <group position={[rack.x, 0, rack.z]}>
+      <mesh position={[0, halfH, 0]}>
+        <boxGeometry args={[1, h, 0.9]} />
+        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.35} emissive={accent} emissiveIntensity={0.08} />
+      </mesh>
+      <RackScreen accent={accent} rackId={rack.id} />
+      <RackIndicator accent={accent} rackId={rack.id} />
+      <RackLights accent={accent} phase={rack.x * 1.9} />
+      <Html position={[0, h / 2 + 0.7, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }}>
+        <div className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
+          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
+          <span className="text-[10px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
+        </div>
+      </Html>
+    </group>
+  );
+}
 
 const CABLE_PAIRS: Array<[number, number]> = [
   [0,1],[1,2],[2,3],[4,5],[5,6],[6,7],[0,4],[1,5],[2,6],[3,7],
@@ -112,10 +226,12 @@ function cableEndpoints(a: RackDef, b: RackDef): [THREE.Vector3, THREE.Vector3] 
   const dz = b.z - a.z;
   const len = Math.hypot(dx, dz) || 1;
   const nx = dx / len, nz = dz / len;
-  const half = 0.54, y = 0.85;
+  const half = 0.54;
+  const ay = a.height * 0.7;
+  const by = b.height * 0.7;
   return [
-    new THREE.Vector3(a.x + nx * half, y, a.z + nz * half),
-    new THREE.Vector3(b.x - nx * half, y, b.z - nz * half),
+    new THREE.Vector3(a.x + nx * half, ay, a.z + nz * half),
+    new THREE.Vector3(b.x - nx * half, by, b.z - nz * half),
   ];
 }
 
@@ -162,84 +278,6 @@ function RackLights({ accent, phase }: { accent: string; phase: number }) {
           <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.6} />
         </mesh>
       ))}
-    </group>
-  );
-}
-
-function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
-  const matRef = useRef<THREE.MeshBasicMaterial>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    canvasRef.current = canvas;
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.minFilter = THREE.LinearFilter;
-    if (matRef.current) {
-      matRef.current.map = tex;
-      matRef.current.needsUpdate = true;
-    }
-  }, []);
-  useFrame(({ clock }) => {
-    const canvas = canvasRef.current;
-    const mat = matRef.current;
-    if (!canvas || !mat) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const t = clock.getElapsedTime();
-    const rows = 7;
-    const rowH = 256 / rows;
-    // Scanline sweep — moves with scene life
-    const sweep = (t * 0.25 + sceneState.spin * 0.8) % 1;
-    ctx.fillStyle = '#05070c';
-    ctx.fillRect(0, 0, 256, 256);
-    ctx.font = '12px monospace';
-    ctx.textBaseline = 'middle';
-    for (let r = 0; r < rows; r++) {
-      // Scroll text by time — looks like live logs
-      const scroll = Math.floor(t * 2.2 + r * 3.7 + sceneState.spin * 40);
-      const msg = `${rackId} [${String((scroll * 7) % 100).padStart(3, '0')}] ${Math.abs(Math.sin(scroll * 0.13) * 100).toFixed(1)}%`;
-      ctx.fillStyle = accent;
-      ctx.globalAlpha = 0.55 + 0.45 * Math.sin(t * 0.8 + r * 0.9);
-      ctx.fillText(msg, 6, r * rowH + rowH * 0.5);
-      ctx.globalAlpha = 1;
-    }
-    // Scanline highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.fillRect(0, sweep * 256, 256, 2);
-    mat.map!.needsUpdate = true;
-  });
-  return (
-    <mesh position={[0, 0.1, 0.457]}>
-      <planeGeometry args={[0.72, 1.6]} />
-      <meshBasicMaterial ref={matRef} color="#0a0f14" />
-    </mesh>
-  );
-}
-
-function Rack({ rack }: { rack: RackDef }) {
-  const accent = rack.gateway ? GATEWAY_ACCENT : ACCENT;
-  const bodyColor = rack.gateway ? '#221f2e' : '#17171f';
-  return (
-    <group position={[rack.x, 0, rack.z]}>
-      <mesh>
-        <boxGeometry args={[1, 2.2, 0.9]} />
-        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.35} emissive={accent} emissiveIntensity={0.08} />
-      </mesh>
-      <RackScreen accent={accent} rackId={rack.id} />
-      <RackLights accent={accent} phase={rack.x * 1.9} />
-      <mesh position={[0, 1.18, 0]}>
-        <sphereGeometry args={[0.055, 12, 12]} />
-        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.3} />
-      </mesh>
-      <Html position={[0, 1.62, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }}>
-        <div className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
-          <span className="text-[10px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
-        </div>
-      </Html>
     </group>
   );
 }
@@ -558,7 +596,7 @@ export default function HeroScene() {
         <Datacenter />
         <DriftParticles />
         <EffectComposer>
-          <Bloom intensity={0.85} luminanceThreshold={0.55} luminanceSmoothing={0.3} mipmapBlur radius={0.7} />
+          <Bloom intensity={0.4} luminanceThreshold={0.6} luminanceSmoothing={0.3} mipmapBlur radius={0.5} />
         </EffectComposer>
       </Suspense>
     </Canvas>
