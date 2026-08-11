@@ -357,9 +357,9 @@ function Datacenter() {
       drag.velocityX *= 0.95;
     }
 
-    // Auto-rotation (reduced when dragging)
-    const autoY = drag.active ? 0 : Math.sin(t * 0.12) * 0.4;
-    const mouseY = drag.active ? 0 : (pointer.x - 0.5) * 0.8;
+    // Auto-rotation always runs — drag just adds an offset
+    const autoY = Math.sin(t * 0.12) * 0.4;
+    const mouseY = (pointer.x - 0.5) * 0.8;
 
     g.rotation.y = autoY + mouseY + drag.targetY;
     g.rotation.x = (pointer.y - 0.5) * -0.25 + drag.targetX;
