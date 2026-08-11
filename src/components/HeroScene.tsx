@@ -253,23 +253,22 @@ function DriftParticles({ count = 200 }: { count?: number }) {
     const cz = (smoothedPointer.y - 0.5) * 5;
 
     const spin = Math.hypot(drag.velocityX, drag.velocityY);
-    const boost = 1 + spin * 60;
+    const boost = 1 + spin * 20;
 
-    // Particle size: explodes with spin for whiteout
-    const targetSize = 0.05 + spin * 40;
+    // Particle size grows with spin — needs sustained hard sling to whiteout
+    const targetSize = 0.05 + spin * 20;
     if (matRef.current) {
-      matRef.current.size += (targetSize - matRef.current.size) * 0.15;
+      matRef.current.size += (targetSize - matRef.current.size) * 0.1;
     }
 
-    // Instant rickroll: trigger when particles are big enough to white out screen
-    if (matRef.current && matRef.current.size > 1.5 && !rickroll.triggered) {
+    // Trigger when particles fill screen (size > 2.5)
+    if (matRef.current && matRef.current.size > 2.5 && !rickroll.triggered) {
       rickroll.triggered = true;
     }
 
     const dt = Math.min(delta, 0.1);
     for (let i = 0; i < count; i++) {
-      // Faster respawn during spin
-      const lifeScale = 1 + spin * 30;
+      const lifeScale = 1 + spin * 8;
       life[i] -= dt * lifeScale;
       if (life[i] <= 0) {
         spawn(arr, vel, life, i, rand, spin);
@@ -311,15 +310,14 @@ function spawn(
   i: number, rand: () => number, spin: number
 ) {
   const idx = i * 3;
-  // Spread wider during spin
-  const spread = 1 + spin * 3;
+  const spread = 1 + spin * 1.5;
   arr[idx] = (rand() - 0.5) * 12 * spread;
-  arr[idx + 1] = -2 + rand() * 5 * (1 + spin * 2);
+  arr[idx + 1] = -2 + rand() * 5 * (1 + spin);
   arr[idx + 2] = (rand() - 0.5) * 8 * spread;
-  vel[idx] = (rand() - 0.5) * (0.5 + spin * 4);
-  vel[idx + 1] = (0.3 + rand() * 0.7) * (1 + spin * 10);
-  vel[idx + 2] = (rand() - 0.5) * (0.5 + spin * 4);
-  life[i] = (2 + rand() * 4) / (1 + spin * 10);
+  vel[idx] = (rand() - 0.5) * (0.5 + spin * 2);
+  vel[idx + 1] = (0.3 + rand() * 0.7) * (1 + spin * 4);
+  vel[idx + 2] = (rand() - 0.5) * (0.5 + spin * 2);
+  life[i] = (2 + rand() * 4) / (1 + spin * 3);
 }
 
 function Datacenter() {
