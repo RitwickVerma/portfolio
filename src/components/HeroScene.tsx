@@ -6,9 +6,11 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { createNoise2D } from 'simplex-noise';
 import { sceneState } from '@/lib/sceneState';
 
-// Shared pointer state — lerped for smooth entry, no snap
+// ─── Shared pointer + drag state ──────────────────────────────────────────
+
 const pointer = { x: 0.5, y: 0.5 };
 const smoothedPointer = { x: 0.5, y: 0.5 };
 const LERP = 0.08;
@@ -22,7 +24,6 @@ function initPointer() {
   }, { passive: true });
 }
 
-// Drag state
 const drag = {
   active: false,
   prevX: 0, prevY: 0,
@@ -41,7 +42,6 @@ function onDragMove(e: PointerEvent) {
   drag.prevX = e.clientX;
   drag.prevY = e.clientY;
 }
-
 function onDragUp() {
   drag.active = false;
   window.removeEventListener('pointermove', onDragMove);
@@ -55,10 +55,8 @@ function GrabHandler() {
     const onDown = (e: PointerEvent) => {
       e.preventDefault();
       drag.active = true;
-      drag.prevX = e.clientX;
-      drag.prevY = e.clientY;
-      drag.velocityX = 0;
-      drag.velocityY = 0;
+      drag.prevX = e.clientX; drag.prevY = e.clientY;
+      drag.velocityX = 0; drag.velocityY = 0;
       window.addEventListener('pointermove', onDragMove, { passive: true });
       window.addEventListener('pointerup', onDragUp, { once: true });
     };
@@ -72,8 +70,13 @@ function GrabHandler() {
   return null;
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────
+
 const ACCENT = '#64ffda';
 const GATEWAY_ACCENT = '#ffd166';
+const HEAT_ACCENT = '#ff8c42';
+
+// ─── Scene lighting ───────────────────────────────────────────────────────
 
 function SceneLighting() {
   const lightRef = useRef<THREE.PointLight>(null);
@@ -86,155 +89,10 @@ function SceneLighting() {
   return <pointLight ref={lightRef} position={[0, 2.5, 0]} intensity={10} distance={18} color={ACCENT} />;
 }
 
-type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean };
-
-const RACKS: RackDef[] = [
-  { id: 'VM110', name: 'VM110 Gateway', x: -3.3, z: -1.25, height: 2.5, gateway: true },
-  { id: 'CT101', name: 'CT101 Hermes', x: -1.1, z: -1.25, height: 2.2 },
-  { id: 'CT102', name: 'CT102 DNS', x: 1.1, z: -1.25, height: 1.9 },
-  { id: 'CT104', name: 'CT104 Vaultwarden', x: 3.3, z: -1.25, height: 1.8 },
-  { id: 'CT106', name: 'CT106 Immich', x: -3.3, z: 1.25, height: 2.3 },
-  { id: 'CT107', name: 'CT107 Paperless', x: -1.1, z: 1.25, height: 2.0 },
-  { id: 'CT111', name: 'CT111 Jellyfin', x: 1.1, z: 1.25, height: 2.4 },
-  { id: 'CT113', name: 'CT113 Syncthing', x: 3.3, z: 1.25, height: 1.8 },
-];
-
-// Real service status per rack — no AI placeholder data
-const RACK_DISPLAY: Record<string, { label: string; lines: string[] }> = {
-  VM110: { label: 'GATEWAY', lines: ['Traefik v3.6  ▸ active', 'Authelia OIDC ▸ ok', 'WAN: 2.3 Gbps', 'Conns: 847 active'] },
-  CT101: { label: 'HERMES', lines: ['Agent  ▸ live', 'Model  ▸ deepseek-v4', 'Sessions: 3', 'Skills: 112 loaded'] },
-  CT102: { label: 'DNS', lines: ['Pi-hole v6  ▸ active', 'Queries: 4.2k/h', 'Blocked: 23.1%', 'Cache hit: 89%'] },
-  CT104: { label: 'VAULT', lines: ['Vaultwarden ▸ locked', 'Users: 2', 'Last sync: 2 min', 'TOTP keys: 7'] },
-  CT106: { label: 'IMMICH', lines: ['Photos: 12,847', 'Videos: 342', 'ML model: mobilenet', 'Backup: up to date'] },
-  CT107: { label: 'PAPERLESS', lines: ['Docs indexed: 2,103', 'Inbox: 14 unread', 'Tags: 47 active', 'OCR: idle'] },
-  CT111: { label: 'JELLYFIN', lines: ['Library: 1.2 TB', 'Active streams: 0', 'Transcodes: 0', 'Real-Debrid: ok'] },
-  CT113: { label: 'SYNCTHING', lines: ['Peers: 5 online', 'Folders: 12', 'Last sync: 3 min', 'Uptime: 14 days'] },
-};
-
-function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
-  const matRef = useRef<THREE.MeshBasicMaterial>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const display = useMemo(() => RACK_DISPLAY[rackId] || { label: rackId, lines: ['---'] }, [rackId]);
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    canvasRef.current = canvas;
-    const ctx = canvas.getContext('2d')!;
-    // Draw static display once
-    ctx.fillStyle = '#04060a';
-    ctx.fillRect(0, 0, 256, 256);
-    // Header
-    ctx.fillStyle = accent;
-    ctx.globalAlpha = 0.7;
-    ctx.fillRect(0, 0, 256, 36);
-    ctx.fillStyle = '#04060a';
-    ctx.globalAlpha = 1;
-    ctx.font = 'bold 13px monospace';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(display.label, 10, 18);
-    // Lines
-    ctx.fillStyle = accent;
-    ctx.globalAlpha = 0.8;
-    ctx.font = '12px monospace';
-    for (let i = 0; i < display.lines.length; i++) {
-      ctx.fillText(display.lines[i], 10, 52 + i * 40);
-    }
-    // Bottom version bar
-    ctx.fillStyle = accent;
-    ctx.globalAlpha = 0.25;
-    ctx.fillRect(0, 244, 256, 12);
-    ctx.globalAlpha = 0.5;
-    ctx.font = '9px monospace';
-    ctx.fillText('node:' + rackId.toLowerCase() + '  •  h/t', 10, 251);
-    ctx.globalAlpha = 1;
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.minFilter = THREE.LinearFilter;
-    if (matRef.current) {
-      matRef.current.map = tex;
-      matRef.current.needsUpdate = true;
-    }
-  }, [accent, rackId, display]);
-  // Subtle pulse on spin — brightness increases
-  useFrame(() => {
-    const mat = matRef.current;
-    if (!mat) return;
-    mat.color.set(accent);
-  });
-  return (
-    <mesh position={[0, 0, 0.457]}>
-      <planeGeometry args={[0.72, 1.6]} />
-      <meshBasicMaterial ref={matRef} color="#04060a" />
-    </mesh>
-  );
-}
-
-function RackIndicator({ accent, rackId }: { accent: string; rackId: string }) {
-  // Each rack has a unique indicator LED pattern
-  const ref = useRef<THREE.Mesh>(null);
-  const blink = useRef(rackId.charCodeAt(2) * 0.3 % 2);
-  useFrame(({ clock }) => {
-    if (!ref.current) return;
-    const t = clock.getElapsedTime();
-    const rate = 0.7 + (rackId.charCodeAt(1) % 5) * 0.3 + sceneState.spin * 8;
-    const mat = ref.current.material as THREE.MeshStandardMaterial;
-    mat.emissiveIntensity = 1.0 + Math.sin(t * rate + blink.current) * 0.7;
-  });
-  return (
-    <mesh ref={ref} position={[0, 0.65, 0]}>
-      <sphereGeometry args={[0.055, 12, 12]} />
-      <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.3} />
-    </mesh>
-  );
-}
-
-function Rack({ rack }: { rack: RackDef }) {
-  const accent = rack.gateway ? GATEWAY_ACCENT : ACCENT;
-  const bodyColor = rack.gateway ? '#221f2e' : '#17171f';
-  const h = rack.height;
-  const halfH = h / 2;
-  return (
-    <group position={[rack.x, 0, rack.z]}>
-      <mesh position={[0, halfH, 0]}>
-        <boxGeometry args={[1, h, 0.9]} />
-        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.35} emissive={accent} emissiveIntensity={0.08} />
-      </mesh>
-      <group position={[0, halfH, 0]}>
-        <RackScreen accent={accent} rackId={rack.id} />
-        <RackIndicator accent={accent} rackId={rack.id} />
-      </group>
-      <RackLights accent={accent} phase={rack.x * 1.9} />
-      <Html position={[0, h + 0.7, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }}>
-        <div className="pointer-events-none hidden sm:flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
-          <span className="text-[10px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
-        </div>
-      </Html>
-    </group>
-  );
-}
-
-const CABLE_PAIRS: Array<[number, number]> = [
-  [0,1],[1,2],[2,3],[4,5],[5,6],[6,7],[0,4],[1,5],[2,6],[3,7],
-];
+// ─── Camera rig ────────────────────────────────────────────────────────────
 
 const FIT_WIDTH = 9.6;
 const FIT_HEIGHT = 7.2;
-
-function cableEndpoints(a: RackDef, b: RackDef): [THREE.Vector3, THREE.Vector3] {
-  const dx = b.x - a.x;
-  const dz = b.z - a.z;
-  const len = Math.hypot(dx, dz) || 1;
-  const nx = dx / len, nz = dz / len;
-  const half = 0.54;
-  const ay = a.height * 0.7;
-  const by = b.height * 0.7;
-  return [
-    new THREE.Vector3(a.x + nx * half, ay, a.z + nz * half),
-    new THREE.Vector3(b.x - nx * half, by, b.z - nz * half),
-  ];
-}
 
 function CameraRig() {
   const camera = useThree((s) => s.camera);
@@ -256,7 +114,6 @@ function CameraRig() {
   }, [camera, size]);
   useFrame(() => {
     const cam = camera as THREE.PerspectiveCamera;
-    // FOV kick on spin — lens feels the inertia, settles back
     const target = baseFov.current + sceneState.spin * 14;
     cam.fov += (target - cam.fov) * 0.06;
     cam.updateProjectionMatrix();
@@ -264,52 +121,182 @@ function CameraRig() {
   return null;
 }
 
-function RackLights({ accent, phase }: { accent: string; phase: number }) {
+// ─── Rack definitions ─────────────────────────────────────────────────────
+
+type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean };
+
+const RACKS: RackDef[] = [
+  { id: 'VM110', name: 'VM110 Gateway', x: -3.3, z: -1.25, height: 2.5, gateway: true, vents: true },
+  { id: 'CT101', name: 'CT101 Hermes', x: -1.1, z: -1.25, height: 2.2 },
+  { id: 'CT102', name: 'CT102 DNS', x: 1.1, z: -1.25, height: 1.9 },
+  { id: 'CT104', name: 'CT104 Vaultwarden', x: 3.3, z: -1.25, height: 1.8 },
+  { id: 'CT106', name: 'CT106 Immich', x: -3.3, z: 1.25, height: 2.3, vents: true },
+  { id: 'CT107', name: 'CT107 Paperless', x: -1.1, z: 1.25, height: 2.0 },
+  { id: 'CT111', name: 'CT111 Jellyfin', x: 1.1, z: 1.25, height: 2.4, vents: true },
+  { id: 'CT113', name: 'CT113 Syncthing', x: 3.3, z: 1.25, height: 1.8 },
+];
+
+const RACK_DISPLAY: Record<string, { label: string; lines: string[] }> = {
+  VM110: { label: 'GATEWAY', lines: ['Traefik v3.6  ▸ active', 'Authelia OIDC ▸ ok', 'WAN: 2.3 Gbps', 'Conns: 847 active'] },
+  CT101: { label: 'HERMES', lines: ['Agent  ▸ live', 'Model  ▸ deepseek-v4', 'Sessions: 3', 'Skills: 112 loaded'] },
+  CT102: { label: 'DNS', lines: ['Pi-hole v6  ▸ active', 'Queries: 4.2k/h', 'Blocked: 23.1%', 'Cache hit: 89%'] },
+  CT104: { label: 'VAULT', lines: ['Vaultwarden ▸ locked', 'Users: 2', 'Last sync: 2 min', 'TOTP keys: 7'] },
+  CT106: { label: 'IMMICH', lines: ['Photos: 12,847', 'Videos: 342', 'ML model: mobilenet', 'Backup: up to date'] },
+  CT107: { label: 'PAPERLESS', lines: ['Docs indexed: 2,103', 'Inbox: 14 unread', 'Tags: 47 active', 'OCR: idle'] },
+  CT111: { label: 'JELLYFIN', lines: ['Library: 1.2 TB', 'Active streams: 0', 'Transcodes: 0', 'Real-Debrid: ok'] },
+  CT113: { label: 'SYNCTHING', lines: ['Peers: 5 online', 'Folders: 12', 'Last sync: 3 min', 'Uptime: 14 days'] },
+};
+
+// ─── Rack screen (canvas texture with real data) ──────────────────────────
+
+function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const display = useMemo(() => RACK_DISPLAY[rackId] || { label: rackId, lines: ['---'] }, [rackId]);
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 256;
+    canvasRef.current = canvas;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#04060a'; ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
+    ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
+    ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
+    ctx.fillText(display.label, 10, 18);
+    ctx.fillStyle = accent; ctx.globalAlpha = 0.8; ctx.font = '12px monospace';
+    for (let i = 0; i < display.lines.length; i++) ctx.fillText(display.lines[i], 10, 52 + i * 40);
+    ctx.fillStyle = accent; ctx.globalAlpha = 0.25; ctx.fillRect(0, 244, 256, 12);
+    ctx.globalAlpha = 0.5; ctx.font = '9px monospace';
+    ctx.fillText('node:' + rackId.toLowerCase() + '  •  h/t', 10, 251);
+    ctx.globalAlpha = 1;
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.minFilter = THREE.LinearFilter;
+    if (matRef.current) { matRef.current.map = tex; matRef.current.needsUpdate = true; }
+  }, [accent, rackId, display]);
+  return (
+    <mesh position={[0, 0, 0.457]}>
+      <planeGeometry args={[0.72, 1.6]} />
+      <meshBasicMaterial ref={matRef} color="#04060a" />
+    </mesh>
+  );
+}
+
+// ─── Rack indicator (unique per-rack blink pattern) ────────────────────────
+
+function RackIndicator({ accent, rackId }: { accent: string; rackId: string }) {
+  const ref = useRef<THREE.Mesh>(null);
+  const blinkOffset = useRef(rackId.charCodeAt(2) * 0.3 % 2);
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const t = clock.getElapsedTime();
+    const baseRate = 1.2 + (rackId.charCodeAt(1) % 7) * 0.25;  // 1.2–2.7 Hz range
+    const rate = baseRate + sceneState.spin * 8;
+    const mat = ref.current.material as THREE.MeshStandardMaterial;
+    mat.emissiveIntensity = 1.0 + Math.sin(t * rate + blinkOffset.current) * 0.7;
+  });
+  return (
+    <mesh ref={ref} position={[0, 0.65, 0]}>
+      <sphereGeometry args={[0.055, 12, 12]} />
+      <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.3} />
+    </mesh>
+  );
+}
+
+// ─── Rack LEDs (layered waveforms per rack, no single sin() pattern) ──────
+
+const RACK_LED_PATTERNS: Record<string, number[]> = {
+  VM110: [0.5, 0.3, 0.7],    // gateway — fast triple beat
+  CT101: [0.3, 0.2, 0.4],    // hermes — rhythmic pulse
+  CT102: [0.7, 0.0, 0.2],    // dns — slow one dominant
+  CT104: [1.0, 0.0, 0.0],    // vault — single slow blink
+  CT106: [0.4, 0.5, 0.3],    // immich — heartbeat
+  CT107: [0.2, 0.6, 0.1],    // paperless — irregular
+  CT111: [0.35, 0.15, 0.5],  // jellyfin — slow wave
+  CT113: [0.0, 0.0, 0.0],    // syncthing — steady on
+};
+
+function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
   const refs = useRef<Array<THREE.Mesh | null>>([]);
+  const pattern = RACK_LED_PATTERNS[rackId] || [0.3, 0.3, 0.3];
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    const rate = 1.8 + sceneState.spin * 4;
-    const amp = 0.3 + sceneState.spin * 0.15;
+    const spinBoost = sceneState.spin * 3;
     refs.current.forEach((mesh, i) => {
       if (!mesh) return;
       const mat = mesh.material as THREE.MeshStandardMaterial;
-      mat.emissiveIntensity = 0.55 + Math.sin(t * rate + i * 2.2 + phase) * amp;
+      // Layered waveform: base sine + harmonic + spin modulation
+      const base = Math.sin(t * (1.0 + pattern[i] * 2) + i) * 0.3;
+      const harmonic = Math.sin(t * (2.5 + pattern[i] * 0.8) + i * 2.7) * 0.12;
+      const activity = Math.min(sceneState.spin * 0.2, 0.3);
+      mat.emissiveIntensity = 0.45 + (base + harmonic + activity + spinBoost * 0.1);
     });
   });
   return (
     <group position={[0, 0.4, 0.46]}>
-      {[0,1,2].map(i => (
-        <mesh key={i} ref={m => { refs.current[i] = m }} position={[-0.24 + i*0.24, 0, 0]}>
+      {[0, 1, 2].map(i => (
+        <mesh key={i} ref={m => { refs.current[i] = m }} position={[-0.24 + i * 0.24, 0, 0]}>
           <sphereGeometry args={[0.032, 8, 8]} />
-          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.6} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.5} />
         </mesh>
       ))}
     </group>
   );
 }
 
-function Cable({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const prevSway = useRef(-999);
-  useFrame(() => {
-    if (!meshRef.current) return;
-    const sway = sceneState.spin * 0.3;
-    if (Math.abs(sway - prevSway.current) < 0.003) return;
-    prevSway.current = sway;
-    const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
-    mid.y += 0.55;
-    mid.x += sway;
-    const geom = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([from, mid, to]), 20, 0.022, 6, false);
-    meshRef.current.geometry.dispose();
-    meshRef.current.geometry = geom;
-  });
+// ─── Rack (body + screen + indicator + lights + 3D label) ──────────────────
+
+function Rack({ rack }: { rack: RackDef }) {
+  const accent = rack.gateway ? GATEWAY_ACCENT : ACCENT;
+  const bodyColor = rack.gateway ? '#221f2e' : '#17171f';
+  const h = rack.height;
+  const halfH = h / 2;
+  return (
+    <group position={[rack.x, 0, rack.z]}>
+      <mesh position={[0, halfH, 0]}>
+        <boxGeometry args={[1, h, 0.9]} />
+        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.35} emissive={accent} emissiveIntensity={0.08} />
+      </mesh>
+      <group position={[0, halfH, 0]}>
+        <RackScreen accent={accent} rackId={rack.id} />
+        <RackIndicator accent={accent} rackId={rack.id} />
+      </group>
+      <RackLights accent={accent} rackId={rack.id} />
+      <Html position={[0, h + 0.5, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }} className="hidden sm:block">
+        <div className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
+          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
+          <span className="text-[10px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+// ─── Static cables ─────────────────────────────────────────────────────────
+
+const CABLE_PAIRS: Array<[number, number]> = [
+  [0, 1], [1, 2], [2, 3], [4, 5], [5, 6], [6, 7], [0, 4], [1, 5], [2, 6], [3, 7],
+];
+
+function cableEndpoints(a: RackDef, b: RackDef): [THREE.Vector3, THREE.Vector3] {
+  const dx = b.x - a.x, dz = b.z - a.z;
+  const len = Math.hypot(dx, dz) || 1;
+  const nx = dx / len, nz = dz / len;
+  const half = 0.54;
+  return [
+    new THREE.Vector3(a.x + nx * half, a.height * 0.7, a.z + nz * half),
+    new THREE.Vector3(b.x - nx * half, b.height * 0.7, b.z - nz * half),
+  ];
+}
+
+function StaticCable({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
   const geometry = useMemo(() => {
     const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
     mid.y += 0.55;
     return new THREE.TubeGeometry(new THREE.CatmullRomCurve3([from, mid, to]), 20, 0.022, 6, false);
   }, [from, to]);
   return (
-    <mesh ref={meshRef} geometry={geometry}>
+    <mesh geometry={geometry}>
       <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.55} transparent opacity={0.7} roughness={0.35} metalness={0.2} />
     </mesh>
   );
@@ -321,210 +308,16 @@ function Cables() {
       const [from, to] = cableEndpoints(RACKS[ai], RACKS[bi]);
       return { key: `${RACKS[ai].id}-${RACKS[bi].id}`, from, to };
     }), []);
-  return <group>{cables.map(c => <Cable key={c.key} from={c.from} to={c.to} />)}</group>;
+  return <group>{cables.map(c => <StaticCable key={c.key} from={c.from} to={c.to} />)}</group>;
 }
 
-/** Round particle texture — built lazily on client after mount */
-let _particleTex: THREE.Texture | null = null;
-function getParticleTex() {
-  if (_particleTex) return _particleTex;
-  if (typeof document === 'undefined') return new THREE.Texture(); // SSR fallback, NOT cached
-  const size = 64;
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext('2d')!;
-  const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
-  gradient.addColorStop(0, 'rgba(255,255,255,1)');
-  gradient.addColorStop(0.08, 'rgba(255,255,255,1)');
-  gradient.addColorStop(0.3, 'rgba(255,255,255,0.5)');
-  gradient.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-  _particleTex = new THREE.CanvasTexture(canvas);
-  _particleTex.needsUpdate = true;
-  return _particleTex;
-}
-
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
-
-/** Organic firefly particles — each blinks independently, swells with spin */
-function DriftParticles({ count = 300 }: { count?: number }) {
-  const rand = useMemo(() => mulberry32(0x64ffda), []);
-
-  const geometry = useMemo(() => {
-    const positions = new Float32Array(count * 3);
-    const sizes = new Float32Array(count);
-    const alphas = new Float32Array(count);
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-    geo.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
-    return geo;
-  }, [count]);
-
-  const vel = useMemo(() => new Float32Array(count * 3), [count]);
-  const life = useMemo(() => new Float32Array(count), [count]);
-  const blinkSpeed = useMemo(() => {
-    const arr = new Float32Array(count);
-    for (let i = 0; i < count; i++) arr[i] = 0.5 + rand() * 3;
-    return arr;
-  }, [count, rand]);
-  const blinkPhase = useMemo(() => {
-    const arr = new Float32Array(count);
-    for (let i = 0; i < count; i++) arr[i] = rand() * Math.PI * 2;
-    return arr;
-  }, [count, rand]);
-  const curlPhase = useMemo(() => {
-    const arr = new Float32Array(count);
-    for (let i = 0; i < count; i++) arr[i] = rand() * Math.PI * 2;
-    return arr;
-  }, [count, rand]);
-
-  const seeded = useRef(false);
-  if (!seeded.current) {
-    seeded.current = true;
-    const arr = (geometry.getAttribute('position') as THREE.BufferAttribute).array as Float32Array;
-    for (let i = 0; i < count; i++) spawnFirefly(arr, vel, life, i, rand, 0);
-  }
-
-  useFrame((state, delta) => {
-    const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
-    const arr = attr.array as Float32Array;
-    const sizeAttr = geometry.getAttribute('size') as THREE.BufferAttribute;
-    const sizeArr = sizeAttr.array as Float32Array;
-    const alphaAttr = geometry.getAttribute('alpha') as THREE.BufferAttribute;
-    const alphaArr = alphaAttr.array as Float32Array;
-    const t = state.clock.getElapsedTime();
-
-    const cx = (smoothedPointer.x - 0.5) * 8;
-    const cz = (smoothedPointer.y - 0.5) * 5;
-    const spin = Math.hypot(drag.velocityX, drag.velocityY);
-
-    // Orbital forces from datacenter rotation — particles swirl with the scene
-    const orbX = sceneState.dcRotY * 1.5;
-    const orbZ = sceneState.dcRotX * 1.5;
-
-    // Wind — follows evolving windAngle from sceneState
-    const windStrength = 0.04;
-    const windX = Math.cos(sceneState.windAngle) * windStrength;
-    const windZ = Math.sin(sceneState.windAngle) * windStrength;
-
-    const dt = Math.min(delta, 0.1);
-    for (let i = 0; i < count; i++) {
-      life[i] -= dt;
-      if (life[i] <= 0) {
-        spawnFirefly(arr, vel, life, i, rand, spin);
-        continue;
-      }
-
-      const idx = i * 3;
-      const px = arr[idx], py = arr[idx + 1], pz = arr[idx + 2];
-
-      // Firefly blinking
-      const pulse = Math.sin(t * blinkSpeed[i] + blinkPhase[i]) * 0.5 + 0.5;
-      const baseSize = 0.14 + spin * 0.6;
-      sizeArr[i] = baseSize * (0.5 + pulse * 0.5);
-      alphaArr[i] = Math.min(0.55 + pulse * 0.35 + spin * 0.4, 1.0);
-
-      // Organic curling
-      const curlX = Math.sin(py * 0.7 + t * 0.5 + curlPhase[i]) * 0.6;
-      const curlZ = Math.cos(px * 0.7 + t * 0.5 + curlPhase[i]) * 0.6;
-
-      const dx = cx - px, dz = cz - pz;
-      const dist = Math.hypot(dx, dz) + 0.3;
-      const cursorForce = 1.5 / (dist * dist + 0.5);
-
-      const vortexForce = spin * 3;
-      const vortexX = -pz * vortexForce;
-      const vortexZ = px * vortexForce;
-
-      vel[idx] += (dx * cursorForce + curlX + vortexX + orbX + windX) * dt;
-      vel[idx + 2] += (dz * cursorForce + curlZ + vortexZ + orbZ + windZ) * dt;
-      vel[idx + 1] += (0.15 + spin * 0.8) * dt;
-
-      vel[idx] *= 0.995;
-      vel[idx + 1] *= 0.995;
-      vel[idx + 2] *= 0.995;
-
-      arr[idx] += vel[idx] * dt;
-      arr[idx + 1] += vel[idx + 1] * dt;
-      arr[idx + 2] += vel[idx + 2] * dt;
-
-      if (Math.abs(arr[idx]) > 8 || arr[idx + 1] > 5 || arr[idx + 1] < -3 || Math.abs(arr[idx + 2]) > 6) {
-        spawnFirefly(arr, vel, life, i, rand, spin);
-      }
-    }
-    attr.needsUpdate = true;
-    sizeAttr.needsUpdate = true;
-    alphaAttr.needsUpdate = true;
-  });
-
-  const shader = useMemo(() => ({
-    uniforms: {
-      uColor: { value: new THREE.Color(ACCENT) },
-      uTexture: { value: getParticleTex() },
-    },
-    vertexShader: /* glsl */`
-      attribute float size;
-      attribute float alpha;
-      varying float vAlpha;
-      void main() {
-        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = size * (500.0 / -mvPosition.z);
-        gl_Position = projectionMatrix * mvPosition;
-        vAlpha = alpha;
-      }
-    `,
-    fragmentShader: /* glsl */`
-      uniform vec3 uColor;
-      uniform sampler2D uTexture;
-      varying float vAlpha;
-      void main() {
-        vec4 tex = texture2D(uTexture, gl_PointCoord);
-        float a = tex.a * clamp(vAlpha, 0.0, 1.0);
-        gl_FragColor = vec4(uColor * 1.4, a);
-      }
-    `,
-  }), []);
-
-  return (
-    <points geometry={geometry}>
-      <shaderMaterial
-        uniforms={shader.uniforms}
-        vertexShader={shader.vertexShader}
-        fragmentShader={shader.fragmentShader}
-        transparent
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-      />
-    </points>
-  );
-}
-
-function spawnFirefly(
-  arr: Float32Array, vel: Float32Array, life: Float32Array,
-  i: number, rand: () => number, spin: number
-) {
-  const idx = i * 3;
-  const r = 1 + spin * 0.3;
-  arr[idx] = (rand() - 0.5) * 10 * r;
-  arr[idx + 1] = -1.5 + rand() * 4.5;
-  arr[idx + 2] = (rand() - 0.5) * 7 * r;
-  vel[idx] = (rand() - 0.5) * 0.3;
-  vel[idx + 1] = 0.1 + rand() * 0.4;
-  vel[idx + 2] = (rand() - 0.5) * 0.3;
-  life[i] = 3 + rand() * 5;
-}
+// ─── Grid floor ────────────────────────────────────────────────────────────
 
 function GridFloor() {
   const gridRef = useRef<THREE.GridHelper>(null);
   useFrame(({ clock }) => {
     if (gridRef.current) {
       const t = clock.getElapsedTime();
-      // Grid pulses with scene energy
       const mat = gridRef.current.material as THREE.Material;
       mat.transparent = true;
       mat.opacity = 0.22 + Math.min(sceneState.spin * 2, 0.35) + Math.sin(t * 0.6) * 0.04;
@@ -541,6 +334,211 @@ function GridFloor() {
     </group>
   );
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// LAYER 1: DUST  — ambient floor-level particles, organic simplex drift
+// ════════════════════════════════════════════════════════════════════════════
+
+let _dustTex: THREE.Texture | null = null;
+function getDustTex() {
+  if (_dustTex) return _dustTex;
+  if (typeof document === 'undefined') return new THREE.Texture();
+  const size = 32;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0, 'rgba(255,255,255,0.6)');
+  g.addColorStop(0.4, 'rgba(255,255,255,0.2)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
+  _dustTex = new THREE.CanvasTexture(canvas);
+  _dustTex.needsUpdate = true;
+  return _dustTex;
+}
+
+const DUST_COUNT = 200;
+let _noise2d: ReturnType<typeof createNoise2D> | null = null;
+function noise2d() {
+  if (!_noise2d) _noise2d = createNoise2D();
+  return _noise2d;
+}
+
+function DustLayer() {
+  const geometry = useMemo(() => {
+    const pos = new Float32Array(DUST_COUNT * 3);
+    for (let i = 0; i < DUST_COUNT; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 12;
+      pos[i * 3 + 1] = -1.5 + Math.random() * 3;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 8;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    return geo;
+  }, []);
+
+  const seedX = useMemo(() => new Float32Array(DUST_COUNT), []);
+  const seedY = useMemo(() => new Float32Array(DUST_COUNT), []);
+  if (!seedX[0]) { for (let i = 0; i < DUST_COUNT; i++) { seedX[i] = Math.random() * 100; seedY[i] = Math.random() * 100; } }
+
+  useFrame((state, delta) => {
+    const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
+    const arr = attr.array as Float32Array;
+    const t = state.clock.getElapsedTime();
+    const dt = Math.min(delta, 0.1);
+    const n2d = noise2d();
+
+    // Orbital tilt — subtle, dust drifts with the datacenter
+    const orbX = sceneState.dcRotY * 0.2;
+    const orbZ = sceneState.dcRotX * 0.2;
+
+    for (let i = 0; i < DUST_COUNT; i++) {
+      const idx = i * 3;
+      // Simplex noise for organic drift — each particle has unique trajectory
+      const nx = n2d(seedX[i] + t * 0.08, seedY[i]) * 0.4;
+      const nz = n2d(seedX[i], seedY[i] + t * 0.08) * 0.4;
+      arr[idx] += (nx + orbX) * dt;
+      arr[idx + 1] += 0.06 * dt; // gentle rise
+      arr[idx + 2] += (nz + orbZ) * dt;
+
+      // Respawn at floor when too high
+      if (arr[idx + 1] > 2.5) {
+        arr[idx] = (Math.random() - 0.5) * 12;
+        arr[idx + 1] = -1.5;
+        arr[idx + 2] = (Math.random() - 0.5) * 8;
+      }
+      if (Math.abs(arr[idx]) > 7 || Math.abs(arr[idx + 2]) > 5) {
+        arr[idx] = (Math.random() - 0.5) * 10;
+        arr[idx + 1] = -1.5 + Math.random() * 1.5;
+        arr[idx + 2] = (Math.random() - 0.5) * 6;
+      }
+    }
+    attr.needsUpdate = true;
+  });
+
+  return (
+    <points geometry={geometry}>
+      <pointsMaterial map={getDustTex()} color={ACCENT} size={0.06} sizeAttenuation transparent opacity={0.2} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </points>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LAYER 2: CURSOR TRAIL — bright tight comet following the pointer
+// ════════════════════════════════════════════════════════════════════════════
+
+const TRAIL_COUNT = 60;
+
+function CursorTrail() {
+  const geometry = useMemo(() => {
+    const pos = new Float32Array(TRAIL_COUNT * 3);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    return geo;
+  }, []);
+
+  const ages = useMemo(() => new Float32Array(TRAIL_COUNT), []);
+  // Initialize ages spread out for immediate trail on load
+  if (!ages[0]) for (let i = 0; i < TRAIL_COUNT; i++) ages[i] = i / TRAIL_COUNT;
+
+  useFrame((state, delta) => {
+    const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
+    const arr = attr.array as Float32Array;
+    const dt = Math.min(delta, 0.1);
+
+    // Cursor position in 3D space (on a plane at y~0.5)
+    const cx = (smoothedPointer.x - 0.5) * 10;
+    const cz = (smoothedPointer.y - 0.5) * 6;
+
+    for (let i = 0; i < TRAIL_COUNT; i++) {
+      ages[i] += dt * 0.8; // age from 0→1 over ~1.25s
+      if (ages[i] >= 1) {
+        // Respawn at cursor
+        arr[i * 3] = cx + (Math.random() - 0.5) * 0.3;
+        arr[i * 3 + 1] = 0.5 + Math.random() * 0.2;
+        arr[i * 3 + 2] = cz + (Math.random() - 0.5) * 0.3;
+        ages[i] = 0;
+      } else {
+        // Drift slightly, fade outward
+        arr[i * 3] += (Math.random() - 0.5) * dt * 0.5;
+        arr[i * 3 + 1] += dt * 0.1;
+        arr[i * 3 + 2] += (Math.random() - 0.5) * dt * 0.5;
+      }
+    }
+    attr.needsUpdate = true;
+  });
+
+  return (
+    <points geometry={geometry}>
+      <pointsMaterial map={getDustTex()} color="#ffffff" size={0.04} sizeAttenuation transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </points>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LAYER 3: RACK VENTS — occasional heat sparks from active servers
+// ════════════════════════════════════════════════════════════════════════════
+
+const VENT_COUNT = 12; // total across all racks
+
+function RackVents() {
+  const rackIndices = useMemo(() => RACKS
+    .map((r, i) => (r.vents ? i : -1))
+    .filter(i => i >= 0), []);
+
+  const geometry = useMemo(() => {
+    const pos = new Float32Array(VENT_COUNT * 3);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    return geo;
+  }, []);
+
+  const timers = useMemo(() => {
+    const arr = new Float32Array(VENT_COUNT);
+    for (let i = 0; i < VENT_COUNT; i++) arr[i] = Math.random() * 3; // staggered start
+    return arr;
+  }, []);
+  const assignedRack = useMemo(() => {
+    const arr = new Int32Array(VENT_COUNT);
+    for (let i = 0; i < VENT_COUNT; i++) arr[i] = rackIndices[i % rackIndices.length];
+    return arr;
+  }, [rackIndices]);
+
+  useFrame((_, delta) => {
+    const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
+    const arr = attr.array as Float32Array;
+    const dt = Math.min(delta, 0.1);
+
+    for (let i = 0; i < VENT_COUNT; i++) {
+      timers[i] -= dt;
+      if (timers[i] <= 0) {
+        // Spawn at rack top
+        const rack = RACKS[assignedRack[i]];
+        arr[i * 3] = rack.x + (Math.random() - 0.5) * 0.4;
+        arr[i * 3 + 1] = rack.height + 0.1;
+        arr[i * 3 + 2] = rack.z + (Math.random() - 0.5) * 0.3;
+        timers[i] = 1.5 + Math.random() * 4; // next spark in 1.5–5.5s
+      }
+      // Rise + fade
+      arr[i * 3 + 1] += dt * 1.5;
+      // Kill when too high
+      if (arr[i * 3 + 1] > RACKS[assignedRack[i]].height + 1.5) {
+        timers[i] = -1; // force respawn next tick
+      }
+    }
+    attr.needsUpdate = true;
+  });
+
+  return (
+    <points geometry={geometry}>
+      <pointsMaterial map={getDustTex()} color={HEAT_ACCENT} size={0.05} sizeAttenuation transparent opacity={0.35} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </points>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// DATACENTER — parent group, writes to sceneState
+// ════════════════════════════════════════════════════════════════════════════
 
 function Datacenter() {
   const group = useRef<THREE.Group>(null);
@@ -566,17 +564,6 @@ function Datacenter() {
     sceneState.spin = Math.hypot(drag.velocityX, drag.velocityY);
     sceneState.mouseX = smoothedPointer.x;
     sceneState.mouseY = smoothedPointer.y;
-    // Wind angle: meanders slowly, gets pushed by spin direction
-    const baseAngle = t * 0.15 + Math.sin(t * 0.07) * 1.2;
-    const spinAngle = Math.atan2(drag.velocityY, drag.velocityX);
-    const targetAngle = isNaN(spinAngle) || sceneState.spin < 0.001
-      ? baseAngle
-      : spinAngle;
-    const lerpSpeed = 0.02 + sceneState.spin * 0.15;
-    let diff = targetAngle - sceneState.windAngle;
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    while (diff < -Math.PI) diff += Math.PI * 2;
-    sceneState.windAngle += diff * lerpSpeed;
   });
   return (
     <group ref={group}>
@@ -590,20 +577,27 @@ function Datacenter() {
   );
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// EXPORT — four distinct layers: dust → background, vents → active machines,
+//          cursor → interactive, datacenter → the heavy physical object
+// ════════════════════════════════════════════════════════════════════════════
+
 export default function HeroScene() {
   initPointer();
   return (
-    <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} camera={{ position: [7,7,7], fov: 35, near: 0.1, far: 200 }} style={{ touchAction: 'pan-y', width:'100%', height:'100%' }}>
+    <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }} style={{ touchAction: 'pan-y', width: '100%', height: '100%' }}>
       <Suspense fallback={null}>
         <GrabHandler />
         <CameraRig />
         <ambientLight intensity={0.4} />
-        <directionalLight position={[6,9,5]} intensity={1.2} />
-        <directionalLight position={[-6,5,-4]} intensity={0.35} color={ACCENT} />
+        <directionalLight position={[6, 9, 5]} intensity={1.2} />
+        <directionalLight position={[-6, 5, -4]} intensity={0.35} color={ACCENT} />
         <SceneLighting />
         <GridFloor />
+        <DustLayer />
         <Datacenter />
-        <DriftParticles />
+        <RackVents />
+        <CursorTrail />
         <EffectComposer>
           <Bloom intensity={0.25} luminanceThreshold={0.6} luminanceSmoothing={0.3} mipmapBlur radius={0.5} />
         </EffectComposer>
