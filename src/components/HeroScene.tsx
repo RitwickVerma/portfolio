@@ -231,7 +231,7 @@ function DriftParticles({ count = 400 }: { count?: number }) {
     const boost = 1 + windMag * 5;
 
     if (matRef.current) {
-      matRef.current.size += ((0.05 + windMag * 2) - matRef.current.size) * 0.1;
+      matRef.current.size += ((0.025 + windMag * 1.5) - matRef.current.size) * 0.15;
     }
 
     const dt = Math.min(delta, 0.1);
@@ -252,7 +252,7 @@ function DriftParticles({ count = 400 }: { count?: number }) {
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial ref={matRef} color={ACCENT} size={0.05} sizeAttenuation transparent opacity={0.6} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial ref={matRef} color={ACCENT} size={0.025} sizeAttenuation transparent opacity={0.6} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
