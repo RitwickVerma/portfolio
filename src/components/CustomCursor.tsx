@@ -65,7 +65,7 @@ export default function CustomCursor() {
       <canvas ref={trailRef} className="fixed inset-0 pointer-events-none z-[9998]" aria-hidden />
       <div
         ref={cursorRef}
-        className="fixed top-0 left-0 pointer-events-none z-[9999] w-3 h-3 -ml-1.5 -mt-1.5 rounded-full hidden sm:block"
+        className="fixed top-0 left-0 pointer-events-none z-[9999] w-3 h-3 -ml-1.5 -mt-1.5 rounded-full hidden"
         style={{
           background: "radial-gradient(circle, rgba(100,255,218,0.8) 0%, transparent 70%)",
           boxShadow: "0 0 16px rgba(100,255,218,0.3)",

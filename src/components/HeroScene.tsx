@@ -540,6 +540,7 @@ function Datacenter() {
       </mesh>
       {RACKS.map(rack => <Rack key={rack.id} rack={rack} />)}
       <Cables />
+      <RackVents />
     </group>
   );
 }
@@ -552,7 +553,7 @@ function Datacenter() {
 export default function HeroScene() {
   initPointer();
   return (
-    <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }} style={{ touchAction: 'pan-y', width: '100%', height: '100%', background: '#0a0a0f' }}>
+    <Canvas flat dpr={[1, 1.75]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }} style={{ touchAction: 'pan-y', width: '100%', height: '100%', background: '#0a0a0f', cursor: 'none' }}>
       <Suspense fallback={null}>
         <GrabHandler />
         <CameraRig />
@@ -563,7 +564,6 @@ export default function HeroScene() {
         <SceneLighting />
         <AirflowLayer />
         <Datacenter />
-        <RackVents />
         <CursorTrail />
       </Suspense>
     </Canvas>
