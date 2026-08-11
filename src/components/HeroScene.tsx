@@ -327,9 +327,9 @@ function GridFloor() {
   return (
     <group>
       <gridHelper ref={gridRef} args={[16, 24, ACCENT, '#1a2b33']} position={[0, -0.06, 0]} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
-        <planeGeometry args={[20, 14]} />
-        <meshBasicMaterial color="#04070c" transparent opacity={0.6} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]}>
+        <planeGeometry args={[40, 30]} />
+        <meshBasicMaterial color="#04070c" transparent opacity={0.85} />
       </mesh>
     </group>
   );
@@ -549,10 +549,8 @@ function Datacenter() {
     smoothedPointer.x += (pointer.x - smoothedPointer.x) * LERP;
     smoothedPointer.y += (pointer.y - smoothedPointer.y) * LERP;
     if (!drag.active) {
-      drag.targetY += drag.velocityY;
-      drag.targetX += drag.velocityX;
-      drag.velocityY *= 0.985;
-      drag.velocityX *= 0.985;
+      drag.velocityY *= 0.92;
+      drag.velocityX *= 0.92;
     }
     const autoY = Math.sin(t * 0.12) * 0.4;
     const mouseY = (smoothedPointer.x - 0.5) * 0.8;
