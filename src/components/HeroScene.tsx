@@ -280,11 +280,11 @@ function RackScreen({ accent, rackId, height }: { accent: string; rackId: string
 
     ctx.clearRect(0, 0, 256, 256);
     ctx.fillStyle = '#04060a'; ctx.fillRect(0, 0, 256, 256);
-    if (phase === 0) drawStatic(ctx, accent, display);
+    if (phase === 0) { /* off — dark screen */ }
     else if (phase === 1) drawBoot(ctx, accent, logs, p, true);
     else if (phase === 2) drawBoot(ctx, accent, logs, 1.0, false);
     else if (phase === 3) drawGlitch(ctx, accent, logs);
-    else if (phase === 4) drawFade(ctx, accent, display, p);
+    else if (phase === 4) { ctx.fillStyle = '#04060a'; ctx.fillRect(0, 0, 256, 256); }
     texRef.current.needsUpdate = true;
   });
 
