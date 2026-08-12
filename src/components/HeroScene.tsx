@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable react-hooks/immutability, react-hooks/refs */
 
-import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -246,6 +246,7 @@ function drawFade(ctx: CanvasRenderingContext2D, accent: string, display: { labe
 }
 
 function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
+  const meshRef = useRef<THREE.Mesh>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const texRef = useRef<THREE.CanvasTexture | null>(null);
@@ -260,20 +261,21 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
     ctxRef.current = canvas.getContext('2d')!;
   }, []);
 
-  // Callback ref: fires the moment R3F creates the material
-  const onMaterial = useCallback((mat: THREE.MeshBasicMaterial | null) => {
-    if (!mat || !canvasRef.current) return;
-    if (!texRef.current) {
-      texRef.current = new THREE.CanvasTexture(canvasRef.current);
-      texRef.current.minFilter = THREE.LinearFilter;
-    }
-    mat.map = texRef.current;
-    mat.needsUpdate = true;
-  }, []);
-
   useFrame(() => {
+    const mesh = meshRef.current;
     const ctx = ctxRef.current;
-    if (!ctx || !texRef.current) return;
+    if (!mesh || !ctx) return;
+    const mat = mesh.material as THREE.MeshBasicMaterial;
+
+    // Lazy init texture — both canvas (from useEffect) and material (from mesh ref)
+    // are guaranteed ready by the time useFrame runs
+    if (!texRef.current) {
+      texRef.current = new THREE.CanvasTexture(canvasRef.current!);
+      texRef.current.minFilter = THREE.LinearFilter;
+      mat.map = texRef.current;
+      mat.needsUpdate = true;
+    }
+
     const phase = sceneState._flashPhase;
     const p = sceneState._flashProgress;
 
@@ -288,9 +290,9 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
   });
 
   return (
-    <mesh position={[0, 0, 0.457]}>
+    <mesh ref={meshRef} position={[0, 0, 0.457]}>
       <planeGeometry args={[0.72, 1.6]} />
-      <meshBasicMaterial ref={onMaterial} color="#04060a" />
+      <meshBasicMaterial color="#04060a" side={THREE.DoubleSide} />
     </mesh>
   );
 }
