@@ -279,12 +279,12 @@ function RackScreen({ accent, rackId, height }: { accent: string; rackId: string
     const p = sceneState._flashProgress;
 
     ctx.clearRect(0, 0, 256, 256);
-    ctx.fillStyle = '#04060a'; ctx.fillRect(0, 0, 256, 256);
-    if (phase === 0) { /* off — dark screen */ }
+    ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, 256, 256);
+    if (phase === 0) { /* off — true black */ }
     else if (phase === 1) drawBoot(ctx, accent, logs, p, true);
     else if (phase === 2) drawBoot(ctx, accent, logs, 1.0, false);
     else if (phase === 3) drawGlitch(ctx, accent, logs);
-    else if (phase === 4) { ctx.fillStyle = '#04060a'; ctx.fillRect(0, 0, 256, 256); }
+    else if (phase === 4) { ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, 256, 256); }
     texRef.current.needsUpdate = true;
   });
 
@@ -605,7 +605,7 @@ function Datacenter() {
   const { gl } = useThree();
   const flashState = useRef({ phase: 0, timer: 0 });
   const lastClick = useRef(0);
-  const PHASE_DURATIONS = [0, 0.4, 3.5, 0.8, 0.4]; // index=phase
+  const PHASE_DURATIONS = [0, 0.4, 5.5, 0.8, 0.4]; // index=phase
   useEffect(() => {
     const canvas = gl.domElement;
     const handler = (e: PointerEvent) => {
