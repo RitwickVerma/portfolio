@@ -171,13 +171,14 @@ const BOOT_LOGS: Record<string, string[]> = {
 };
 
 function drawStatic(ctx: CanvasRenderingContext2D, accent: string, display: { label: string; lines: string[] }) {
-  ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
+  // Dim — screens are "off" by default, barely lit
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.15; ctx.fillRect(0, 0, 256, 36);
   ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
   ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
   ctx.fillText(display.label, 10, 18);
-  ctx.fillStyle = accent; ctx.globalAlpha = 0.8; ctx.font = '12px monospace';
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.18; ctx.font = '12px monospace';
   for (let i = 0; i < display.lines.length; i++) ctx.fillText(display.lines[i], 10, 50 + i * 38);
-  ctx.fillStyle = accent; ctx.globalAlpha = 0.25; ctx.fillRect(0, 244, 256, 12);
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.06; ctx.fillRect(0, 244, 256, 12);
 }
 
 function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[], progress: number, flicker: boolean) {
@@ -288,8 +289,8 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
   });
 
   return (
-    <mesh ref={meshRef} position={[0, 0, 0.457]}>
-      <planeGeometry args={[0.72, 1.6]} />
+    <mesh ref={meshRef} position={[0, -0.05, 0.455]}>
+      <planeGeometry args={[0.72, 1.5]} />
       <meshBasicMaterial color="#ffffff" side={THREE.DoubleSide} />
     </mesh>
   );
