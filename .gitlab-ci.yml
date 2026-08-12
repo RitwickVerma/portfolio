@@ -51,10 +51,10 @@ build:
     - npm ci
     - npm run build
 
-# ── Deploy to CT114 (main only, needs homelab runner) ──
+# ── Deploy to CT114 ──
 deploy:
   stage: deploy
-  image: alpine:latest
+  image: ubuntu:22.04
   needs:
     - lint
     - typecheck
@@ -62,11 +62,10 @@ deploy:
   only:
     - master
   before_script:
-    - apk add --no-cache openssh-client rsync
+    - apt-get update -qq && apt-get install -y -qq openssh-client rsync >/dev/null 2>&1
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
     - chmod 600 ~/.ssh/id_ed25519
-    - ssh-keygen -p -m PEM -f ~/.ssh/id_ed25519 -N "" 2>/dev/null || true
     - ssh-keyscan -H 69.69.69.114 >> ~/.ssh/known_hosts 2>/dev/null || true
   script:
     - tar czf /tmp/deploy.tar.gz --exclude='node_modules' --exclude='.git' .next public package.json package-lock.json next.config.ts
@@ -80,4 +79,3 @@ deploy:
         sleep 3 &&
         curl -sk -o /dev/null -w "%{http_code}" http://localhost:3456/
       '
-
