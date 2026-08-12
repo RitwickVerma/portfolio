@@ -7,6 +7,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { createNoise2D } from 'simplex-noise';
 import { sceneState } from '@/lib/sceneState';
+import { advancePhase, phaseProgress, type PhaseState } from '@/lib/phaseMachine';
+import { mulberry32 } from '@/lib/random';
 
 // ─── Shared pointer + drag state ──────────────────────────────────────────
 
@@ -445,18 +447,6 @@ function getFlowTex() {
 
 const FLOW_COUNT = 200;
 
-/** Deterministic PRNG — stable across re-renders, satisfies react-hooks/purity */
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 let _noise2d: ReturnType<typeof createNoise2D> | null = null;
 function noise2d() {
   if (!_noise2d) _noise2d = createNoise2D();
@@ -603,9 +593,8 @@ function CablePulses() {
 function Datacenter() {
   const group = useRef<THREE.Group>(null);
   const { gl } = useThree();
-  const flashState = useRef({ phase: 0, timer: 0 });
+  const flashState = useRef<PhaseState>({ phase: 0, timer: 0 });
   const lastClick = useRef(0);
-  const PHASE_DURATIONS = [0, 0.4, 5.5, 0.8, 0.4]; // index=phase
   useEffect(() => {
     const canvas = gl.domElement;
     const handler = (e: PointerEvent) => {
@@ -647,16 +636,9 @@ function Datacenter() {
     // Phase machine
     const fs = flashState.current;
     const dt = Math.min(delta, 0.1);
-    if (fs.phase > 0) {
-      fs.timer += dt;
-      const dur = PHASE_DURATIONS[fs.phase];
-      if (fs.timer >= dur) {
-        fs.phase = fs.phase >= 4 ? 0 : fs.phase + 1;
-        fs.timer = 0;
-      }
-    }
-    sceneState._flashPhase = fs.phase;
-    sceneState._flashProgress = fs.phase > 0 ? Math.min(fs.timer / PHASE_DURATIONS[fs.phase], 1) : 0;
+    flashState.current = advancePhase(fs, dt);
+    sceneState._flashPhase = flashState.current.phase;
+    sceneState._flashProgress = phaseProgress(flashState.current);
   });
   return (
     <group ref={group}>

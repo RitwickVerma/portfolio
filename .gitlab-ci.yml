@@ -30,6 +30,18 @@ typecheck:
     - npm ci
     - npx tsc --noEmit
 
+# ── Unit tests (Vitest) ───────────────────
+test:
+  stage: check
+  image: node:${NODE_VERSION}
+  cache:
+    key: npm-test-$CI_COMMIT_REF_SLUG
+    paths:
+      - node_modules/
+  script:
+    - npm ci
+    - npm run test
+
 # ── Build + install prod deps ─────────────
 build:
   stage: build
