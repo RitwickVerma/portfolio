@@ -526,8 +526,7 @@ function AirflowLayer() {
 // LAYER 3: CABLE PULSES — data packets traveling between racks
 // ════════════════════════════════════════════════════════════════════════════
 
-const PULSE_COUNT = 8;
-const PULSE_SPEED = 0.25; // units/sec along the curve
+const PULSE_COUNT = 50; // max simultaneous pulses (expanded during flash)
 
 function CablePulses() {
   const geometry = useMemo(() => {
@@ -537,7 +536,6 @@ function CablePulses() {
     return geo;
   }, []);
 
-  // Precompute cable curves for all pairs
   const curves = useMemo(() =>
     CABLE_PAIRS.map(([ai, bi]) => {
       const [from, to] = cableEndpoints(RACKS[ai], RACKS[bi]);
@@ -546,47 +544,54 @@ function CablePulses() {
       return new THREE.CatmullRomCurve3([from, mid, to]);
     }), []);
 
-  const pulses = useRef<Array<{ pair: number; t: number; speed: number; alive: boolean }>>([]);
+  const pulses = useRef<Array<{ pair: number; t: number; speed: number }>>([]);
+  const matRef = useRef<THREE.PointsMaterial>(null);
 
   useFrame((_, delta) => {
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
     const dt = Math.min(delta, 0.1);
+    const phase = sceneState._flashPhase;
+    const active = phase > 0;
+    const maxPulses = active ? 40 : 8;
+    const spawnRate = active ? dt * 25 : dt * 2;
+    const baseSpeed = active ? 0.7 : 0.2;
 
-    // Spawn new pulses occasionally
-    if (pulses.current.length < PULSE_COUNT && Math.random() < dt * 2) {
+    // Spawn
+    if (pulses.current.length < maxPulses && Math.random() < spawnRate) {
       pulses.current.push({
         pair: Math.floor(Math.random() * curves.length),
         t: 0,
-        speed: PULSE_SPEED * (0.7 + Math.random() * 0.6),
-        alive: true,
+        speed: baseSpeed * (0.6 + Math.random() * 0.8),
       });
     }
 
-    // Move existing pulses
+    // Move
     for (let i = pulses.current.length - 1; i >= 0; i--) {
       const p = pulses.current[i];
       p.t += p.speed * dt;
-      if (p.t >= 1) {
-        pulses.current.splice(i, 1);
-        continue;
-      }
+      if (p.t >= 1) { pulses.current.splice(i, 1); continue; }
       const pt = curves[p.pair].getPointAt(p.t);
       arr[i * 3] = pt.x;
       arr[i * 3 + 1] = pt.y;
       arr[i * 3 + 2] = pt.z;
     }
 
-    // Zero out unused slots
     for (let i = pulses.current.length; i < PULSE_COUNT; i++) {
       arr[i * 3] = arr[i * 3 + 1] = arr[i * 3 + 2] = -100;
     }
     attr.needsUpdate = true;
+
+    // Flash-reactive material
+    if (matRef.current) {
+      matRef.current.size = active ? 0.12 : 0.06;
+      matRef.current.opacity = active ? 0.95 : 0.6;
+    }
   });
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial map={getFlowTex()} color="#ffffff" size={0.08} sizeAttenuation transparent opacity={0.8} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial ref={matRef} map={getFlowTex()} color="#ffffff" size={0.06} sizeAttenuation transparent opacity={0.6} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
@@ -600,7 +605,7 @@ function Datacenter() {
   const { gl } = useThree();
   const flashState = useRef({ phase: 0, timer: 0 });
   const lastClick = useRef(0);
-  const PHASE_DURATIONS = [0, 0.4, 1.8, 0.7, 0.4]; // index=phase
+  const PHASE_DURATIONS = [0, 0.4, 3.5, 0.8, 0.4]; // index=phase
   useEffect(() => {
     const canvas = gl.domElement;
     const handler = (e: PointerEvent) => {
