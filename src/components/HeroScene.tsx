@@ -320,7 +320,7 @@ function RackIndicator({ accent, rackId, warning }: { accent: string; rackId: st
     mat.emissiveIntensity = 1.0 + Math.sin(t * rate + blinkOffset.current) * 0.7 + flashEmit;
   });
   return (
-    <mesh ref={ref} position={[0, 0.65, 0]}>
+    <mesh ref={ref} position={[0, 0.68, 0]}>
       <sphereGeometry args={[0.055, 12, 12]} />
       <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.3} />
     </mesh>
@@ -364,7 +364,7 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
     });
   });
   return (
-    <group position={[0, 0.4, 0.46]}>
+    <group>
       {[0, 1, 2].map(i => (
         <mesh key={i} ref={m => { refs.current[i] = m }} position={[-0.24 + i * 0.24, 0, 0]}>
           <sphereGeometry args={[0.032, 8, 8]} />
@@ -391,8 +391,10 @@ function Rack({ rack }: { rack: RackDef }) {
       <group position={[0, halfH, 0]}>
         <RackScreen accent={accent} rackId={rack.id} height={h} />
         <RackIndicator accent={accent} rackId={rack.id} warning={rack.warning} />
+        <group position={[0, -(h * 0.31) - 0.06, 0.46]}>
+          <RackLights accent={accent} rackId={rack.id} />
+        </group>
       </group>
-      <RackLights accent={accent} rackId={rack.id} />
       <Html position={[0, h + 0.5, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }} className="hidden sm:block">
         <div className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: rack.warning ? WARN_ACCENT : accent, boxShadow: `0 0 6px ${rack.warning ? WARN_ACCENT : accent}` }} />
