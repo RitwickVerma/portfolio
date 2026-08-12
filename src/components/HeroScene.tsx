@@ -73,7 +73,6 @@ function GrabHandler() {
 
 const ACCENT = '#64ffda';
 const GATEWAY_ACCENT = '#ffd166';
-const HEAT_ACCENT = '#ff8c42';
 const WARN_ACCENT = '#ff4444';
 
 // ─── Scene lighting ───────────────────────────────────────────────────────
@@ -137,13 +136,13 @@ function SceneFog() {
 type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean; warning?: boolean };
 
 const RACKS: RackDef[] = [
-  { id: 'VM110', name: 'VM110 Gateway',  x: -3.20, z: -1.30, height: 2.5, gateway: true, vents: true },
+  { id: 'VM110', name: 'VM110 Gateway',  x: -3.20, z: -1.30, height: 2.5, gateway: true },
   { id: 'CT101', name: 'CT101 Hermes',    x: -1.00, z: -1.20, height: 2.2 },
   { id: 'CT102', name: 'CT102 DNS',       x:  1.15, z: -1.28, height: 1.9 },
   { id: 'CT104', name: 'CT104 Vaultwarden',x:  3.35, z: -1.15, height: 1.8, warning: true },
-  { id: 'CT106', name: 'CT106 Immich',    x: -3.15, z:  1.20, height: 2.3, vents: true },
+  { id: 'CT106', name: 'CT106 Immich',    x: -3.15, z:  1.20, height: 2.3 },
   { id: 'CT107', name: 'CT107 Paperless',  x: -1.05, z:  1.30, height: 2.0 },
-  { id: 'CT111', name: 'CT111 Jellyfin',   x:  1.20, z:  1.18, height: 2.4, vents: true },
+  { id: 'CT111', name: 'CT111 Jellyfin',   x:  1.20, z:  1.18, height: 2.4 },
   { id: 'CT113', name: 'CT113 Syncthing',  x:  3.28, z:  1.35, height: 1.8 },
 ];
 
@@ -240,7 +239,8 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
       const base = Math.sin(t * (1.0 + pattern[i] * 2) + i) * 0.3;
       const harmonic = Math.sin(t * (2.5 + pattern[i] * 0.8) + i * 2.7) * 0.12;
       const activity = Math.min(sceneState.spin * 0.2, 0.3);
-      mat.emissiveIntensity = 0.45 + (base + harmonic + activity + spinBoost * 0.1);
+      const flash = Math.min(sceneState._flash * 3, 1.5); // double-click burst
+      mat.emissiveIntensity = 0.45 + (base + harmonic + activity + spinBoost * 0.1 + flash);
     });
   });
   return (
@@ -401,53 +401,6 @@ function AirflowLayer() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// LAYER 2: CURSOR TRAIL — bright tight comet following the pointer
-// ════════════════════════════════════════════════════════════════════════════
-
-const TRAIL_COUNT = 60;
-
-function CursorTrail() {
-  const geometry = useMemo(() => {
-    const pos = new Float32Array(TRAIL_COUNT * 3);
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    return geo;
-  }, []);
-
-  const ages = useMemo(() => new Float32Array(TRAIL_COUNT), []);
-  if (!ages[0]) for (let i = 0; i < TRAIL_COUNT; i++) ages[i] = i / TRAIL_COUNT;
-
-  useFrame((_, delta) => {
-    const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
-    const arr = attr.array as Float32Array;
-    const dt = Math.min(delta, 0.1);
-    const cx = (smoothedPointer.x - 0.5) * 10;
-    const cz = (smoothedPointer.y - 0.5) * 6;
-
-    for (let i = 0; i < TRAIL_COUNT; i++) {
-      ages[i] += dt * 0.8;
-      if (ages[i] >= 1) {
-        arr[i * 3] = cx + (Math.random() - 0.5) * 0.3;
-        arr[i * 3 + 1] = 0.5 + Math.random() * 0.2;
-        arr[i * 3 + 2] = cz + (Math.random() - 0.5) * 0.3;
-        ages[i] = 0;
-      } else {
-        arr[i * 3] += (Math.random() - 0.5) * dt * 0.5;
-        arr[i * 3 + 1] += dt * 0.1;
-        arr[i * 3 + 2] += (Math.random() - 0.5) * dt * 0.5;
-      }
-    }
-    attr.needsUpdate = true;
-  });
-
-  return (
-    <points geometry={geometry}>
-      <pointsMaterial map={getFlowTex()} color="#ffffff" size={0.06} sizeAttenuation transparent opacity={0.65} depthWrite={false} blending={THREE.AdditiveBlending} />
-    </points>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
 // LAYER 3: CABLE PULSES — data packets traveling between racks
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -522,6 +475,12 @@ function CablePulses() {
 
 function Datacenter() {
   const group = useRef<THREE.Group>(null);
+  const flashRef = useRef(0); // double-click easter egg timer
+  useEffect(() => {
+    const handler = () => { flashRef.current = 0.8; };
+    window.addEventListener('dblclick', handler);
+    return () => window.removeEventListener('dblclick', handler);
+  }, []);
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
     const g = group.current;
@@ -542,6 +501,9 @@ function Datacenter() {
     sceneState.spin = Math.hypot(drag.velocityX, drag.velocityY);
     sceneState.mouseX = smoothedPointer.x;
     sceneState.mouseY = smoothedPointer.y;
+    // Decay flash timer
+    if (flashRef.current > 0) flashRef.current = Math.max(0, flashRef.current - state.clock.getDelta());
+    sceneState._flash = flashRef.current;
   });
   return (
     <group ref={group}>

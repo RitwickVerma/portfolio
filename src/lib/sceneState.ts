@@ -5,4 +5,5 @@ export const sceneState = {
   dcRotX: 0,
   mouseX: 0.5,
   mouseY: 0.5,
+  _flash: 0 as number,
 };

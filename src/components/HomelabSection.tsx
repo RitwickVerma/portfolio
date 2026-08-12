@@ -11,7 +11,7 @@ export default function HomelabSection() {
 
       <div className="glass rounded-xl p-6 sm:p-8 border-white/[0.06]">
         <p className="text-fg/70 text-sm leading-relaxed mb-8">
-          14 services running on Proxmox VE across 8 containers and VMs. Gateway
+          14 services running on Proxmox VE across 8 containers and VMs (plus supporting infra). Gateway
           on NixOS with Traefik, Authelia SSO, and Headscale VPN. All served
           from a single machine under my desk.
         </p>
