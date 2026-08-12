@@ -677,7 +677,7 @@ function Datacenter() {
 export default function HeroScene() {
   initPointer();
   return (
-    <Canvas flat dpr={[1, 2]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }} camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }} style={{ touchAction: 'none', userSelect: 'none', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f', cursor: 'none' }}>
+    <Canvas flat dpr={[1, 2]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }} camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }} style={{ touchAction: 'pan-y', userSelect: 'none', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f', cursor: 'none' }}>
       <Suspense fallback={null}>
         <GrabHandler />
         <CameraRig />
