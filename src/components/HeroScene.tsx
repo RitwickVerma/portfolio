@@ -291,7 +291,7 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
   return (
     <mesh ref={meshRef} position={[0, -0.05, 0.455]}>
       <planeGeometry args={[0.72, 1.5]} />
-      <meshBasicMaterial color="#ffffff" side={THREE.DoubleSide} />
+      <meshBasicMaterial color="#ffffff" />
     </mesh>
   );
 }
