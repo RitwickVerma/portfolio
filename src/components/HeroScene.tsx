@@ -457,8 +457,8 @@ function getFlowTex() {
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d')!;
   const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  g.addColorStop(0, 'rgba(255,255,255,1.0)');
-  g.addColorStop(0.3, 'rgba(255,255,255,0.5)');
+  g.addColorStop(0, 'rgba(255,255,255,0.85)');
+  g.addColorStop(0.35, 'rgba(255,255,255,0.3)');
   g.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
   _flowTex = new THREE.CanvasTexture(canvas);
@@ -584,14 +584,14 @@ function CablePulses() {
 
     // Flash-reactive material
     if (matRef.current) {
-      matRef.current.size = active ? 0.55 : 0.15;
-      matRef.current.opacity = active ? 1.0 : 0.9;
+      matRef.current.size = active ? 0.32 : 0.10;
+      matRef.current.opacity = active ? 0.95 : 0.8;
     }
   });
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial ref={matRef} map={getFlowTex()} color="#ffffff" size={0.15} sizeAttenuation transparent opacity={0.9} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial ref={matRef} map={getFlowTex()} color="#ffffff" size={0.10} sizeAttenuation transparent opacity={0.8} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
