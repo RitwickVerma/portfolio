@@ -259,15 +259,18 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
     canvas.width = 256; canvas.height = 256;
     canvasRef.current = canvas;
     ctxRef.current = canvas.getContext('2d')!;
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.minFilter = THREE.LinearFilter;
-    if (matRef.current) { matRef.current.map = tex; matRef.current.needsUpdate = true; }
   }, []);
 
   useFrame(() => {
     const ctx = ctxRef.current;
     const canvas = canvasRef.current;
-    if (!ctx || !canvas) return;
+    if (!ctx || !canvas || !matRef.current) return;
+    // Lazy texture init — R3F ref may not be populated when useEffect runs
+    if (!matRef.current.map) {
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearFilter;
+      matRef.current.map = tex;
+    }
     const phase = sceneState._flashPhase;
     const p = sceneState._flashProgress;
     ctx.clearRect(0, 0, 256, 256);
@@ -277,7 +280,7 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
     else if (phase === 2) drawBoot(ctx, accent, logs, 1.0, false);
     else if (phase === 3) drawGlitch(ctx, accent, logs);
     else if (phase === 4) drawFade(ctx, accent, display, p);
-    (matRef.current!.map as THREE.CanvasTexture).needsUpdate = true;
+    (matRef.current.map as THREE.CanvasTexture).needsUpdate = true;
   });
 
   return (
