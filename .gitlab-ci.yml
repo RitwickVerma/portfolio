@@ -66,6 +66,7 @@ deploy:
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
     - chmod 600 ~/.ssh/id_ed25519
+    - ssh-keygen -p -m PEM -f ~/.ssh/id_ed25519 -N "" 2>/dev/null || true
     - ssh-keyscan -H 69.69.69.114 >> ~/.ssh/known_hosts 2>/dev/null || true
   script:
     - tar czf /tmp/deploy.tar.gz --exclude='node_modules' --exclude='.git' .next public package.json package-lock.json next.config.ts
