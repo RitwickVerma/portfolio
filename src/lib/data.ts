@@ -210,7 +210,7 @@ export const skills = {
 export const socialLinks = {
   github: "https://github.com/RitwickVerma",
   linkedin: "https://linkedin.com/in/ritwickverma",
-  email: "ritwickverma@gmail.com",
+  email: "verma1997@gmail.com",
   resume:
     "https://raw.githubusercontent.com/RitwickVerma/Resume/master/resume_ATS-letter.pdf",
 };

@@ -101,7 +101,7 @@ const COMMAND_OUTPUTS: Record<string, string> = {
     `${ANSI.green}Resume:${ANSI.reset} https://raw.githubusercontent.com/RitwickVerma/Resume/master/resume_ATS-letter.pdf\r\n`,
 
   contact:
-    `${ANSI.green}Email:${ANSI.reset}    ritwickverma@gmail.com\r\n` +
+    `${ANSI.green}Email:${ANSI.reset}    verma1997@gmail.com\r\n` +
     `${ANSI.green}GitHub:${ANSI.reset}   https://github.com/RitwickVerma\r\n` +
     `${ANSI.green}LinkedIn:${ANSI.reset} https://www.linkedin.com/in/ritwickverma\r\n`,
 
@@ -112,7 +112,7 @@ const COMMAND_OUTPUTS: Record<string, string> = {
     `  ${ANSI.green}█████████████████${ANSI.reset}   ${ANSI.yellow}Projects:${ANSI.reset} 6 featured\r\n` +
     `  ${ANSI.green}█████████████████${ANSI.reset}   ${ANSI.yellow}Services:${ANSI.reset} 14 (homelab)\r\n` +
     `  ${ANSI.green}█████████████████${ANSI.reset}   ${ANSI.yellow}Editor:${ANSI.reset}   vim\r\n` +
-    `   ${ANSI.green}███████████████${ANSI.reset}    ${ANSI.yellow}Email:${ANSI.reset}    ritwickverma@gmail.com\r\n` +
+    `   ${ANSI.green}███████████████${ANSI.reset}    ${ANSI.yellow}Email:${ANSI.reset}    verma1997@gmail.com\r\n` +
     `    ${ANSI.green}▀███████████▀${ANSI.reset}     ${ANSI.yellow}Colors:${ANSI.reset}  ${ANSI.green}████${ANSI.reset}${ANSI.yellow}████${ANSI.reset}${ANSI.red}████${ANSI.reset}\r\n` +
     `       ${ANSI.green}▀▀▀▀▀▀▀${ANSI.reset}        ${ANSI.yellow}WM:${ANSI.reset}       none (ssh)\r\n`,
 };
