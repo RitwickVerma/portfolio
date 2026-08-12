@@ -43,6 +43,13 @@ body {
   color: var(--fg);
 }
 
+/* Keyboard focus ring */
+*:focus-visible {
+  outline: 2px solid rgba(100, 255, 218, 0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Grid background overlay */
 .bg-grid {
   background-image:

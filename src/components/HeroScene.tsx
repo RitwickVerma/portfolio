@@ -157,33 +157,129 @@ const RACK_DISPLAY: Record<string, { label: string; lines: string[] }> = {
   CT113: { label: 'SYNCTHING', lines: ['Peers: 5 online', 'Folders: 12', 'Last sync: 3 min', 'Uptime: 14 days'] },
 };
 
-// ─── Rack screen (canvas texture with real data) ──────────────────────────
+// ─── Rack screen (canvas texture — dynamic boot/log/glitch during flash) ───
+
+const BOOT_LOGS: Record<string, string[]> = {
+  VM110: ['VM110 login:', '[  OK  ] Traefik v3.6  ▸ active', '[  OK  ] Authelia OIDC ▸ ok', '[  OK  ] Headscale VPN ▸ up', '[  OK  ] WAN: 2.3 Gbps', 'VM110:~# _'],
+  CT101: ['CT101 login:', '[  OK  ] Hermes Agent ▸ live', '[  OK  ] deepseek-v4 ▸ loaded', '[  OK  ] Skills: 112 loaded', '[  OK  ] Memory: 2.1GB', 'CT101:~# _'],
+  CT102: ['CT102 login:', '[  OK  ] Pi-hole v6  ▸ active', '[  OK  ] Queries: 4.2k/h', '[  OK  ] Blocked: 23.1%', '[  OK  ] Cache hit: 89%', 'CT102:~# _'],
+  CT104: ['CT104 login:', '[  OK  ] Vaultwarden ▸ locked', '[  OK  ] Users: 2 enrolled', '[  OK  ] TOTP keys: 7', '[  OK  ] Last sync: 2 min', 'CT104:~# _'],
+  CT106: ['CT106 login:', '[  OK  ] Immich ▸ running', '[  OK  ] Photos: 12,847', '[  OK  ] ML: mobilenet ▸ idle', '[  OK  ] Backup: up to date', 'CT106:~# _'],
+  CT107: ['CT107 login:', '[  OK  ] Paperless-ngx ▸ up', '[  OK  ] Docs indexed: 2,103', '[  OK  ] Inbox: 14 unread', '[  OK  ] OCR: idle', 'CT107:~# _'],
+  CT111: ['CT111 login:', '[  OK  ] Jellyfin ▸ running', '[  OK  ] Library: 1.2 TB', '[  OK  ] Active streams: 0', '[  OK  ] Real-Debrid: ok', 'CT111:~# _'],
+  CT113: ['CT113 login:', '[  OK  ] Syncthing ▸ up', '[  OK  ] Peers: 5 online', '[  OK  ] Folders: 12 synced', '[  OK  ] Uptime: 14 days', 'CT113:~# _'],
+};
+
+function drawStatic(ctx: CanvasRenderingContext2D, accent: string, display: { label: string; lines: string[] }) {
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
+  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
+  ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
+  ctx.fillText(display.label, 10, 18);
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.8; ctx.font = '12px monospace';
+  for (let i = 0; i < display.lines.length; i++) ctx.fillText(display.lines[i], 10, 50 + i * 38);
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.25; ctx.fillRect(0, 244, 256, 12);
+}
+
+function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[], progress: number, flicker: boolean) {
+  const visible = Math.floor(progress * logs.length) + (flicker && Math.random() < 0.15 ? 0 : 1);
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
+  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
+  ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
+  ctx.fillText(logs[0].split(' ')[0].toUpperCase(), 10, 18);
+  ctx.fillStyle = accent; ctx.globalAlpha = flicker ? 0.6 + Math.random() * 0.4 : 0.85;
+  ctx.font = '12px monospace';
+  for (let i = 1; i < Math.min(visible, logs.length); i++) {
+    let line = logs[i];
+    if (flicker && Math.random() < 0.08) line = '█'.repeat(Math.floor(Math.random() * 20));
+    ctx.fillText(line, 10, 48 + (i - 1) * 36);
+  }
+  if (visible >= logs.length) {
+    const cursorOn = flicker || Math.floor(Date.now() / 500) % 2 === 0;
+    if (cursorOn) {
+      ctx.fillStyle = accent; ctx.globalAlpha = 0.9;
+      ctx.fillText('_', 10 + ctx.measureText(logs[logs.length - 1].replace('_', '')).width, 48 + (logs.length - 2) * 36);
+    }
+  }
+}
+
+function drawGlitch(ctx: CanvasRenderingContext2D, accent: string, logs: string[]) {
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
+  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
+  ctx.font = 'bold 13px monospace'; ctx.fillText(logs[0].split(' ')[0].toUpperCase(), 10, 18);
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.85; ctx.font = '12px monospace';
+  for (let i = 1; i < logs.length; i++) ctx.fillText(logs[i], 10, 48 + (i - 1) * 36);
+
+  const imgData = ctx.getImageData(0, 0, 256, 256);
+  ctx.clearRect(0, 0, 256, 256);
+  const yStride = 4 + Math.floor(Math.random() * 12);
+  for (let y = 0; y < 256; y += yStride) {
+    const shiftX = Math.random() < 0.3 ? Math.floor((Math.random() - 0.5) * 30) : 0;
+    const h = Math.min(yStride, 256 - y);
+    ctx.putImageData(imgData, shiftX, y, 0, y, 256, h);
+  }
+  if (Math.random() < 0.6) {
+    const ry = Math.floor(Math.random() * 200);
+    ctx.fillStyle = 'rgba(255,50,50,0.25)'; ctx.fillRect(Math.random() * 10, ry, 256, 3);
+    ctx.fillStyle = 'rgba(50,255,255,0.25)'; ctx.fillRect(-Math.random() * 10, ry + 6, 256, 3);
+  }
+  if (Math.random() < 0.4) {
+    ctx.fillStyle = 'rgba(' + (Math.random()>0.5?'255':'0') + ',' + (Math.random()>0.5?'255':'0') + ',' + (Math.random()>0.5?'255':'0') + ',0.15)';
+    ctx.fillRect(Math.random() * 200, Math.random() * 200, Math.random() * 60, Math.random() * 20);
+  }
+  for (let y = 0; y < 256; y += 8) {
+    ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fillRect(0, y, 256, 1);
+  }
+}
+
+function drawFade(ctx: CanvasRenderingContext2D, accent: string, display: { label: string; lines: string[] }, progress: number) {
+  ctx.globalAlpha = 1 - progress;
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.7 * (1 - progress); ctx.fillRect(0, 0, 256, 36);
+  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1 - progress;
+  ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
+  ctx.fillText(display.label, 10, 18);
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.8 * (1 - progress); ctx.font = '12px monospace';
+  for (let i = 0; i < display.lines.length; i++) ctx.fillText(display.lines[i], 10, 50 + i * 38);
+  ctx.globalAlpha = 1;
+  if (progress > 0.5) {
+    ctx.fillStyle = 'rgba(4,6,10,' + ((progress - 0.5) * 2) + ')';
+    ctx.fillRect(0, 0, 256, 256);
+  }
+}
 
 function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
   const matRef = useRef<THREE.MeshBasicMaterial>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const display = useMemo(() => RACK_DISPLAY[rackId] || { label: rackId, lines: ['---'] }, [rackId]);
+  const logs = useMemo(() => BOOT_LOGS[rackId] || [rackId + ' login:', '[  OK  ] system running', rackId + ':~# _'], [rackId]);
+
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const canvas = document.createElement('canvas');
     canvas.width = 256; canvas.height = 256;
     canvasRef.current = canvas;
-    const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#04060a'; ctx.fillRect(0, 0, 256, 256);
-    ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
-    ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
-    ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
-    ctx.fillText(display.label, 10, 18);
-    ctx.fillStyle = accent; ctx.globalAlpha = 0.8; ctx.font = '12px monospace';
-    for (let i = 0; i < display.lines.length; i++) ctx.fillText(display.lines[i], 10, 52 + i * 40);
-    ctx.fillStyle = accent; ctx.globalAlpha = 0.25; ctx.fillRect(0, 244, 256, 12);
-    ctx.globalAlpha = 0.5; ctx.font = '9px monospace';
-    ctx.fillText('node:' + rackId.toLowerCase() + '  •  h/t', 10, 251);
-    ctx.globalAlpha = 1;
+    ctxRef.current = canvas.getContext('2d')!;
     const tex = new THREE.CanvasTexture(canvas);
     tex.minFilter = THREE.LinearFilter;
     if (matRef.current) { matRef.current.map = tex; matRef.current.needsUpdate = true; }
-  }, [accent, rackId, display]);
+  }, []);
+
+  useFrame(() => {
+    const ctx = ctxRef.current;
+    const canvas = canvasRef.current;
+    if (!ctx || !canvas) return;
+    const phase = sceneState._flashPhase;
+    const p = sceneState._flashProgress;
+    ctx.clearRect(0, 0, 256, 256);
+    ctx.fillStyle = '#04060a'; ctx.fillRect(0, 0, 256, 256);
+    if (phase === 0) drawStatic(ctx, accent, display);
+    else if (phase === 1) drawBoot(ctx, accent, logs, p, true);
+    else if (phase === 2) drawBoot(ctx, accent, logs, 1.0, false);
+    else if (phase === 3) drawGlitch(ctx, accent, logs);
+    else if (phase === 4) drawFade(ctx, accent, display, p);
+    (matRef.current!.map as THREE.CanvasTexture).needsUpdate = true;
+  });
+
   return (
     <mesh position={[0, 0, 0.457]}>
       <planeGeometry args={[0.72, 1.6]} />
@@ -233,13 +329,20 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     const spinBoost = sceneState.spin * 3;
+    const phase = sceneState._flashPhase;
+    const p = sceneState._flashProgress;
     refs.current.forEach((mesh, i) => {
       if (!mesh) return;
       const mat = mesh.material as THREE.MeshStandardMaterial;
       const base = Math.sin(t * (1.0 + pattern[i] * 2) + i) * 0.3;
       const harmonic = Math.sin(t * (2.5 + pattern[i] * 0.8) + i * 2.7) * 0.12;
       const activity = Math.min(sceneState.spin * 0.2, 0.3);
-      const flash = Math.min(sceneState._flash * 5, 3.0); // double-click burst
+      // Flash burst per phase
+      let flash = 0;
+      if (phase === 1) flash = 0.45 + p * 5.5; // power-on surge 0.45→5.95
+      else if (phase === 2) flash = 5.5 + Math.sin(t * 15 + i) * 0.3; // steady bright + shimmer
+      else if (phase === 3) flash = 0.3 + Math.random() * 5.2; // glitch flicker
+      else if (phase === 4) flash = 5.5 * (1 - p); // fade 5.5→0
       mat.emissiveIntensity = 0.45 + (base + harmonic + activity + spinBoost * 0.1 + flash);
     });
   });
@@ -475,9 +578,14 @@ function CablePulses() {
 
 function Datacenter() {
   const group = useRef<THREE.Group>(null);
-  const flashRef = useRef(0); // double-click easter egg timer
+  const flashState = useRef({ phase: 0, timer: 0 });
+  const PHASE_DURATIONS = [0, 0.4, 1.8, 0.7, 0.4]; // index=phase
   useEffect(() => {
-    const handler = () => { flashRef.current = 1.2; };
+    const handler = () => {
+      if (flashState.current.phase === 0) {
+        flashState.current = { phase: 1, timer: 0 };
+      }
+    };
     window.addEventListener('dblclick', handler);
     return () => window.removeEventListener('dblclick', handler);
   }, []);
@@ -501,9 +609,19 @@ function Datacenter() {
     sceneState.spin = Math.hypot(drag.velocityX, drag.velocityY);
     sceneState.mouseX = smoothedPointer.x;
     sceneState.mouseY = smoothedPointer.y;
-    // Decay flash timer
-    if (flashRef.current > 0) flashRef.current = Math.max(0, flashRef.current - state.clock.getDelta());
-    sceneState._flash = flashRef.current;
+    // Phase machine
+    const fs = flashState.current;
+    const dt = Math.min(state.clock.getDelta(), 0.1);
+    if (fs.phase > 0) {
+      fs.timer += dt;
+      const dur = PHASE_DURATIONS[fs.phase];
+      if (fs.timer >= dur) {
+        fs.phase = fs.phase >= 4 ? 0 : fs.phase + 1;
+        fs.timer = 0;
+      }
+    }
+    sceneState._flashPhase = fs.phase;
+    sceneState._flashProgress = fs.phase > 0 ? Math.min(fs.timer / PHASE_DURATIONS[fs.phase], 1) : 0;
   });
   return (
     <group ref={group}>

@@ -25,13 +25,13 @@ export default function CursorGlow() {
     resize();
     window.addEventListener("resize", resize);
 
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       mouseX = e.clientX; mouseY = e.clientY;
       mouseInside = true;
     };
     const onLeave = () => { mouseInside = false; };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    window.addEventListener("mouseleave", onLeave);
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerleave", onLeave);
 
     const animate = () => {
       if (mouseInside) {
@@ -77,8 +77,8 @@ export default function CursorGlow() {
 
     return () => {
       window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseleave", onLeave);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerleave", onLeave);
       cancelAnimationFrame(animId);
     };
   }, []);
