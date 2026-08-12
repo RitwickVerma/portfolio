@@ -267,8 +267,6 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
     if (!mesh || !ctx) return;
     const mat = mesh.material as THREE.MeshBasicMaterial;
 
-    // Lazy init texture — both canvas (from useEffect) and material (from mesh ref)
-    // are guaranteed ready by the time useFrame runs
     if (!texRef.current) {
       texRef.current = new THREE.CanvasTexture(canvasRef.current!);
       texRef.current.minFilter = THREE.LinearFilter;
@@ -292,7 +290,7 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
   return (
     <mesh ref={meshRef} position={[0, 0, 0.457]}>
       <planeGeometry args={[0.72, 1.6]} />
-      <meshBasicMaterial color="#04060a" side={THREE.DoubleSide} />
+      <meshBasicMaterial color="#ffffff" side={THREE.DoubleSide} />
     </mesh>
   );
 }
