@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import AboutSection from "@/components/AboutSection";
 import ProjectsSection from "@/components/ProjectsSection";
@@ -11,17 +11,13 @@ import TerminalWrapper from "@/components/TerminalWrapper";
 
 export default function HomeContent() {
   // Pin the hero for one full viewport of scroll: 200vh wrapper, sticky hero.
-  // Fade over that first 100vh via scrollY (px) mapped against viewport height.
+  // Fade over that first 100vh by mapping scrollY (px) against viewport height.
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [vh, setVh] = useState(800);
-  useEffect(() => {
-    setVh(window.innerHeight);
-    const onResize = () => setVh(window.innerHeight);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
   const { scrollY } = useScroll();
-  const opacity = useTransform(scrollY, [0, vh], [1, 0.3]);
+  const opacity = useTransform(scrollY, (y) => {
+    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+    return 1 - Math.min(Math.max(y / vh, 0), 1) * 0.7;
+  });
 
   return (
     <div className="relative">
