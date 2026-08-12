@@ -615,7 +615,7 @@ function Datacenter() {
     canvas.addEventListener('pointerdown', handler);
     return () => canvas.removeEventListener('pointerdown', handler);
   }, [gl]);
-  useFrame((state) => {
+  useFrame((state, delta) => {
     const t = state.clock.getElapsedTime();
     const g = group.current;
     if (!g) return;
@@ -637,7 +637,7 @@ function Datacenter() {
     sceneState.mouseY = smoothedPointer.y;
     // Phase machine
     const fs = flashState.current;
-    const dt = Math.min(state.clock.getDelta(), 0.1);
+    const dt = Math.min(delta, 0.1);
     if (fs.phase > 0) {
       fs.timer += dt;
       const dur = PHASE_DURATIONS[fs.phase];
