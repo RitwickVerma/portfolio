@@ -83,6 +83,12 @@ body {
   box-shadow: 0 0 20px rgba(100, 255, 218, 0.05);
 }
 
+/* Prevent canvas focus on mobile */
+canvas {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Terminal styles */
 .xterm-viewport::-webkit-scrollbar {
   width: 4px;
