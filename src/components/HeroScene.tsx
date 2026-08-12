@@ -300,7 +300,14 @@ function RackIndicator({ accent, rackId, warning }: { accent: string; rackId: st
     const baseRate = warning ? 3.5 : 1.2 + (rackId.charCodeAt(1) % 7) * 0.25;
     const rate = baseRate + sceneState.spin * 8;
     const mat = ref.current.material as THREE.MeshStandardMaterial;
-    mat.emissiveIntensity = 1.0 + Math.sin(t * rate + blinkOffset.current) * 0.7;
+    // Flash boost
+    let flashEmit = 0;
+    const phase = sceneState._flashPhase;
+    if (phase === 1) flashEmit = sceneState._flashProgress * 12;
+    else if (phase === 2) flashEmit = 12;
+    else if (phase === 3) flashEmit = Math.random() * 12;
+    else if (phase === 4) flashEmit = 12 * (1 - sceneState._flashProgress);
+    mat.emissiveIntensity = 1.0 + Math.sin(t * rate + blinkOffset.current) * 0.7 + flashEmit;
   });
   return (
     <mesh ref={ref} position={[0, 0.65, 0]}>
@@ -339,10 +346,10 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
       const activity = Math.min(sceneState.spin * 0.2, 0.3);
       // Flash burst per phase
       let flash = 0;
-      if (phase === 1) flash = 0.45 + p * 5.5; // power-on surge 0.45→5.95
-      else if (phase === 2) flash = 5.5 + Math.sin(t * 15 + i) * 0.3; // steady bright + shimmer
-      else if (phase === 3) flash = 0.3 + Math.random() * 5.2; // glitch flicker
-      else if (phase === 4) flash = 5.5 * (1 - p); // fade 5.5→0
+      if (phase === 1) flash = 0.45 + p * 14; // power-on surge 0.45→14.45
+      else if (phase === 2) flash = 14 + Math.sin(t * 15 + i) * 0.5; // steady bright + shimmer
+      else if (phase === 3) flash = 0.3 + Math.random() * 14; // glitch flicker
+      else if (phase === 4) flash = 14 * (1 - p); // fade 14→0
       mat.emissiveIntensity = 0.45 + (base + harmonic + activity + spinBoost * 0.1 + flash);
     });
   });
@@ -578,17 +585,26 @@ function CablePulses() {
 
 function Datacenter() {
   const group = useRef<THREE.Group>(null);
+  const { gl } = useThree();
   const flashState = useRef({ phase: 0, timer: 0 });
+  const lastClick = useRef(0);
   const PHASE_DURATIONS = [0, 0.4, 1.8, 0.7, 0.4]; // index=phase
   useEffect(() => {
-    const handler = () => {
-      if (flashState.current.phase === 0) {
-        flashState.current = { phase: 1, timer: 0 };
+    const canvas = gl.domElement;
+    const handler = (e: PointerEvent) => {
+      const now = performance.now();
+      if (now - lastClick.current < 400) {
+        if (flashState.current.phase === 0) {
+          flashState.current = { phase: 1, timer: 0 };
+        }
+        lastClick.current = 0;
+      } else {
+        lastClick.current = now;
       }
     };
-    window.addEventListener('dblclick', handler);
-    return () => window.removeEventListener('dblclick', handler);
-  }, []);
+    canvas.addEventListener('pointerdown', handler);
+    return () => canvas.removeEventListener('pointerdown', handler);
+  }, [gl]);
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
     const g = group.current;
