@@ -173,17 +173,6 @@ const BOOT_LOGS: Record<string, string[]> = {
   CT113: ['CT113 login:', '[  OK  ] Syncthing ▸ up', '[  OK  ] Peers: 5 online', '[  OK  ] Folders: 12 synced', '[  OK  ] Uptime: 14 days', 'CT113:~# _'],
 };
 
-function drawStatic(ctx: CanvasRenderingContext2D, accent: string, display: { label: string; lines: string[] }) {
-  // Dim — screens are "off" by default, barely lit
-  ctx.fillStyle = accent; ctx.globalAlpha = 0.15; ctx.fillRect(0, 0, 256, 36);
-  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
-  ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
-  ctx.fillText(display.label, 10, 18);
-  ctx.fillStyle = accent; ctx.globalAlpha = 0.18; ctx.font = '12px monospace';
-  for (let i = 0; i < display.lines.length; i++) ctx.fillText(display.lines[i], 10, 50 + i * 38);
-  ctx.fillStyle = accent; ctx.globalAlpha = 0.06; ctx.fillRect(0, 244, 256, 12);
-}
-
 function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[], progress: number, flicker: boolean) {
   const visible = Math.floor(progress * logs.length) + (flicker && Math.random() < 0.15 ? 0 : 1);
   ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
@@ -235,26 +224,11 @@ function drawGlitch(ctx: CanvasRenderingContext2D, accent: string, logs: string[
   }
 }
 
-function drawFade(ctx: CanvasRenderingContext2D, accent: string, display: { label: string; lines: string[] }, progress: number) {
-  ctx.fillStyle = accent; ctx.globalAlpha = 0.7 * (1 - progress); ctx.fillRect(0, 0, 256, 36);
-  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1 - progress;
-  ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
-  ctx.fillText(display.label, 10, 18);
-  ctx.fillStyle = accent; ctx.globalAlpha = 0.8 * (1 - progress); ctx.font = '12px monospace';
-  for (let i = 0; i < display.lines.length; i++) ctx.fillText(display.lines[i], 10, 50 + i * 38);
-  ctx.globalAlpha = 1;
-  if (progress > 0.5) {
-    ctx.fillStyle = 'rgba(4,6,10,' + ((progress - 0.5) * 2) + ')';
-    ctx.fillRect(0, 0, 256, 256);
-  }
-}
-
 function RackScreen({ accent, rackId, height }: { accent: string; rackId: string; height: number }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const texRef = useRef<THREE.CanvasTexture | null>(null);
-  const display = useMemo(() => RACK_DISPLAY[rackId] || { label: rackId, lines: ['---'] }, [rackId]);
   const logs = useMemo(() => BOOT_LOGS[rackId] || [rackId + ' login:', '[  OK  ] system running', rackId + ':~# _'], [rackId]);
 
   useEffect(() => {
@@ -470,6 +444,19 @@ function getFlowTex() {
 }
 
 const FLOW_COUNT = 200;
+
+/** Deterministic PRNG — stable across re-renders, satisfies react-hooks/purity */
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 let _noise2d: ReturnType<typeof createNoise2D> | null = null;
 function noise2d() {
   if (!_noise2d) _noise2d = createNoise2D();
@@ -478,20 +465,30 @@ function noise2d() {
 
 function AirflowLayer() {
   const geometry = useMemo(() => {
+    const rand = mulberry32(0x64ffda);
     const pos = new Float32Array(FLOW_COUNT * 3);
     for (let i = 0; i < FLOW_COUNT; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 12;
-      pos[i * 3 + 1] = -0.5 + Math.random() * 1.5;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 6;
+      pos[i * 3] = (rand() - 0.5) * 12;
+      pos[i * 3 + 1] = -0.5 + rand() * 1.5;
+      pos[i * 3 + 2] = (rand() - 0.5) * 6;
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     return geo;
   }, []);
 
-  const seedX = useMemo(() => new Float32Array(FLOW_COUNT), []);
-  const seedY = useMemo(() => new Float32Array(FLOW_COUNT), []);
-  if (!seedX[0]) { for (let i = 0; i < FLOW_COUNT; i++) { seedX[i] = Math.random() * 100; seedY[i] = Math.random() * 100; } }
+  const seedX = useMemo(() => {
+    const rand = mulberry32(0xcafe01);
+    const arr = new Float32Array(FLOW_COUNT);
+    for (let i = 0; i < FLOW_COUNT; i++) arr[i] = rand() * 100;
+    return arr;
+  }, []);
+  const seedY = useMemo(() => {
+    const rand = mulberry32(0xcafe02);
+    const arr = new Float32Array(FLOW_COUNT);
+    for (let i = 0; i < FLOW_COUNT; i++) arr[i] = rand() * 100;
+    return arr;
+  }, []);
 
   useFrame((state, delta) => {
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
