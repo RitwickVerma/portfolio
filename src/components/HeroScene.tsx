@@ -239,7 +239,7 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
       const base = Math.sin(t * (1.0 + pattern[i] * 2) + i) * 0.3;
       const harmonic = Math.sin(t * (2.5 + pattern[i] * 0.8) + i * 2.7) * 0.12;
       const activity = Math.min(sceneState.spin * 0.2, 0.3);
-      const flash = Math.min(sceneState._flash * 3, 1.5); // double-click burst
+      const flash = Math.min(sceneState._flash * 5, 3.0); // double-click burst
       mat.emissiveIntensity = 0.45 + (base + harmonic + activity + spinBoost * 0.1 + flash);
     });
   });
@@ -477,7 +477,7 @@ function Datacenter() {
   const group = useRef<THREE.Group>(null);
   const flashRef = useRef(0); // double-click easter egg timer
   useEffect(() => {
-    const handler = () => { flashRef.current = 0.8; };
+    const handler = () => { flashRef.current = 1.2; };
     window.addEventListener('dblclick', handler);
     return () => window.removeEventListener('dblclick', handler);
   }, []);
