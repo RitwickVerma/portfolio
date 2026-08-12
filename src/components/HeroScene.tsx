@@ -584,14 +584,14 @@ function CablePulses() {
 
     // Flash-reactive material
     if (matRef.current) {
-      matRef.current.size = active ? 0.12 : 0.06;
-      matRef.current.opacity = active ? 0.95 : 0.6;
+      matRef.current.size = active ? 0.28 : 0.10;
+      matRef.current.opacity = active ? 1.0 : 0.85;
     }
   });
 
   return (
     <points geometry={geometry}>
-      <pointsMaterial ref={matRef} map={getFlowTex()} color="#ffffff" size={0.06} sizeAttenuation transparent opacity={0.6} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial ref={matRef} map={getFlowTex()} color="#ffffff" size={0.10} sizeAttenuation transparent opacity={0.85} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
