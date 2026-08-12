@@ -2,106 +2,77 @@
 
 import { useEffect, useRef } from "react";
 
-const TRAIL_LENGTH = 12;
-const DOT_RADIUS = 6;
-const GLOW_RADIUS = 24;
-const TRAIL_LIFE = 0.6;
-
-interface TrailDot {
-  x: number; y: number;
-  age: number;
-}
-
 export default function CursorGlow() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const trailRef = useRef<HTMLCanvasElement>(null);
+  const mouseRef = useRef({ x: -100, y: -100 });
+  const dotsRef = useRef<{ x: number; y: number; a: number }[]>([]);
+  const rafRef = useRef(0);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = trailRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let mouseX = -100, mouseY = -100;
-    let mouseInside = false;
-    let animId = 0;
-    const trail: TrailDot[] = [];
+    const dots = dotsRef.current;
 
-    const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
-    };
-    resize();
-    window.addEventListener("resize", resize);
+    const animate = () => {
+      const { x, y } = mouseRef.current;
+      dots.push({ x, y, a: 1 });
+      if (dots.length > 18) dots.shift();
 
-    const onMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      mouseInside = true;
-    };
-    const onLeave = () => { mouseInside = false; };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    window.addEventListener("mouseleave", onLeave);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    let lastT = performance.now();
-    const animate = (t: number) => {
-      const dt = Math.min((t - lastT) / 1000, 0.1);
-      lastT = t;
-
-      if (mouseInside) {
-        trail.push({ x: mouseX, y: mouseY, age: 0 });
-      }
-
-      // Age and remove old dots
-      for (let i = trail.length - 1; i >= 0; i--) {
-        trail[i].age += dt;
-        if (trail[i].age > TRAIL_LIFE) trail.splice(i, 1);
-      }
-      // Keep at most TRAIL_LENGTH
-      while (trail.length > TRAIL_LENGTH) trail.shift();
-
-      const dpr = window.devicePixelRatio || 1;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
-
-      // Draw trail — older = dimmer, smaller
-      for (let i = 0; i < trail.length; i++) {
-        const d = trail[i];
-        const t = d.age / TRAIL_LIFE; // 0 → 1
-        const alpha = 0.55 * (1 - t);
-        const radius = DOT_RADIUS * (1 - t * 0.5);
-
-        const grad = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, GLOW_RADIUS);
-        grad.addColorStop(0, `rgba(100,255,218,${alpha})`);
-        grad.addColorStop(0.25, `rgba(100,255,218,${alpha * 0.6})`);
-        grad.addColorStop(1, "rgba(100,255,218,0)");
-
+      for (let i = 0; i < dots.length; i++) {
+        const d = dots[i];
+        d.a *= 0.88;
+        const s = 2 + (d.a * 2);
         ctx.beginPath();
-        ctx.arc(d.x, d.y, GLOW_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
+        ctx.arc(d.x, d.y, s, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(100,255,218,${d.a * 0.4})`;
         ctx.fill();
       }
-
-      animId = requestAnimationFrame(animate);
+      rafRef.current = requestAnimationFrame(animate);
     };
-    animId = requestAnimationFrame(animate);
+
+    const onMove = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY };
+      if (cursorRef.current) {
+        cursorRef.current.style.transform = `translate3d(${e.clientX}px,${e.clientY}px,0)`;
+      }
+    };
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+
+    window.addEventListener("mousemove", onMove, { passive: true });
+    window.addEventListener("resize", resize);
+    rafRef.current = requestAnimationFrame(animate);
 
     return () => {
-      window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseleave", onLeave);
-      cancelAnimationFrame(animId);
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 pointer-events-none"
-      style={{ zIndex: 9999 }}
-      aria-hidden
-    />
+    <>
+      <canvas ref={trailRef} className="fixed inset-0 pointer-events-none z-[9998]" aria-hidden />
+      <div
+        ref={cursorRef}
+        className="fixed top-0 left-0 pointer-events-none z-[9999] w-3 h-3 -ml-1.5 -mt-1.5 rounded-full sm:block"
+        style={{
+          background: "radial-gradient(circle, rgba(100,255,218,0.8) 0%, transparent 70%)",
+          boxShadow: "0 0 16px rgba(100,255,218,0.3)",
+          transition: "transform 0.06s ease-out",
+        }}
+        aria-hidden
+      />
+    </>
   );
 }
