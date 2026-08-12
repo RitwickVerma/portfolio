@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable react-hooks/immutability, react-hooks/refs */
 
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -232,7 +232,6 @@ function drawGlitch(ctx: CanvasRenderingContext2D, accent: string, logs: string[
 }
 
 function drawFade(ctx: CanvasRenderingContext2D, accent: string, display: { label: string; lines: string[] }, progress: number) {
-  ctx.globalAlpha = 1 - progress;
   ctx.fillStyle = accent; ctx.globalAlpha = 0.7 * (1 - progress); ctx.fillRect(0, 0, 256, 36);
   ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1 - progress;
   ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
@@ -247,9 +246,9 @@ function drawFade(ctx: CanvasRenderingContext2D, accent: string, display: { labe
 }
 
 function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
-  const matRef = useRef<THREE.MeshBasicMaterial>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const texRef = useRef<THREE.CanvasTexture | null>(null);
   const display = useMemo(() => RACK_DISPLAY[rackId] || { label: rackId, lines: ['---'] }, [rackId]);
   const logs = useMemo(() => BOOT_LOGS[rackId] || [rackId + ' login:', '[  OK  ] system running', rackId + ':~# _'], [rackId]);
 
@@ -261,18 +260,23 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
     ctxRef.current = canvas.getContext('2d')!;
   }, []);
 
+  // Callback ref: fires the moment R3F creates the material
+  const onMaterial = useCallback((mat: THREE.MeshBasicMaterial | null) => {
+    if (!mat || !canvasRef.current) return;
+    if (!texRef.current) {
+      texRef.current = new THREE.CanvasTexture(canvasRef.current);
+      texRef.current.minFilter = THREE.LinearFilter;
+    }
+    mat.map = texRef.current;
+    mat.needsUpdate = true;
+  }, []);
+
   useFrame(() => {
     const ctx = ctxRef.current;
-    const canvas = canvasRef.current;
-    if (!ctx || !canvas || !matRef.current) return;
-    // Lazy texture init — R3F ref may not be populated when useEffect runs
-    if (!matRef.current.map) {
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.minFilter = THREE.LinearFilter;
-      matRef.current.map = tex;
-    }
+    if (!ctx || !texRef.current) return;
     const phase = sceneState._flashPhase;
     const p = sceneState._flashProgress;
+
     ctx.clearRect(0, 0, 256, 256);
     ctx.fillStyle = '#04060a'; ctx.fillRect(0, 0, 256, 256);
     if (phase === 0) drawStatic(ctx, accent, display);
@@ -280,13 +284,13 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
     else if (phase === 2) drawBoot(ctx, accent, logs, 1.0, false);
     else if (phase === 3) drawGlitch(ctx, accent, logs);
     else if (phase === 4) drawFade(ctx, accent, display, p);
-    (matRef.current.map as THREE.CanvasTexture).needsUpdate = true;
+    texRef.current.needsUpdate = true;
   });
 
   return (
     <mesh position={[0, 0, 0.457]}>
       <planeGeometry args={[0.72, 1.6]} />
-      <meshBasicMaterial ref={matRef} color="#04060a" />
+      <meshBasicMaterial ref={onMaterial} color="#04060a" />
     </mesh>
   );
 }
