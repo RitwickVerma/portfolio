@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable react-hooks/immutability, react-hooks/refs */
 
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -660,8 +660,31 @@ function Datacenter() {
 
 export default function HeroScene() {
   initPointer();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(true);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { rootMargin: '100px' },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   return (
-    <Canvas flat dpr={[1, 2]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }} camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }} onCreated={({ gl }) => { gl.domElement.tabIndex = -1; gl.domElement.style.outline = 'none'; }} style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f', cursor: 'none' }}>
+    <div ref={wrapRef} style={{ width: '100%', height: '100%' }}>
+    <Canvas
+      flat
+      dpr={[1, 2]}
+      frameloop={inView ? 'always' : 'never'}
+      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
+      camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }}
+      onCreated={({ gl }) => { gl.domElement.tabIndex = -1; gl.domElement.style.outline = 'none'; }}
+      style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f', cursor: 'none' }}
+    >
       <Suspense fallback={null}>
         <GrabHandler />
         <CameraRig />
@@ -674,5 +697,6 @@ export default function HeroScene() {
         <Datacenter />
       </Suspense>
     </Canvas>
+    </div>
   );
 }

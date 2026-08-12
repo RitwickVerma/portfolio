@@ -16,6 +16,7 @@ export default function CursorGlow() {
     let mouseX = -100, mouseY = -100;
     let mouseInside = false;
     let animId = 0;
+    let running = false;
     const trail: { x: number; y: number }[] = [];
 
     const resize = () => {
@@ -28,10 +29,12 @@ export default function CursorGlow() {
     const onMove = (e: PointerEvent) => {
       mouseX = e.clientX; mouseY = e.clientY;
       mouseInside = true;
+      ensureRunning();
     };
     const onDown = (e: PointerEvent) => {
       mouseX = e.clientX; mouseY = e.clientY;
       mouseInside = true;
+      ensureRunning();
     };
     const onUp = () => { mouseInside = false; };
     const onLeave = () => { mouseInside = false; };
@@ -40,33 +43,36 @@ export default function CursorGlow() {
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointerleave", onLeave);
 
-    const animate = () => {
+    const step = () => {
       if (mouseInside) {
         trail.push({ x: mouseX, y: mouseY });
         if (trail.length > TRAIL_POINTS) trail.shift();
+      } else if (trail.length > 0) {
+        // Mouse left — decay the tail, one point per frame.
+        trail.shift();
       }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (trail.length < 2) { animId = requestAnimationFrame(animate); return; }
+      if (trail.length >= 2) {
+        // Draw smooth trail line — thick at head, thin at tail
+        for (let i = 1; i < trail.length; i++) {
+          const t = i / trail.length; // 0=old tail, 1=fresh head
+          const alpha = t * 0.6;
+          const width = 1 + t * 3; // 1px at tail, 4px at head
 
-      // Draw smooth trail line — thick at head, thin at tail
-      for (let i = 1; i < trail.length; i++) {
-        const t = i / trail.length; // 0=old tail, 1=fresh head
-        const alpha = t * 0.6;
-        const width = 1 + t * 3; // 1px at tail, 4px at head
-
-        ctx.beginPath();
-        ctx.moveTo(trail[i - 1].x, trail[i - 1].y);
-        ctx.lineTo(trail[i].x, trail[i].y);
-        ctx.strokeStyle = `rgba(100,255,218,${alpha})`;
-        ctx.lineWidth = width;
-        ctx.lineCap = "round";
-        ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(trail[i - 1].x, trail[i - 1].y);
+          ctx.lineTo(trail[i].x, trail[i].y);
+          ctx.strokeStyle = `rgba(100,255,218,${alpha})`;
+          ctx.lineWidth = width;
+          ctx.lineCap = "round";
+          ctx.stroke();
+        }
       }
 
-      // Bright dot at cursor
-      if (mouseInside && trail.length > 0) {
+      // Bright dot at cursor head
+      if (trail.length > 0) {
         const head = trail[trail.length - 1];
         const grad = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 8);
         grad.addColorStop(0, "rgba(100,255,218,0.9)");
@@ -78,9 +84,22 @@ export default function CursorGlow() {
         ctx.fill();
       }
 
-      animId = requestAnimationFrame(animate);
+      // Keep animating only while the cursor is active or the trail is decaying.
+      // Idle (mouse left AND trail empty) → loop stops, zero rAF cost.
+      if (mouseInside || trail.length > 0) {
+        animId = requestAnimationFrame(step);
+      } else {
+        running = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     };
-    animId = requestAnimationFrame(animate);
+
+    function ensureRunning() {
+      if (!running) {
+        running = true;
+        animId = requestAnimationFrame(step);
+      }
+    }
 
     return () => {
       window.removeEventListener("resize", resize);
