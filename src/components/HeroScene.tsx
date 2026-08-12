@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable react-hooks/immutability, react-hooks/refs */
+/* eslint-disable react-hooks/immutability */
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -150,17 +150,6 @@ const RACKS: RackDef[] = [
   { id: 'CT111', name: 'CT111 Jellyfin',   x:  1.20, z:  1.18, height: 2.4 },
   { id: 'CT113', name: 'CT113 Syncthing',  x:  3.28, z:  1.35, height: 1.8 },
 ];
-
-const RACK_DISPLAY: Record<string, { label: string; lines: string[] }> = {
-  VM110: { label: 'GATEWAY', lines: ['Traefik v3.6  ▸ active', 'Authelia OIDC ▸ ok', 'WAN: 2.3 Gbps', 'Conns: 847 active'] },
-  CT101: { label: 'HERMES', lines: ['Agent  ▸ live', 'Model  ▸ deepseek-v4', 'Sessions: 3', 'Skills: 112 loaded'] },
-  CT102: { label: 'DNS', lines: ['Pi-hole v6  ▸ active', 'Queries: 4.2k/h', 'Blocked: 23.1%', 'Cache hit: 89%'] },
-  CT104: { label: 'VAULT', lines: ['Vaultwarden ▸ locked', 'Users: 2', 'Last sync: 2 min', 'TOTP keys: 7'] },
-  CT106: { label: 'IMMICH', lines: ['Photos: 12,847', 'Videos: 342', 'ML model: mobilenet', 'Backup: up to date'] },
-  CT107: { label: 'PAPERLESS', lines: ['Docs indexed: 2,103', 'Inbox: 14 unread', 'Tags: 47 active', 'OCR: idle'] },
-  CT111: { label: 'JELLYFIN', lines: ['Library: 1.2 TB', 'Active streams: 0', 'Transcodes: 0', 'Real-Debrid: ok'] },
-  CT113: { label: 'SYNCTHING', lines: ['Peers: 5 online', 'Folders: 12', 'Last sync: 3 min', 'Uptime: 14 days'] },
-};
 
 // ─── Rack screen (canvas texture — dynamic boot/log/glitch during flash) ───
 
