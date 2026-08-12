@@ -29,8 +29,15 @@ export default function CursorGlow() {
       mouseX = e.clientX; mouseY = e.clientY;
       mouseInside = true;
     };
+    const onDown = (e: PointerEvent) => {
+      mouseX = e.clientX; mouseY = e.clientY;
+      mouseInside = true;
+    };
+    const onUp = () => { mouseInside = false; };
     const onLeave = () => { mouseInside = false; };
     window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerdown", onDown, { passive: true });
+    window.addEventListener("pointerup", onUp);
     window.addEventListener("pointerleave", onLeave);
 
     const animate = () => {
@@ -78,6 +85,8 @@ export default function CursorGlow() {
     return () => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointerleave", onLeave);
       cancelAnimationFrame(animId);
     };
