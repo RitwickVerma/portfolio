@@ -53,6 +53,7 @@ function GrabHandler() {
     const el = gl.domElement;
     const onDown = (e: PointerEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       drag.active = true;
       drag.prevX = e.clientX; drag.prevY = e.clientY;
       drag.velocityX = 0; drag.velocityY = 0;
@@ -611,6 +612,8 @@ function Datacenter() {
   useEffect(() => {
     const canvas = gl.domElement;
     const handler = (e: PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
       const now = performance.now();
       if (now - lastClick.current < 400) {
         if (flashState.current.phase === 0) {
@@ -621,8 +624,8 @@ function Datacenter() {
         lastClick.current = now;
       }
     };
-    canvas.addEventListener('pointerdown', handler);
-    return () => canvas.removeEventListener('pointerdown', handler);
+    canvas.addEventListener('pointerdown', handler, { capture: true });
+    return () => canvas.removeEventListener('pointerdown', handler, { capture: true });
   }, [gl]);
   useFrame((state, delta) => {
     const t = state.clock.getElapsedTime();
