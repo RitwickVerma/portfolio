@@ -54,7 +54,7 @@ build:
 # ── Deploy to CT114 ──
 deploy:
   stage: deploy
-  image: ubuntu:22.04
+  image: alpine:latest
   needs:
     - lint
     - typecheck
@@ -62,9 +62,9 @@ deploy:
   only:
     - master
   before_script:
-    - apt-get update -qq && apt-get install -y -qq openssh-client rsync >/dev/null 2>&1
+    - apk add --no-cache openssh-client rsync
     - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+    - cp "$SSH_PRIVATE_KEY" ~/.ssh/id_ed25519
     - chmod 600 ~/.ssh/id_ed25519
     - ssh-keyscan -H 69.69.69.114 >> ~/.ssh/known_hosts 2>/dev/null || true
   script:
