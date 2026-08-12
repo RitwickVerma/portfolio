@@ -5,41 +5,41 @@ stages:
 
 variables:
   NODE_VERSION: "22"
+  # Keep npm's package cache inside the project dir so GitLab can cache it.
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+
+# Shared cache: npm's package cache (`.npm`) keyed on package-lock.json.
+# `npm ci --prefer-offline` reads tarballs from here instead of the network.
+default:
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
 
 # ── Lint ──────────────────────────────────
 lint:
   stage: check
   image: node:${NODE_VERSION}
-  cache:
-    key: npm-lint-$CI_COMMIT_REF_SLUG
-    paths:
-      - node_modules/
   script:
-    - npm ci
+    - npm ci --prefer-offline
     - npm run lint
 
 # ── TypeScript type check ─────────────────
 typecheck:
   stage: check
   image: node:${NODE_VERSION}
-  cache:
-    key: npm-tc-$CI_COMMIT_REF_SLUG
-    paths:
-      - node_modules/
   script:
-    - npm ci
+    - npm ci --prefer-offline
     - npx tsc --noEmit
 
 # ── Unit tests (Vitest) ───────────────────
 test:
   stage: check
   image: node:${NODE_VERSION}
-  cache:
-    key: npm-test-$CI_COMMIT_REF_SLUG
-    paths:
-      - node_modules/
   script:
-    - npm ci
+    - npm ci --prefer-offline
     - npm run test
 
 # ── Build + install prod deps ─────────────
@@ -47,9 +47,11 @@ build:
   stage: build
   image: node:${NODE_VERSION}
   cache:
-    key: npm-build-$CI_COMMIT_REF_SLUG
+    key:
+      files:
+        - package-lock.json
     paths:
-      - node_modules/
+      - .npm/
       - .next/cache/
   artifacts:
     paths:
@@ -60,7 +62,7 @@ build:
       - next.config.ts
     expire_in: 1h
   script:
-    - npm ci
+    - npm ci --prefer-offline
     - npm run build
     - npm prune --omit=dev
 
@@ -91,4 +93,3 @@ deploy:
         sleep 3 &&
         curl -sk -o /dev/null -w "%{http_code}" http://localhost:3456/
       '
-
