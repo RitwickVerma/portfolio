@@ -246,7 +246,7 @@ function drawFade(ctx: CanvasRenderingContext2D, accent: string, display: { labe
   }
 }
 
-function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
+function RackScreen({ accent, rackId, height }: { accent: string; rackId: string; height: number }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -288,9 +288,11 @@ function RackScreen({ accent, rackId }: { accent: string; rackId: string }) {
     texRef.current.needsUpdate = true;
   });
 
+  const screenH = height * 0.62; // proportional to rack height
+
   return (
-    <mesh ref={meshRef} position={[0, -0.05, 0.455]}>
-      <planeGeometry args={[0.72, 1.5]} />
+    <mesh ref={meshRef} position={[0, 0, 0.455]}>
+      <planeGeometry args={[0.72, screenH]} />
       <meshBasicMaterial color="#ffffff" />
     </mesh>
   );
@@ -387,7 +389,7 @@ function Rack({ rack }: { rack: RackDef }) {
         <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.35} emissive={accent} emissiveIntensity={0.08} />
       </mesh>
       <group position={[0, halfH, 0]}>
-        <RackScreen accent={accent} rackId={rack.id} />
+        <RackScreen accent={accent} rackId={rack.id} height={h} />
         <RackIndicator accent={accent} rackId={rack.id} warning={rack.warning} />
       </group>
       <RackLights accent={accent} rackId={rack.id} />
