@@ -605,6 +605,7 @@ function Datacenter() {
       if (now - lastClick.current < 400) {
         if (flashState.current.phase === 0) {
           flashState.current = { phase: 1, timer: 0 };
+          console.log('[EASTER EGG] Double-click detected — starting phase 1');
         }
         lastClick.current = 0;
       } else {
@@ -644,6 +645,9 @@ function Datacenter() {
         fs.phase = fs.phase >= 4 ? 0 : fs.phase + 1;
         fs.timer = 0;
       }
+    }
+    if (fs.phase !== sceneState._flashPhase) {
+      console.log('[EASTER EGG] Phase:', fs.phase, 'progress:', fs.timer.toFixed(2));
     }
     sceneState._flashPhase = fs.phase;
     sceneState._flashProgress = fs.phase > 0 ? Math.min(fs.timer / PHASE_DURATIONS[fs.phase], 1) : 0;
