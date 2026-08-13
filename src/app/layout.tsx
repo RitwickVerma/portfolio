@@ -39,12 +39,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#0a0a0f] text-fg flex flex-col">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-[#0a0a0f] focus:text-accent focus:border focus:border-accent/40 focus:rounded-lg"
+        >
+          Skip to content
+        </a>
         <PointerProvider>
         <ShaderBackground />
         <CursorGlow />
         <ClientShell>
         <Nav />
-        <main className="flex-1">{children}</main>
+        <main id="main" className="flex-1">{children}</main>
         <Footer />
         </ClientShell>
         </PointerProvider>

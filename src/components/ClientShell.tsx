@@ -1,5 +1,7 @@
 "use client";
 
+import { MotionConfig } from "framer-motion";
+
 export default function ClientShell({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <MotionConfig reducedMotion="user">{children}</MotionConfig>;
 }

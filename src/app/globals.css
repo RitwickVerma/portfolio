@@ -11,6 +11,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+@theme {
+  /* Fluid modular type scale — 1.25 (major third), clamped to viewport */
+  --text-display: clamp(2.75rem, 6vw + 0.5rem, 5rem);
+  --text-h2: clamp(1.5rem, 2vw + 0.5rem, 2rem);
+}
+
 :root {
   --bg: #0a0a0f;
   --fg: #e4e4e7;
@@ -20,23 +26,38 @@
   --border: rgba(255, 255, 255, 0.06);
 }
 
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    cursor: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Balanced headings + consistent optical tracking */
+  h1, h2, h3, h4 {
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+  }
+
+  /* Tabular figures for mono — aligned numbers in stats/terminal */
+  code, pre, .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 255, 218, 0.2) transparent;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  cursor: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
 ::selection {
@@ -99,4 +120,68 @@ canvas {
 .xterm-viewport::-webkit-scrollbar-thumb {
   background: rgba(100, 255, 218, 0.2);
   border-radius: 2px;
+}
+
+/* ─── Reduced motion — respect the OS setting ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  body {
+    cursor: auto; /* custom trail is disabled — restore native cursor */
+  }
+  .scroll-indicator {
+    display: none;
+  }
+}
+
+/* ─── Print — clean, readable document (recruiters save to PDF) ────────── */
+@media print {
+  * {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Interactive/decorative chrome */
+  nav, canvas, .scroll-indicator {
+    display: none !important;
+  }
+
+  body {
+    cursor: auto !important;
+    line-height: 1.5;
+    font-size: 11pt;
+  }
+
+  /* The 3D hero pins inside a 200vh wrapper — collapse to a normal header */
+  #hero {
+    position: static !important;
+    height: auto !important;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  /* Surface absolute URLs — essential for a printed reference */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #555;
+  }
+
+  @page {
+    margin: 2cm;
+  }
 }

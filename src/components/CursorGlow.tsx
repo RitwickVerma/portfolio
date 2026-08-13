@@ -10,6 +10,10 @@ export default function CursorGlow() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // Respect reduced motion — no trail. Native cursor restored via CSS.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 

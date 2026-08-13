@@ -33,16 +33,16 @@ export default function HomeContent() {
 
   return (
     <div className="relative">
-      <div ref={wrapRef} className="h-[200vh]">
+      <div ref={wrapRef} className="h-[200vh] print:h-auto">
         <motion.section
           id="hero"
           style={{ opacity }}
-          className="sticky top-0 h-screen bg-grid overflow-hidden"
+          className="sticky top-0 h-screen bg-grid overflow-hidden print:static print:h-auto"
         >
           <HeroSceneWrapper />
 
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-fg mb-4 text-center px-4">
+            <h1 className="text-display leading-[1.05] font-bold tracking-tight text-fg mb-4 text-center px-4">
               Ritwick Verma
             </h1>
             <p className="text-muted text-sm sm:text-lg font-mono text-center px-4">
@@ -67,7 +67,7 @@ export default function HomeContent() {
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a0f] to-transparent pointer-events-none z-10" />
 
           <motion.div
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20"
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 scroll-indicator motion-reduce:hidden"
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
