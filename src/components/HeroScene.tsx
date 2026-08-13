@@ -120,10 +120,15 @@ function CameraRig() {
   }, [camera, size]);
   useFrame(() => {
     const cam = camera as THREE.PerspectiveCamera;
+    // Ease ONE scroll value and drive FOV + dolley from it. Applying the raw
+    // scroll instantly here (while FOV lerps) desyncs the two and makes the
+    // scene "pump" on every scroll tick — the heartbeat effect.
+    sceneState.smoothScroll += (sceneState.scroll - sceneState.smoothScroll) * 0.1;
+    const s = sceneState.smoothScroll;
     // Spin widens FOV; scroll recedes the camera (dolley out) — the scene "opens up".
-    const target = baseFov.current + sceneState.spin * 14 + sceneState.scroll * 6;
+    const target = baseFov.current + sceneState.spin * 14 + s * 6;
     cam.fov += (target - cam.fov) * 0.06;
-    const pull = 1 + sceneState.scroll * 0.3;
+    const pull = 1 + s * 0.3;
     cam.position.copy(baseDir.current.clone().multiplyScalar(baseDist.current * pull));
     cam.lookAt(0, 0.55, 0);
     cam.updateProjectionMatrix();
@@ -654,7 +659,9 @@ function Datacenter() {
     const autoY = Math.sin(t * 0.12) * 0.4;
     const mouseY = (smoothedPointer.x - 0.5) * 0.8;
     // Scroll slowly turns the datacenter — the reveal ties scroll to the scene.
-    g.rotation.y = autoY + mouseY + drag.targetY + sceneState.scroll * 0.9;
+    // Read the eased smoothScroll (updated in CameraRig) so rotation and camera
+    // move in lockstep instead of the scene pumping on raw scroll ticks.
+    g.rotation.y = autoY + mouseY + drag.targetY + sceneState.smoothScroll * 0.9;
     g.rotation.x = (smoothedPointer.y - 0.5) * -0.25 + drag.targetX;
     g.position.y = Math.sin(t * 0.55) * 0.06;
     sceneState.dcRotY = g.rotation.y;
