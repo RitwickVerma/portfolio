@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import AboutSection from "@/components/AboutSection";
 import ProjectsSection from "@/components/ProjectsSection";
@@ -8,6 +8,7 @@ import HomelabSection from "@/components/HomelabSection";
 import SectionReveal from "@/components/SectionReveal";
 import HeroSceneWrapper from "@/components/HeroSceneWrapper";
 import TerminalWrapper from "@/components/TerminalWrapper";
+import { sceneState } from "@/lib/sceneState";
 
 export default function HomeContent() {
   // Pin the hero for one full viewport of scroll: 200vh wrapper, sticky hero.
@@ -18,6 +19,17 @@ export default function HomeContent() {
     const vh = typeof window !== "undefined" ? window.innerHeight : 800;
     return 1 - Math.min(Math.max(y / vh, 0), 1) * 0.7;
   });
+
+  // Feed scroll progress (0-1 across the hero pin window) into the 3D scene.
+  useEffect(() => {
+    const onScroll = () => {
+      const vh = window.innerHeight || 1;
+      sceneState.scroll = Math.min(Math.max(window.scrollY / vh, 0), 1);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className="relative">

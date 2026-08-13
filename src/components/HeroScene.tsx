@@ -100,6 +100,8 @@ function CameraRig() {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
   const baseFov = useRef(35);
+  const baseDist = useRef(11);
+  const baseDir = useRef(new THREE.Vector3(1.0, 0.88, 1.15).normalize());
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
     const aspect = size.width / Math.max(size.height, 1);
@@ -109,15 +111,21 @@ function CameraRig() {
     cam.fov = fov;
     const tanHalf = Math.tan(THREE.MathUtils.degToRad(fov / 2));
     const dist = Math.max(FIT_WIDTH / (2 * tanHalf * aspect), FIT_HEIGHT / (2 * tanHalf));
+    baseDist.current = dist;
     const dir = new THREE.Vector3(1.0, 0.88, 1.15).normalize();
+    baseDir.current.copy(dir);
     cam.position.copy(dir.multiplyScalar(dist));
     cam.lookAt(0, 0.55, 0);
     cam.updateProjectionMatrix();
   }, [camera, size]);
   useFrame(() => {
     const cam = camera as THREE.PerspectiveCamera;
-    const target = baseFov.current + sceneState.spin * 14;
+    // Spin widens FOV; scroll recedes the camera (dolley out) — the scene "opens up".
+    const target = baseFov.current + sceneState.spin * 14 + sceneState.scroll * 6;
     cam.fov += (target - cam.fov) * 0.06;
+    const pull = 1 + sceneState.scroll * 0.3;
+    cam.position.copy(baseDir.current.clone().multiplyScalar(baseDist.current * pull));
+    cam.lookAt(0, 0.55, 0);
     cam.updateProjectionMatrix();
   });
   return null;
@@ -162,6 +170,18 @@ const BOOT_LOGS: Record<string, string[]> = {
   CT107: ['CT107 login:', '[  OK  ] Paperless-ngx ▸ up', '[  OK  ] Docs indexed: 2,103', '[  OK  ] Inbox: 14 unread', '[  OK  ] OCR: idle', 'CT107:~# _'],
   CT111: ['CT111 login:', '[  OK  ] Jellyfin ▸ running', '[  OK  ] Library: 1.2 TB', '[  OK  ] Active streams: 0', '[  OK  ] Real-Debrid: ok', 'CT111:~# _'],
   CT113: ['CT113 login:', '[  OK  ] Syncthing ▸ up', '[  OK  ] Peers: 5 online', '[  OK  ] Folders: 12 synced', '[  OK  ] Uptime: 14 days', 'CT113:~# _'],
+};
+
+// Hover-inspection stats — real service data, concise (pairs with BOOT_LOGS).
+const RACK_STATS: Record<string, { role: string; stats: string[] }> = {
+  VM110: { role: 'Gateway', stats: ['Traefik v3.6 · active', 'Authelia OIDC · ok', 'WAN 2.3 Gbps'] },
+  CT101: { role: 'Hermes Agent', stats: ['deepseek-v4 · loaded', '112 skills', '3 sessions'] },
+  CT102: { role: 'DNS / DHCP', stats: ['Pi-hole v6 · active', '4.2k queries/h', '23.1% blocked'] },
+  CT104: { role: 'Vaultwarden', stats: ['2 users', '7 TOTP keys', 'last sync 2m'] },
+  CT106: { role: 'Immich', stats: ['12,847 photos', 'mobilenet · idle', 'backup current'] },
+  CT107: { role: 'Paperless-ngx', stats: ['2,103 docs', '14 unread', 'OCR idle'] },
+  CT111: { role: 'Jellyfin', stats: ['1.2 TB library', '0 streams', 'Real-Debrid ok'] },
+  CT113: { role: 'Syncthing', stats: ['5 peers online', '12 folders', '14d uptime'] },
 };
 
 function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[], progress: number, flicker: boolean) {
@@ -350,11 +370,17 @@ function Rack({ rack }: { rack: RackDef }) {
   const bodyColor = rack.gateway ? '#221f2e' : '#17171f';
   const h = rack.height;
   const halfH = h / 2;
+  const [hovered, setHovered] = useState(false);
+  const info = RACK_STATS[rack.id];
   return (
-    <group position={[rack.x, 0, rack.z]}>
+    <group
+      position={[rack.x, 0, rack.z]}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
+      onPointerOut={() => setHovered(false)}
+    >
       <mesh position={[0, halfH, 0]}>
         <boxGeometry args={[1, h, 0.9]} />
-        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.35} emissive={accent} emissiveIntensity={0.08} />
+        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.35} emissive={accent} emissiveIntensity={hovered ? 0.4 : 0.08} />
       </mesh>
       <group position={[0, halfH, 0]}>
         <RackScreen accent={accent} rackId={rack.id} height={h} />
@@ -369,6 +395,19 @@ function Rack({ rack }: { rack: RackDef }) {
           <span className="text-[10px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
         </div>
       </Html>
+      {hovered && info && (
+        <Html position={[0, h + 1.45, 0]} center zIndexRange={[60, 0]} style={{ pointerEvents: 'none' }} className="hidden sm:block">
+          <div className="pointer-events-none select-none whitespace-nowrap rounded-lg border border-accent/25 bg-[#0a0a0f]/90 px-3 py-2 backdrop-blur-md shadow-lg">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
+              <span className="text-[10px] font-mono tracking-wider text-accent uppercase">{info.role}</span>
+            </div>
+            {info.stats.map((s) => (
+              <div key={s} className="text-[10px] font-mono text-zinc-400 leading-relaxed">{s}</div>
+            ))}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
@@ -614,7 +653,8 @@ function Datacenter() {
     }
     const autoY = Math.sin(t * 0.12) * 0.4;
     const mouseY = (smoothedPointer.x - 0.5) * 0.8;
-    g.rotation.y = autoY + mouseY + drag.targetY;
+    // Scroll slowly turns the datacenter — the reveal ties scroll to the scene.
+    g.rotation.y = autoY + mouseY + drag.targetY + sceneState.scroll * 0.9;
     g.rotation.x = (smoothedPointer.y - 0.5) * -0.25 + drag.targetX;
     g.position.y = Math.sin(t * 0.55) * 0.06;
     sceneState.dcRotY = g.rotation.y;
