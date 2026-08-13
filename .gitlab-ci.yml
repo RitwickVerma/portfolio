@@ -1,5 +1,6 @@
 stages:
   - check
+  - deploy
 
 variables:
   NODE_VERSION: "22"
@@ -13,8 +14,7 @@ default:
     paths:
       - .npm/
 
-# One job, one npm ci. Lint + typecheck + test together. No build, no deploy —
-# deployment is `./deploy.sh` from the dev box.
+# One job, one npm ci — lint + typecheck + test together.
 check:
   stage: check
   image: node:${NODE_VERSION}
@@ -23,3 +23,21 @@ check:
     - npm run lint
     - npx tsc --noEmit
     - npm run test
+
+# Orchestrates only: SSH to CT114 and run /root/rebuild.sh. The build happens
+# on CT114 (2GB), not here. CT114 pulls, builds standalone, and restarts itself.
+deploy:
+  stage: deploy
+  image: alpine:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+  needs:
+    - check
+  before_script:
+    - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh
+    - cp "$SSH_PRIVATE_KEY" ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - ssh-keyscan -H 69.69.69.114 >> ~/.ssh/known_hosts 2>/dev/null || true
+  script:
+    - ssh -o StrictHostKeyChecking=no root@69.69.69.114 "/root/rebuild.sh"
