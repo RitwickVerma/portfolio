@@ -3,3 +3,6 @@ node_modules/
 .next/cache/
 *.tar.gz
 /tmp/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
