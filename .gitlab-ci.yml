@@ -47,12 +47,18 @@ build:
   rules:
     - if: $CI_COMMIT_TAG
   cache:
-    key:
-      files:
-        - package-lock.json
-    paths:
-      - .npm/
-      - .next/cache/
+    # Two SEPARATE caches. The npm tarball cache shares its key with the check
+    # jobs (keyed on lockfile). The turbopack build cache gets its own stable
+    # key so lint/typecheck/test jobs (which only cache .npm) can't overwrite
+    # and drop .next/cache — that was why "No build cache found" every time.
+    - key:
+        files:
+          - package-lock.json
+      paths:
+        - .npm/
+    - key: turbopack
+      paths:
+        - .next/cache/
   script:
     - npm ci --prefer-offline
     - npm run build
