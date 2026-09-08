@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable react-hooks/immutability */
 
 // GPUParticleAirflow — WebGPU-only plume of compute motes rising over the rack
 // cluster. Entire lifecycle lives on the GPU:
@@ -190,7 +189,7 @@ export default function GPUParticleAirflow() {
       apiRef.current?.teardown();
       apiRef.current = null;
     };
-  }, [tier, gl]);
+  }, [tier, gl, scene]);
 
   // Drive the compute pass ahead of the frame render; push drag spin in.
   useFrame(() => {
