@@ -81,7 +81,7 @@ export default function ShaderBackground() {
         orthographic
         camera={{ position: [0, 0, 1], near: 0.1, far: 10, zoom: 1 }}
         gl={{ antialias: true, alpha: true }}
-        style={{ width: "100%", height: "100%" }}
+        style={{ pointerEvents: "none", width: "100%", height: "100%" }}
       >
         <ShaderPlane />
       </Canvas>
