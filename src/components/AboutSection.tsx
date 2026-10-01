@@ -50,8 +50,8 @@ export default function AboutSection() {
           </motion.p>
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             Outside of work, I run a{" "}
-            <span className="text-accent">14-service homelab</span> on Proxmox
-            with a NixOS gateway, self-host everything from my password manager
+            <span className="text-accent">15-service homelab</span> on Proxmox
+            with a Debian gateway, self-host everything from my password manager
             to my photo library, and obsess over infrastructure automation.
           </motion.p>
         </motion.div>

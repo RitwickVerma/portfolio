@@ -108,15 +108,19 @@ function TiltCard({ project }: { project: (typeof projects)[0] }) {
           ))}
         </div>
 
-        {project.links.github && (
-          <a
-            href={project.links.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent/70 text-sm hover:text-accent transition-colors inline-flex items-center gap-1 mt-1 relative z-10"
-          >
-            GitHub →
-          </a>
+        {(project.links.github || project.links.gitlab) && (
+          <div className="flex flex-wrap gap-3 mt-1 relative z-10">
+            {project.links.github && (
+              <a href={project.links.github} target="_blank" rel="noopener noreferrer" className="text-accent/70 text-sm hover:text-accent transition-colors inline-flex items-center gap-1">
+                GitHub →
+              </a>
+            )}
+            {project.links.gitlab && (
+              <a href={project.links.gitlab} target="_blank" rel="noopener noreferrer" className="text-accent/70 text-sm hover:text-accent transition-colors inline-flex items-center gap-1">
+                GitLab →
+              </a>
+            )}
+          </div>
         )}
       </motion.div>
     </div>

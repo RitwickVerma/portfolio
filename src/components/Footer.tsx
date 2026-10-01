@@ -16,6 +16,22 @@ export default function Footer() {
             GitHub
           </a>
           <a
+            href="https://gitlab.com/ritwick7"
+            className="hover:text-accent transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitLab
+          </a>
+          <a
+            href="https://github.com/sponsors/RitwickVerma"
+            className="hover:text-accent transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Sponsor
+          </a>
+          <a
             href="https://linkedin.com/in/ritwickverma"
             className="hover:text-accent transition-colors"
             target="_blank"

@@ -11,8 +11,8 @@ export default function HomelabSection() {
 
       <div className="glass rounded-xl p-6 sm:p-8 border-white/[0.06]">
         <p className="text-fg/70 text-sm leading-relaxed mb-8">
-          14 services running on Proxmox VE across 8 containers and VMs (plus supporting infra). Gateway
-          on NixOS with Traefik, Authelia SSO, and Headscale VPN. All served
+          15 services running on Proxmox VE across 13 containers and 2 VMs (plus supporting infra). Gateway
+          on Debian with Traefik, Authelia SSO, and Headscale VPN. All served
           from a single machine under my desk.
         </p>
 
@@ -20,7 +20,7 @@ export default function HomelabSection() {
         <div className="flex items-center justify-center gap-3 sm:gap-4 mb-8 flex-wrap">
           {[
             { label: "Proxmox", css: "bg-accent/10 text-accent border-accent/30" },
-            { label: "NixOS Gateway", css: "bg-white/10 text-fg border-white/20" },
+            { label: "Debian Gateway", css: "bg-white/10 text-fg border-white/20" },
             { label: "Traefik v3", css: "bg-white/5 text-fg/70 border-white/10" },
             { label: "Authelia OIDC", css: "bg-white/5 text-fg/70 border-white/10" },
             { label: "Headscale VPN", css: "bg-white/5 text-fg/70 border-white/10" },

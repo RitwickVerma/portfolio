@@ -6,6 +6,7 @@ export interface Project {
   tech: string[];
   links: {
     github?: string;
+    gitlab?: string;
     live?: string;
     playstore?: string;
   };

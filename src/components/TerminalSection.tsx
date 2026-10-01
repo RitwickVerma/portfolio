@@ -64,21 +64,21 @@ const COMMAND_OUTPUTS: Record<string, string> = {
   whoami:
     `${ANSI.green}Ritwick Verma${ANSI.reset} — software engineer at eBay (San Francisco).\r\n` +
     "MCS from UC Irvine. Built ShutUp (26k+ downloads) and a quant trading bot,\r\n" +
-    `and runs a 14-service homelab on Proxmox + NixOS + Traefik.\r\n`,
+    `and runs a 15-service homelab on Proxmox + Debian + Traefik.\r\n`,
 
   projects:
     `${ANSI.green}${"ShutUp".padEnd(24)}${ANSI.reset}Android gesture-based telephony — 26k+ downloads\r\n` +
-    `${ANSI.green}${"Plutus Bot".padEnd(24)}${ANSI.reset}Quant trading bot — Python, 144 tests\r\n` +
+    `${ANSI.green}${"Plutus Bot".padEnd(24)}${ANSI.reset}Quant trading system — Python, Alpaca, live + backtest\r\n` +
     `${ANSI.green}${"RPG Engine".padEnd(24)}${ANSI.reset}Custom game engine — C++ / SDL2\r\n` +
-    `${ANSI.green}${"Homelab".padEnd(24)}${ANSI.reset}14 services — NixOS / Proxmox / Traefik\r\n` +
+    `${ANSI.green}${"Homelab".padEnd(24)}${ANSI.reset}15 services — Debian / Proxmox / Traefik\r\n` +
     `${ANSI.green}${"Monster Sudoku Solver".padEnd(24)}${ANSI.reset}AI constraint-satisfaction solver — UC Irvine\r\n` +
     `${ANSI.green}${"Solar EV DAQ".padEnd(24)}${ANSI.reset}Arduino + RPi + Firebase data acquisition\r\n`,
 
   homelab:
     `${ANSI.yellow}${"Service".padEnd(18)}${"Status".padEnd(12)}Purpose${ANSI.reset}\r\n` +
-    `${ANSI.green}${"VM110 Gateway".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}NixOS gateway — Traefik + Authelia\r\n` +
+    `${ANSI.green}${"VM110 Gateway".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}Debian gateway — Traefik + Authelia\r\n` +
     `${ANSI.green}${"CT101 Hermes".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}AI agent host\r\n` +
-    `${ANSI.green}${"CT102 DNS".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}AdGuard / DNS\r\n` +
+    `${ANSI.green}${"CT102 DNS".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}Technitium DNS\r\n` +
     `${ANSI.green}${"CT104 Vaultwarden".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}Password manager\r\n` +
     `${ANSI.green}${"CT106 Immich".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}Photo library\r\n` +
     `${ANSI.green}${"CT107 Paperless".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}Document management\r\n` +
@@ -88,7 +88,7 @@ const COMMAND_OUTPUTS: Record<string, string> = {
   skills:
     `${ANSI.yellow}Languages${ANSI.reset}  C++  C  Python  Java  TypeScript  JavaScript  Kotlin\r\n` +
     `${ANSI.yellow}Domains${ANSI.reset}     Backend  Android  Game Dev  AI/ML  DevOps  Embedded\r\n` +
-    `${ANSI.yellow}Tools${ANSI.reset}       Docker  Proxmox  NixOS  Traefik  Git  Linux\r\n`,
+    `${ANSI.yellow}Tools${ANSI.reset}       Docker  Proxmox  Debian  Traefik  Git  Linux\r\n`,
 
   experience:
     `${ANSI.green}${"2021 — Present".padEnd(14)}${ANSI.reset}Software Engineer @ eBay\r\n` +
@@ -103,6 +103,8 @@ const COMMAND_OUTPUTS: Record<string, string> = {
   contact:
     `${ANSI.green}Email:${ANSI.reset}    verma1997@gmail.com\r\n` +
     `${ANSI.green}GitHub:${ANSI.reset}   https://github.com/RitwickVerma\r\n` +
+    `${ANSI.green}GitLab:${ANSI.reset}   https://gitlab.com/ritwick7\r\n` +
+    `${ANSI.green}Sponsor:${ANSI.reset}  https://github.com/sponsors/RitwickVerma\r\n` +
     `${ANSI.green}LinkedIn:${ANSI.reset} https://www.linkedin.com/in/ritwickverma\r\n`,
 
   neofetch:
@@ -110,7 +112,7 @@ const COMMAND_OUTPUTS: Record<string, string> = {
     `    ${ANSI.green}▄███████████▄${ANSI.reset}     ${ANSI.yellow}Shell:${ANSI.reset}   portfolio v1.0\r\n` +
     `   ${ANSI.green}███████████████${ANSI.reset}    ${ANSI.yellow}Uptime:${ANSI.reset}  since 2021\r\n` +
     `  ${ANSI.green}█████████████████${ANSI.reset}   ${ANSI.yellow}Projects:${ANSI.reset} 6 featured\r\n` +
-    `  ${ANSI.green}█████████████████${ANSI.reset}   ${ANSI.yellow}Services:${ANSI.reset} 14 (homelab)\r\n` +
+    `  ${ANSI.green}█████████████████${ANSI.reset}   ${ANSI.yellow}Services:${ANSI.reset} 15 (homelab)\r\n` +
     `  ${ANSI.green}█████████████████${ANSI.reset}   ${ANSI.yellow}Editor:${ANSI.reset}   vim\r\n` +
     `   ${ANSI.green}███████████████${ANSI.reset}    ${ANSI.yellow}Email:${ANSI.reset}    verma1997@gmail.com\r\n` +
     `    ${ANSI.green}▀███████████▀${ANSI.reset}     ${ANSI.yellow}Colors:${ANSI.reset}  ${ANSI.green}████${ANSI.reset}${ANSI.yellow}████${ANSI.reset}${ANSI.red}████${ANSI.reset}\r\n` +
