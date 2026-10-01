@@ -24,12 +24,12 @@ export default function Footer() {
             GitLab
           </a>
           <a
-            href="https://github.com/sponsors/RitwickVerma"
+            href="https://buycovfefefor.ritwickverma.dev"
             className="hover:text-accent transition-colors"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Sponsor
+            Support
           </a>
           <a
             href="https://linkedin.com/in/ritwickverma"

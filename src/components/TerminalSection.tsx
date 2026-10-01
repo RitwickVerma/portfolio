@@ -104,7 +104,7 @@ const COMMAND_OUTPUTS: Record<string, string> = {
     `${ANSI.green}Email:${ANSI.reset}    verma1997@gmail.com\r\n` +
     `${ANSI.green}GitHub:${ANSI.reset}   https://github.com/RitwickVerma\r\n` +
     `${ANSI.green}GitLab:${ANSI.reset}   https://gitlab.com/ritwick7\r\n` +
-    `${ANSI.green}Sponsor:${ANSI.reset}  https://github.com/sponsors/RitwickVerma\r\n` +
+    `${ANSI.green}Support:${ANSI.reset}  https://buycovfefefor.ritwickverma.dev\r\n` +
     `${ANSI.green}LinkedIn:${ANSI.reset} https://www.linkedin.com/in/ritwickverma\r\n`,
 
   neofetch:
