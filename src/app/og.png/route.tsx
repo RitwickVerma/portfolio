@@ -1,4 +1,3 @@
-import { hero } from "@/lib/data";
 import { renderOg } from "@/lib/og";
 
 // A route handler (not the opengraph-image convention) so the static export
@@ -8,9 +7,9 @@ export const dynamic = "force-static";
 
 export function GET() {
   return renderOg({
-    eyebrow: "ritwickverma.dev",
-    name: hero.name,
-    line: hero.line,
-    lineTwo: hero.lineTwo,
+    sheet: "SHEET 00 · INDEX",
+    title: "I build systems, then try to",
+    emphasis: "prove them wrong.",
+    footer: "Backend engineer · eBay · San Francisco",
   });
 }

@@ -1,21 +1,36 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { SITE_URL } from "@/lib/data";
 import { SITE_TITLE, SITE_DESCRIPTION, personJsonLd, jsonLdString } from "@/lib/seo";
 import "./globals.css";
 
-const OG_ALT =
-  "Ritwick Verma — backend engineer at eBay. I build and self-host the systems I ship.";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Type system: Fraunces (optical-size serif) carries the voice, IBM Plex Sans the
+// reading, IBM Plex Mono every label, figure number and table cell. next/font
+// self-hosts all three at build time — the page makes no third-party requests.
+const display = Fraunces({
+  variable: "--font-display",
   subsets: ["latin"],
+  axes: ["opsz", "SOFT"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sans = IBM_Plex_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
+
+const mono = IBM_Plex_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
+});
+
+const OG_ALT = "Ritwick Verma — I build systems, then try to prove them wrong.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -40,21 +55,27 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0f",
-  colorScheme: "dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f2efe8" },
+    { media: "(prefers-color-scheme: dark)", color: "#11110f" },
+  ],
+  colorScheme: "light dark",
 };
+
+// Both inline scripts below are compile-time constants (no user input reaches
+// them): a one-word class toggle, and JSON-LD built from our own data with `<`
+// escaped by jsonLdString. dangerouslySetInnerHTML is safe here.
+const JS_FLAG = "document.documentElement.classList.add('js')";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full bg-[#0a0a0f] text-fg flex flex-col">
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-[#0a0a0f] focus:text-accent focus:border focus:border-accent/40 focus:rounded-lg"
-        >
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+      <head>
+        {/* Reveal styles are gated on this class: with no script, nothing is hidden. */}
+        <script dangerouslySetInnerHTML={{ __html: JS_FLAG }} />
+      </head>
+      <body>
+        <a href="#main" className="skip">
           Skip to content
         </a>
         <script
