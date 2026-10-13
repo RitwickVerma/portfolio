@@ -75,7 +75,8 @@ export default function ResumePage() {
 
       <main
         id="main"
-        className="max-w-3xl mx-auto px-6 py-12 text-fg/90 print:max-w-none print:p-0 print:text-[10pt] print:leading-snug"
+        tabIndex={-1}
+        className="focus:outline-none max-w-3xl mx-auto px-6 py-12 text-fg/90 print:max-w-none print:p-0 print:text-[10pt] print:leading-snug"
       >
         <header>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-fg print:text-[20pt]">
