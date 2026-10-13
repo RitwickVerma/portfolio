@@ -1,12 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
-import ClientShell from "@/components/ClientShell";
-import ShaderBackground from "@/components/ShaderBackground";
-import CursorGlow from "@/components/CursorGlow";
-import { PointerProvider } from "@/components/PointerProvider";
+import { SITE_URL } from "@/lib/data";
+import { SITE_TITLE, SITE_DESCRIPTION, personJsonLd, jsonLdString } from "@/lib/seo";
 import "./globals.css";
+
+const OG_ALT =
+  "Ritwick Verma — backend engineer at eBay. I build and self-host the systems I ship.";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,17 +18,30 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ritwick Verma — Software Engineer",
-  description:
-    "Software engineer at eBay. Builder of homelabs, quant bots, game engines, and Android apps. UC Irvine MCS.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_TITLE, template: "%s — Ritwick Verma" },
+  description: SITE_DESCRIPTION,
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "Ritwick Verma — Software Engineer",
-    description:
-      "Software engineer at eBay. Builder of homelabs, quant bots, game engines, and Android apps.",
-    url: "https://www.ritwickverma.dev",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: "/",
     siteName: "ritwickverma.dev",
     type: "website",
+    locale: "en_US",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: OG_ALT }],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [{ url: "/og.png", alt: OG_ALT }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0f",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -45,15 +57,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
-        <PointerProvider>
-        <ShaderBackground />
-        <CursorGlow />
-        <ClientShell>
-        <Nav />
-        <main id="main" className="flex-1">{children}</main>
-        <Footer />
-        </ClientShell>
-        </PointerProvider>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdString(personJsonLd()) }}
+        />
+        {children}
       </body>
     </html>
   );
