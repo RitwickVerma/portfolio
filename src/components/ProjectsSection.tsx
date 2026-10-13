@@ -130,21 +130,20 @@ function TiltCard({ project }: { project: ProjectData }) {
             ))}
           </ul>
 
-          {links.length > 0 && (
-            <div className="flex flex-wrap gap-x-5 gap-y-1">
-              {links.map((l) => (
-                <a
-                  key={l.label}
-                  href={l.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent text-sm hover:underline underline-offset-4"
-                >
-                  {project.title} on {l.label} →
-                </a>
-              ))}
-            </div>
-          )}
+          {/* Always rendered: cards without a public repo keep the row so chips line up. */}
+          <div className="flex flex-wrap gap-x-5 gap-y-1 min-h-5">
+            {links.map((l) => (
+              <a
+                key={l.label}
+                href={l.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent text-sm leading-5 hover:underline underline-offset-4"
+              >
+                {project.title} on {l.label} →
+              </a>
+            ))}
+          </div>
         </div>
       </motion.article>
     </div>
