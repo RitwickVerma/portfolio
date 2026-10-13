@@ -9,6 +9,7 @@ import { createNoise2D } from 'simplex-noise';
 import { sceneState } from '@/lib/sceneState';
 import { advancePhase, phaseProgress, type PhaseState } from '@/lib/phaseMachine';
 import { mulberry32 } from '@/lib/random';
+import { layoutLabels, placeLabel } from '@/lib/labels';
 
 // ─── Shared pointer + drag state ──────────────────────────────────────────
 
@@ -211,6 +212,20 @@ function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[],
   }
 }
 
+// At rest a machine that is on shows a login prompt, not a dead panel. Dim,
+// so the LEDs and labels still lead; the cursor blinks at 2 Hz.
+function drawIdle(ctx: CanvasRenderingContext2D, accent: string, logs: string[], cursorOn: boolean) {
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.22; ctx.fillRect(0, 0, 256, 36);
+  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 0.9;
+  ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
+  ctx.fillText(logs[0].split(' ')[0].toUpperCase(), 10, 18);
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.38;
+  ctx.font = '12px monospace';
+  ctx.fillText(logs[0], 10, 48);
+  if (cursorOn) ctx.fillText('_', 10 + ctx.measureText(logs[0] + ' ').width, 48);
+  ctx.globalAlpha = 1;
+}
+
 function drawGlitch(ctx: CanvasRenderingContext2D, accent: string, logs: string[]) {
   ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
   ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
@@ -242,6 +257,7 @@ function RackScreen({ accent, rackId, height }: { accent: string; rackId: string
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const texRef = useRef<THREE.CanvasTexture | null>(null);
+  const lastPhase = useRef(-1);
   const logs = useMemo(() => BOOT_LOGS[rackId] || [rackId + ' login:', '[  OK  ] system running', rackId + ':~# _'], [rackId]);
 
   useEffect(() => {
@@ -268,9 +284,17 @@ function RackScreen({ accent, rackId, height }: { accent: string; rackId: string
     const phase = sceneState._flashPhase;
     const p = sceneState._flashProgress;
 
+    // At rest only the cursor blink changes, twice a second: redraw on those
+    // ticks alone instead of re-uploading eight 256² textures every frame.
+    // Every live phase redraws each frame.
+    const blink = Math.floor(Date.now() / 500) % 2 === 0;
+    const idleKey = blink ? 0 : -2;
+    if (phase === 0 && lastPhase.current === idleKey) return;
+    lastPhase.current = phase === 0 ? idleKey : phase;
+
     ctx.clearRect(0, 0, 256, 256);
     ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, 256, 256);
-    if (phase === 0) { /* off — true black */ }
+    if (phase === 0) drawIdle(ctx, accent, logs, blink);
     else if (phase === 1) drawBoot(ctx, accent, logs, p, true);
     else if (phase === 2) drawBoot(ctx, accent, logs, 1.0, false);
     else if (phase === 3) drawGlitch(ctx, accent, logs);
@@ -365,46 +389,32 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
   );
 }
 
-// ─── Label safe area — clamp drei <Html> to the visible hero ───────────────
-// Below the fixed nav, clear of the bottom fade, and never past the canvas
-// edges (holds down to 360px viewports).
+// ─── Label placement — the rules live in lib/labels.ts (unit-tested) ──────
 
-const NAV_SAFE = 80;
-const BOTTOM_SAFE = 120;
-const EDGE_SAFE = 12;
-// The centred hero text block (name, value line, CTAs), as a half-size box
-// around the canvas centre. Labels over it are pushed out its nearest top/bottom edge.
-const TEXT_HALF_W = 330;
-const TEXT_HALF_H = 180;
-const TEXT_FEATHER = 140;
+type ScreenSize = { width: number; height: number };
+const LABEL_HALF_W = 78;
+const TOOLTIP_HALF_W = 96;
 
-function clampedPosition(halfWidth: number) {
-  const v = new THREE.Vector3();
-  return (obj: THREE.Object3D, camera: THREE.Camera, size: { width: number; height: number }): [number, number] => {
-    v.setFromMatrixPosition(obj.matrixWorld).project(camera);
-    const x = (v.x * size.width) / 2 + size.width / 2;
-    let y = (-v.y * size.height) / 2 + size.height / 2;
-    const cx = size.width / 2;
-    const cy = size.height / 2;
-    const hw = TEXT_HALF_W + halfWidth;
-    // Continuous push: a label over the text block slides out the nearest
-    // vertical edge, and the push fades to zero over TEXT_FEATHER px of
-    // horizontal distance — no teleporting as the scene turns.
-    const dy = y - cy;
-    const reach = (hw + TEXT_FEATHER - Math.abs(x - cx)) / TEXT_FEATHER;
-    const fx = Math.min(Math.max(reach, 0), 1);
-    if (fx > 0 && Math.abs(dy) < TEXT_HALF_H) {
-      const dir = dy < 0 ? -1 : 1;
-      y += dir * (TEXT_HALF_H - Math.abs(dy)) * fx;
-    }
-    const minX = EDGE_SAFE + halfWidth;
-    const maxX = Math.max(minX, size.width - EDGE_SAFE - halfWidth);
-    const maxY = Math.max(NAV_SAFE, size.height - BOTTOM_SAFE);
-    return [Math.min(Math.max(x, minX), maxX), Math.min(Math.max(y, NAV_SAFE), maxY)];
-  };
+function toScreen(v: THREE.Vector3, camera: THREE.Camera, size: ScreenSize): [number, number] {
+  v.project(camera);
+  return [(v.x * size.width) / 2 + size.width / 2, (-v.y * size.height) / 2 + size.height / 2];
 }
-const labelPosition = clampedPosition(78);
-const tooltipPosition = clampedPosition(96);
+
+// drei <Html calculatePosition> for the hover tooltip: a single label on its own.
+const tooltipVec = new THREE.Vector3();
+function tooltipPosition(obj: THREE.Object3D, camera: THREE.Camera, size: ScreenSize): [number, number] {
+  const [x, y] = toScreen(tooltipVec.setFromMatrixPosition(obj.matrixWorld), camera, size);
+  return placeLabel(x, y, TOOLTIP_HALF_W, size);
+}
+
+// drei anchors an <Html fullscreen> at its parent object's projection. Pin it
+// to the canvas centre so the overlay covers the canvas exactly instead of
+// bobbing with the datacenter group. drei only writes its z-index when that
+// position *changes*, so a pinned overlay must carry its own (wrapperClass);
+// without it the labels paint under the hero scrim.
+function canvasCentre(_obj: THREE.Object3D, _camera: THREE.Camera, size: ScreenSize): [number, number] {
+  return [size.width / 2, size.height / 2];
+}
 
 // One label style everywhere: near-opaque ground so the text never depends on
 // what the scene is doing behind it (≥ 9:1 even over a white pixel).
@@ -424,7 +434,7 @@ function LabelPill({ name, color }: { name: string; color: string }) {
 // they sit as one centred, wrapping row inside the page gutters under the nav.
 function NarrowLegend() {
   return (
-    <Html fullscreen zIndexRange={[7, 7]} style={{ pointerEvents: 'none' }}>
+    <Html fullscreen calculatePosition={canvasCentre} wrapperClass="z-[7]" zIndexRange={[7, 7]} style={{ pointerEvents: 'none' }}>
       <div className="pointer-events-none absolute left-6 right-6 top-[88px] flex flex-wrap items-center justify-center gap-2">
         {RACKS.filter((r) => r.core).map((r) => (
           <LabelPill key={r.id} name={r.name} color={r.warning ? WARN_ACCENT : r.gateway ? GATEWAY_ACCENT : ACCENT} />
@@ -434,7 +444,53 @@ function NarrowLegend() {
   );
 }
 
-// ─── Rack (body + screen + indicator + lights + label) ─────────────────────
+// From 768px up every rack carries its label. One overlay, one projection pass
+// per frame, and lib/labels lays them out together — so no label ever sits on
+// another or on the hero text, whichever way the scene has turned.
+function RackLabels({ root }: { root: React.RefObject<THREE.Group | null> }) {
+  const refs = useRef<Array<HTMLDivElement | null>>([]);
+  const vec = useMemo(() => new THREE.Vector3(), []);
+  const anchors = useMemo(() => RACKS.map(() => ({ x: 0, y: 0, halfWidth: LABEL_HALF_W })), []);
+
+  useFrame(({ camera, size }) => {
+    const g = root.current;
+    if (!g) return;
+    // CameraRig moved the camera this frame; refresh its inverse before projecting.
+    camera.updateMatrixWorld();
+    for (let i = 0; i < RACKS.length; i++) {
+      const r = RACKS[i];
+      const [x, y] = toScreen(vec.set(r.x, r.height + 0.5, r.z).applyMatrix4(g.matrixWorld), camera, size);
+      const a = anchors[i];
+      a.x = x;
+      a.y = y;
+      // Real pill width: reading offsetWidth is free here, nothing has dirtied layout.
+      const width = refs.current[i]?.offsetWidth;
+      a.halfWidth = width ? width / 2 : LABEL_HALF_W;
+    }
+    const placed = layoutLabels(anchors, size);
+    for (let i = 0; i < placed.length; i++) {
+      const el = refs.current[i];
+      if (el) el.style.transform = `translate3d(${placed[i][0]}px, ${placed[i][1]}px, 0) translate(-50%, -50%)`;
+    }
+  });
+
+  return (
+    <Html fullscreen calculatePosition={canvasCentre} wrapperClass="z-[7]" zIndexRange={[7, 7]} style={{ pointerEvents: 'none' }}>
+      {RACKS.map((r, i) => (
+        <div
+          key={r.id}
+          ref={(el) => { refs.current[i] = el; }}
+          className="absolute left-0 top-0 will-change-transform"
+          style={{ transform: 'translate3d(-1000px, -1000px, 0)' }}
+        >
+          <LabelPill name={r.name} color={r.warning ? WARN_ACCENT : r.gateway ? GATEWAY_ACCENT : ACCENT} />
+        </div>
+      ))}
+    </Html>
+  );
+}
+
+// ─── Rack (body + screen + indicator + lights + hover tooltip) ──────────────
 
 function Rack({ rack }: { rack: RackDef }) {
   const accent = rack.gateway ? GATEWAY_ACCENT : ACCENT;
@@ -443,7 +499,6 @@ function Rack({ rack }: { rack: RackDef }) {
   const halfH = h / 2;
   const [hovered, setHovered] = useState(false);
   const info = RACK_STATS[rack.id];
-  const narrow = useThree((st) => st.size.width < 768);
   return (
     <group
       position={[rack.x, 0, rack.z]}
@@ -461,11 +516,6 @@ function Rack({ rack }: { rack: RackDef }) {
           <RackLights accent={accent} rackId={rack.id} />
         </group>
       </group>
-      {!narrow && (
-        <Html position={[0, h + 0.5, 0]} center calculatePosition={labelPosition} zIndexRange={[7, 7]} style={{ pointerEvents: 'none' }}>
-          <LabelPill name={rack.name} color={rack.warning ? WARN_ACCENT : accent} />
-        </Html>
-      )}
       {hovered && info && (
         <Html position={[0, h + 1.45, 0]} center calculatePosition={tooltipPosition} zIndexRange={[60, 0]} style={{ pointerEvents: 'none' }} className="hidden sm:block">
           <div aria-hidden="true" className="pointer-events-none select-none whitespace-nowrap rounded-lg border border-accent/25 bg-[#0a0a0f]/90 px-3 py-2 backdrop-blur-md shadow-lg">
@@ -741,7 +791,10 @@ export function Datacenter() {
     flashState.current = advancePhase(fs, dt);
     sceneState._flashPhase = flashState.current.phase;
     sceneState._flashProgress = phaseProgress(flashState.current);
-  });
+    // Children project into screen space this frame (labels, tooltip): give
+    // them fresh world matrices now rather than the renderer's post-frame pass.
+    g.updateMatrixWorld(true);
+  }, -1); // negative priority: before every child, so they read this frame's rotation
   return (
     <group ref={group}>
       <mesh position={[0, -0.05, 0]}>
@@ -751,7 +804,7 @@ export function Datacenter() {
       {RACKS.map(rack => <Rack key={rack.id} rack={rack} />)}
       <Cables />
       <CablePulses />
-      {narrowScreen && <NarrowLegend />}
+      {narrowScreen ? <NarrowLegend /> : <RackLabels root={group} />}
     </group>
   );
 }
@@ -786,7 +839,7 @@ export default function HeroScene({ onReady }: { onReady?: () => void }) {
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
       camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }}
       onCreated={({ gl }) => { gl.domElement.tabIndex = -1; gl.domElement.style.outline = 'none'; onReady?.(); }}
-      style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f', cursor: 'none' }}
+      style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f' }}
     >
       <Suspense fallback={null}>
         <GrabHandler />

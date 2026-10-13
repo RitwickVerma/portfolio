@@ -70,30 +70,9 @@ export default function HomeContent() {
           style={{ opacity }}
           className="sticky top-0 h-screen overflow-hidden print:static print:h-auto"
         >
+          {/* Scene, poster and the text scrim: the scrim lives inside the wrapper so it
+              always sits between the canvas and the rack labels, whatever the fade is doing. */}
           <HeroSceneWrapper />
-
-          {/* Scrim: a calm, near-opaque field behind the whole text block (name, value
-              line, CTAs) that falls off to nothing, so the scene reads clearly around it.
-              Radii are px-clamped: on a 360px phone the block is nearly full-width. */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 pointer-events-none z-[5] print:hidden hidden sm:block"
-            style={{
-              background:
-                "radial-gradient(ellipse clamp(330px, 46vw, 760px) clamp(250px, 36vh, 400px) at 50% 50%, rgba(10,10,15,0.94) 0%, rgba(10,10,15,0.9) 58%, rgba(10,10,15,0.5) 80%, rgba(10,10,15,0) 100%)",
-            }}
-          />
-          {/* Phones: the text block spans the full width, so a desktop-strength scrim
-              blacks out the whole scene. Lighter core, tighter falloff — the large
-              white type still holds contrast, and the racks stay visible. */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 pointer-events-none z-[5] print:hidden sm:hidden"
-            style={{
-              background:
-                "radial-gradient(ellipse 62% 26% at 50% 50%, rgba(10,10,15,0.72) 0%, rgba(10,10,15,0.55) 60%, rgba(10,10,15,0) 100%)",
-            }}
-          />
 
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 px-6">
             <h1 className="text-display leading-[1.05] font-bold tracking-tight text-fg text-center">

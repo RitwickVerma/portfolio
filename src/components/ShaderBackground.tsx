@@ -84,8 +84,11 @@ export default function ShaderBackground() {
     <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
       <Canvas
         orthographic
+        // A soft full-viewport field: 1x is indistinguishable from 2x and costs
+        // a quarter of the fragment work on retina screens. No edges to smooth.
+        dpr={1}
         camera={{ position: [0, 0, 1], near: 0.1, far: 10, zoom: 1 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={{ antialias: false, alpha: true }}
         style={{ pointerEvents: "none", width: "100%", height: "100%" }}
       >
         <ShaderPlane />
