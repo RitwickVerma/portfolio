@@ -2,27 +2,24 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import HeroPoster from "@/components/HeroPoster";
 import { isWebGPUAvailable } from "@/lib/gpu";
+import { useIdleReady } from "@/lib/idle";
+import { EASE, DURATION } from "@/lib/motion";
 
 type RendererKind = "pending" | "webgpu" | "webgl2";
+type SceneProps = { onReady?: () => void };
 
-const Spinner = () => (
-  <div className="w-full h-full flex items-center justify-center">
-    <div className="w-8 h-8 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
-  </div>
-);
-
-const HeroSceneWebGL2 = dynamic(() => import("@/components/HeroScene"), {
+const HeroSceneWebGL2 = dynamic<SceneProps>(() => import("@/components/HeroScene"), {
   ssr: false,
-  loading: Spinner,
 });
 
-const HeroSceneWebGPU = dynamic(
+const HeroSceneWebGPU = dynamic<SceneProps>(
   () => import("@/components/HeroSceneWebGPU"),
-  { ssr: false, loading: Spinner },
+  { ssr: false },
 );
 
-function RendererPicker() {
+function RendererPicker({ onReady }: SceneProps) {
   const [kind, setKind] = useState<RendererKind>("pending");
 
   useEffect(() => {
@@ -47,15 +44,41 @@ function RendererPicker() {
     };
   }, []);
 
-  if (kind === "webgpu") return <HeroSceneWebGPU />;
-  if (kind === "webgl2") return <HeroSceneWebGL2 />;
-  return <Spinner />;
+  if (kind === "webgpu") return <HeroSceneWebGPU onReady={onReady} />;
+  if (kind === "webgl2") return <HeroSceneWebGL2 onReady={onReady} />;
+  return null;
 }
 
+/**
+ * The live scene (three.js, R3F, WebGPU) is a lazy chunk mounted after idle.
+ * Until its first frame the static poster fills the same box, so first paint
+ * is text + CSS and nothing moves when the canvas arrives.
+ */
 export default function HeroSceneWrapper() {
+  const idle = useIdleReady(800);
+  const [ready, setReady] = useState(false);
+  const ease = `cubic-bezier(${EASE.outExpo.join(",")})`;
+
   return (
     <div className="absolute inset-0">
-      <RendererPicker />
+      <div
+        className="absolute inset-0"
+        style={{
+          opacity: ready ? 0 : 1,
+          transition: `opacity ${DURATION.slow}s ${ease}`,
+        }}
+      >
+        <HeroPoster />
+      </div>
+      <div
+        className="absolute inset-0"
+        style={{
+          opacity: ready ? 1 : 0,
+          transition: `opacity ${DURATION.slow}s ${ease}`,
+        }}
+      >
+        {idle && <RendererPicker onReady={() => setReady(true)} />}
+      </div>
     </div>
   );
 }
