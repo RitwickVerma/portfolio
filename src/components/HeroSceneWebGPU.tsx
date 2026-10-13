@@ -22,9 +22,14 @@ import {
 import GPUParticleAirflow from '@/components/GPUParticleAirflow';
 import { capPixelRatio } from '@/lib/gpu';
 
-async function createWebGPURenderer(canvas: HTMLCanvasElement) {
+// R3F v9 calls the gl factory with its default props ({ canvas, ... }), NOT the
+// bare canvas. Passing the props object as `canvas` gave the renderer a fake
+// domElement: every frame threw "domElement.getContext is not a function" and
+// the scene never started (production bug, 2026-10-13). Keep the real type —
+// no `as unknown as` cast — so this cannot silently regress.
+async function createWebGPURenderer({ canvas }: { canvas: HTMLCanvasElement | OffscreenCanvas }) {
   const renderer = new WebGPURenderer({
-    canvas,
+    canvas: canvas as HTMLCanvasElement,
     antialias: true,
     forceWebGL: false,
   });
@@ -57,7 +62,7 @@ export default function HeroSceneWebGPU({ onReady }: { onReady?: () => void }) {
       flat
       dpr={[1, 2]}
       frameloop={inView ? 'always' : 'never'}
-      gl={createWebGPURenderer as unknown as ComponentProps<typeof Canvas>['gl']}
+      gl={createWebGPURenderer as unknown as NonNullable<ComponentProps<typeof Canvas>['gl']>}
       camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }}
       onCreated={({ gl }) => { gl.domElement.tabIndex = -1; gl.domElement.style.outline = 'none'; onReady?.(); }}
       style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f', cursor: 'none' }}

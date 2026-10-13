@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import HeroPoster from "@/components/HeroPoster";
-import { isWebGPUAvailable } from "@/lib/gpu";
+import { isWebGPUAvailable, webgpuOptIn } from "@/lib/gpu";
 import { useIdleReady } from "@/lib/idle";
 import { EASE, DURATION } from "@/lib/motion";
 
@@ -24,7 +24,10 @@ function RendererPicker({ onReady }: SceneProps) {
 
   useEffect(() => {
     let alive = true;
-    isWebGPUAvailable()
+    const probe = webgpuOptIn(window.location.search)
+      ? isWebGPUAvailable()
+      : Promise.resolve(false);
+    probe
       .then((ok) => {
         if (!alive) return;
         if (ok) {

@@ -15,6 +15,16 @@ type AdapterLike = {
 };
 
 /**
+ * WebGPU is OPT-IN (`?renderer=webgpu`) until it is verified on real GPUs.
+ * The default path is the proven WebGL2 scene. History: the WebGPU path shipped
+ * on 2026-10-13 untested on hardware and blanked the hero for every Chrome
+ * visitor with a GPU — headless smoke tests only ever exercised WebGL2.
+ */
+export function webgpuOptIn(search: string): boolean {
+  return new URLSearchParams(search).get('renderer') === 'webgpu';
+}
+
+/**
  * True when a usable WebGPU adapter AND device can be created.
  * Swallows every failure — callers fall back to WebGL2.
  */
