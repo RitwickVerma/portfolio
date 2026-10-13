@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import PrintButton from "@/components/PrintButton";
-import { experiences, education, projects, skills, socialLinks, hero } from "@/lib/data";
+import { CASES } from "@/lib/cases";
+import { education, experiences, projects, skills, socialLinks } from "@/lib/data";
 
 const DESCRIPTION =
-  "Résumé of Ritwick Verma — backend engineer at eBay. Experience, projects, education and skills.";
-
+  "Résumé of Ritwick Verma — backend engineer at eBay. Experience, selected work, education and skills.";
 const OG_ALT = "Resume — Ritwick Verma, backend engineer at eBay.";
 
 export const metadata: Metadata = {
@@ -31,129 +31,128 @@ export const metadata: Metadata = {
 
 const contact = [
   { label: socialLinks.email, href: `mailto:${socialLinks.email}` },
+  { label: "ritwickverma.dev", href: "https://www.ritwickverma.dev" },
   { label: "linkedin.com/in/ritwickverma", href: "https://www.linkedin.com/in/ritwickverma" },
   { label: "github.com/RitwickVerma", href: socialLinks.github },
-  { label: "gitlab.com/ritwick7", href: socialLinks.gitlab },
 ];
+
+// One line per case study for the printed page; each has a full write-up online.
+const SELECTED = [
+  {
+    title: "TV ambilight",
+    stack: "C++, Tizen, UDP",
+    line: "Headless service on a Samsung TV that reads the video plane through an undocumented native capture call and drives a 75-LED strip; profiling moved it from 8 to 46 fps.",
+  },
+  {
+    title: "Plutus",
+    stack: "Python, Alpaca, GitLab CI",
+    line: "Long-short equity bot with point-in-time backtests; ran 30+ falsification experiments and eight method rules that took a +149% backtest to an honest +0.57% out of sample.",
+  },
+  {
+    title: "Homelab",
+    stack: "Proxmox, Docker, Traefik, Authelia",
+    line: "Fifteen self-hosted services on one host behind an SSO gateway and VPN, with pinned images, nightly backups, health alerting and written postmortems.",
+  },
+];
+const OTHER = projects.filter((p) => ["shutup", "rpg-engine", "gesture-manager-x", "monster-sudoku", "solar-ev-daq"].includes(p.slug));
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-8 print:mt-3">
-      <h2 className="font-mono text-accent text-sm tracking-widest uppercase pb-2 mb-4 border-b border-white/[0.08] print:mb-1.5 print:pb-0.5 print:text-[9pt] print:border-black">
-        {title}
-      </h2>
+    <section className="rs-section">
+      <h2 className="rs-h2">{title}</h2>
       {children}
     </section>
   );
 }
 
-function Row({ left, right }: { left: React.ReactNode; right?: string }) {
-  return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-6">
-      <h3 className="text-fg font-medium">{left}</h3>
-      {right && <span className="font-mono text-xs text-muted print:text-[9pt]">{right}</span>}
-    </div>
-  );
-}
-
 export default function ResumePage() {
   return (
-    <div className="resume cursor-auto min-h-screen">
-      <div className="print:hidden border-b border-white/[0.06]">
-        <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
-          <Link href="/" className="font-mono text-sm text-accent hover:underline underline-offset-4">
-            ← ritwickverma.dev
+    <div className="rs">
+      <div className="rs-bar no-print">
+        <div className="frame" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 56, gap: 16 }}>
+          <Link href="/" className="label link">
+            ← Index
           </Link>
-          <div className="flex items-center gap-4">
-            <span className="hidden sm:inline text-xs text-muted">
-              Prints as one black-on-white page
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span className="label hide-xs">Prints as one page</span>
             <PrintButton />
           </div>
         </div>
       </div>
 
-      <main
-        id="main"
-        tabIndex={-1}
-        className="focus:outline-none max-w-3xl mx-auto px-6 py-12 text-fg/90 print:max-w-none print:p-0 print:text-[10pt] print:leading-snug"
-      >
-        <header>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-fg print:text-[20pt]">
-            {hero.name}
-          </h1>
-          <p className="mt-1 text-fg/80 print:mt-0">
-            {hero.line} {hero.lineTwo}
-          </p>
-          <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 w-fit font-mono text-sm print:mt-1 print:grid-cols-2 print:text-[9pt]">
+      <main id="main" tabIndex={-1} className="rs-page">
+        <header className="rs-head">
+          <div>
+            <h1 className="rs-name">Ritwick Verma</h1>
+            <p className="rs-title">Software engineer — backend · San Francisco, CA</p>
+          </div>
+          <ul className="rs-contact">
             {contact.map((c) => (
               <li key={c.href}>
-                <a href={c.href} className="text-accent hover:underline underline-offset-4">
-                  {c.label}
-                </a>
+                <a href={c.href} className="link">{c.label}</a>
               </li>
             ))}
           </ul>
         </header>
 
         <Section title="Experience">
-          <ul className="space-y-5 print:space-y-1.5">
-            {experiences.map((e) => (
-              <li key={e.company}>
-                <Row
-                  left={
-                    <>
-                      {e.role}, <span className="text-accent print:text-black">{e.company}</span>
-                      {e.location && <span className="text-muted font-normal"> · {e.location}</span>}
-                    </>
-                  }
-                  right={e.period}
-                />
-                <ul className="mt-1 space-y-1 list-disc pl-5 text-fg/80 text-sm print:mt-0 print:space-y-0 print:text-[10pt]">
-                  {e.description.map((d) => (
-                    <li key={d}>{d}</li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
+          {experiences.map((e) => (
+            <div key={e.company} className="rs-item">
+              <div className="rs-row">
+                <h3>
+                  {e.role}, <strong>{e.company}</strong>
+                  {e.location && <span className="rs-muted"> · {e.location}</span>}
+                </h3>
+                <span className="rs-date">{e.period}</span>
+              </div>
+              <ul className="rs-bullets">
+                {e.description.map((d) => (
+                  <li key={d}>{d}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </Section>
 
-        <Section title="Projects">
-          <ul className="space-y-3 print:space-y-1">
-            {projects.map((p) => (
-              <li key={p.slug} className="text-sm print:text-[10pt]">
-                <span className="text-fg font-medium">{p.title}</span>{" "}
-                <span className="font-mono text-xs text-fg/70 print:text-[9pt]">
-                  ({p.tech.join(", ")})
-                </span>{" "}
-                — {p.description}{" "}
-                <span className="text-fg/80">
-                  {p.metric.value} {p.metric.label}.
-                </span>
-              </li>
-            ))}
-          </ul>
+        <Section title="Selected work">
+          {SELECTED.map((s, i) => (
+            <div key={s.title} className="rs-item">
+              <div className="rs-row">
+                <h3>
+                  <strong>{s.title}</strong> <span className="rs-muted">({s.stack})</span>
+                </h3>
+                <a className="rs-date link no-print-link" href={`/work/${CASES[i].slug}/`}>case study</a>
+              </div>
+              <p className="rs-line">{s.line}</p>
+            </div>
+          ))}
+          {OTHER.map((p) => (
+            <div key={p.slug} className="rs-item">
+              <p className="rs-line">
+                <strong>{p.title}</strong> <span className="rs-muted">({p.tech.join(", ")})</span> — {p.description}{" "}
+                {p.metric.value} {p.metric.label}.
+              </p>
+            </div>
+          ))}
         </Section>
 
         <Section title="Education">
-          <ul className="space-y-3 print:space-y-1">
-            {education.map((ed) => (
-              <li key={ed.school}>
-                <Row left={ed.school} right={ed.period} />
-                <p className="text-sm text-fg/70 print:text-[10pt]">{ed.degree}</p>
-              </li>
-            ))}
-          </ul>
+          {education.map((ed) => (
+            <div key={ed.school} className="rs-edu rs-item">
+              <h3 style={{ fontSize: "inherit", fontWeight: 600 }}>{ed.school}</h3>
+              <span className="rs-date">{ed.period}</span>
+              <p>{ed.degree}</p>
+            </div>
+          ))}
         </Section>
 
         <Section title="Skills">
-          <dl className="grid grid-cols-[7rem_1fr] gap-x-4 gap-y-1 text-sm print:text-[10pt] print:gap-y-0">
-            <dt className="text-muted">Languages</dt>
+          <dl className="rs-skills">
+            <dt>Languages</dt>
             <dd>{skills.languages.join(", ")}</dd>
-            <dt className="text-muted">Domains</dt>
+            <dt>Domains</dt>
             <dd>{skills.domains.join(", ")}</dd>
-            <dt className="text-muted">Tools</dt>
+            <dt>Tools</dt>
             <dd>{skills.tools.join(", ")}</dd>
           </dl>
         </Section>
