@@ -150,7 +150,7 @@ export function SceneFog() {
 
 // ─── Rack definitions — asymmetric positions, no perfect grid ─────────────
 
-// `core` racks keep their label on narrow screens (< 768px shows two, at opposite ends).
+// `core` racks form the mobile legend row (< 768px shows these two).
 type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean; warning?: boolean; core?: boolean };
 
 const RACKS: RackDef[] = [
@@ -372,9 +372,11 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
 const NAV_SAFE = 80;
 const BOTTOM_SAFE = 120;
 const EDGE_SAFE = 12;
-// Half-height of the centred hero text block on narrow screens; labels snap
-// to its nearest edge instead of printing over the name.
-const TEXT_BAND_HALF = 170;
+// The centred hero text block (name, value line, CTAs), as a half-size box
+// around the canvas centre. Labels over it are pushed out its nearest top/bottom edge.
+const TEXT_HALF_W = 330;
+const TEXT_HALF_H = 180;
+const TEXT_FEATHER = 140;
 
 function clampedPosition(halfWidth: number) {
   const v = new THREE.Vector3();
@@ -382,9 +384,18 @@ function clampedPosition(halfWidth: number) {
     v.setFromMatrixPosition(obj.matrixWorld).project(camera);
     const x = (v.x * size.width) / 2 + size.width / 2;
     let y = (-v.y * size.height) / 2 + size.height / 2;
-    if (size.width < 768) {
-      const mid = size.height / 2;
-      if (Math.abs(y - mid) < TEXT_BAND_HALF) y = y < mid ? mid - TEXT_BAND_HALF : mid + TEXT_BAND_HALF;
+    const cx = size.width / 2;
+    const cy = size.height / 2;
+    const hw = TEXT_HALF_W + halfWidth;
+    // Continuous push: a label over the text block slides out the nearest
+    // vertical edge, and the push fades to zero over TEXT_FEATHER px of
+    // horizontal distance — no teleporting as the scene turns.
+    const dy = y - cy;
+    const reach = (hw + TEXT_FEATHER - Math.abs(x - cx)) / TEXT_FEATHER;
+    const fx = Math.min(Math.max(reach, 0), 1);
+    if (fx > 0 && Math.abs(dy) < TEXT_HALF_H) {
+      const dir = dy < 0 ? -1 : 1;
+      y += dir * (TEXT_HALF_H - Math.abs(dy)) * fx;
     }
     const minX = EDGE_SAFE + halfWidth;
     const maxX = Math.max(minX, size.width - EDGE_SAFE - halfWidth);
@@ -392,8 +403,36 @@ function clampedPosition(halfWidth: number) {
     return [Math.min(Math.max(x, minX), maxX), Math.min(Math.max(y, NAV_SAFE), maxY)];
   };
 }
-const labelPosition = clampedPosition(72);
+const labelPosition = clampedPosition(78);
 const tooltipPosition = clampedPosition(96);
+
+// One label style everywhere: near-opaque ground so the text never depends on
+// what the scene is doing behind it (≥ 9:1 even over a white pixel).
+function LabelPill({ name, color }: { name: string; color: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/25 bg-[#0a0a0f]/90 px-2.5 py-1"
+    >
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }} />
+      <span className="text-xs font-medium tracking-wider text-zinc-100">{name}</span>
+    </div>
+  );
+}
+
+// Below 768px the labels don't chase the racks (they'd land on the text);
+// they sit as one centred, wrapping row inside the page gutters under the nav.
+function NarrowLegend() {
+  return (
+    <Html fullscreen zIndexRange={[7, 7]} style={{ pointerEvents: 'none' }}>
+      <div className="pointer-events-none absolute left-6 right-6 top-[88px] flex flex-wrap items-center justify-center gap-2">
+        {RACKS.filter((r) => r.core).map((r) => (
+          <LabelPill key={r.id} name={r.name} color={r.warning ? WARN_ACCENT : r.gateway ? GATEWAY_ACCENT : ACCENT} />
+        ))}
+      </div>
+    </Html>
+  );
+}
 
 // ─── Rack (body + screen + indicator + lights + label) ─────────────────────
 
@@ -422,12 +461,9 @@ function Rack({ rack }: { rack: RackDef }) {
           <RackLights accent={accent} rackId={rack.id} />
         </group>
       </group>
-      {(!narrow || rack.core) && (
-        <Html position={[0, h + 0.5, 0]} center calculatePosition={labelPosition} zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
-          <div aria-hidden="true" className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: rack.warning ? WARN_ACCENT : accent, boxShadow: `0 0 6px ${rack.warning ? WARN_ACCENT : accent}` }} />
-            <span className="text-[11px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
-          </div>
+      {!narrow && (
+        <Html position={[0, h + 0.5, 0]} center calculatePosition={labelPosition} zIndexRange={[7, 7]} style={{ pointerEvents: 'none' }}>
+          <LabelPill name={rack.name} color={rack.warning ? WARN_ACCENT : accent} />
         </Html>
       )}
       {hovered && info && (
@@ -656,6 +692,7 @@ function CablePulses() {
 export function Datacenter() {
   const group = useRef<THREE.Group>(null);
   const { gl } = useThree();
+  const narrowScreen = useThree((st) => st.size.width < 768);
   const flashState = useRef<PhaseState>({ phase: 0, timer: 0 });
   const lastClick = useRef(0);
   useEffect(() => {
@@ -714,6 +751,7 @@ export function Datacenter() {
       {RACKS.map(rack => <Rack key={rack.id} rack={rack} />)}
       <Cables />
       <CablePulses />
+      {narrowScreen && <NarrowLegend />}
     </group>
   );
 }
