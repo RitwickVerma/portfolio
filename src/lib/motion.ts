@@ -63,7 +63,7 @@ export const MOTION = {
   fadeUp: (delay = 0, distance = 40) => ({
     initial: { opacity: 0, y: distance },
     whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, amount: 0.25 } as const,
+    viewport: { once: true, amount: "some" } as const,
     transition: { duration: DURATION.base, delay, ease: EASE.outExpo },
   }),
 } as const;
