@@ -14,6 +14,23 @@ import { sceneState } from "@/lib/sceneState";
 import { EASE } from "@/lib/motion";
 import { hero, socialLinks } from "@/lib/data";
 
+/**
+ * Keeps an em dash from starting a line (nbsp before it) and "self-host" from
+ * splitting at its hyphen. Plain string in, nodes out; the data stays plain.
+ */
+function glueDashes(text: string): React.ReactNode {
+  const glue = (t: string) => t.replace(/ — /g, "\u00A0— ");
+  const [pre, post] = text.split("self-host");
+  if (post === undefined) return glue(text);
+  return (
+    <>
+      {glue(pre)}
+      <span className="whitespace-nowrap">self-host</span>
+      {glue(post)}
+    </>
+  );
+}
+
 /** One masked line of the hero reveal — per line, never per word. CSS-driven so text never waits on JS. */
 function Line({ i, className, children }: { i: number; className?: string; children: React.ReactNode }) {
   return (
@@ -55,13 +72,15 @@ export default function HomeContent() {
         >
           <HeroSceneWrapper />
 
-          {/* Scrim: keeps the name readable over whatever the scene is doing. */}
+          {/* Scrim: a calm, near-opaque field behind the whole text block (name, value
+              line, CTAs) that falls off to nothing, so the scene reads clearly around it.
+              Radii are px-clamped: on a 360px phone the block is nearly full-width. */}
           <div
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none z-[5] print:hidden"
             style={{
               background:
-                "radial-gradient(ellipse 60% 42% at 50% 50%, rgba(10,10,15,0.84) 0%, rgba(10,10,15,0.6) 45%, rgba(10,10,15,0) 100%)",
+                "radial-gradient(ellipse clamp(330px, 46vw, 760px) clamp(250px, 36vh, 400px) at 50% 50%, rgba(10,10,15,0.94) 0%, rgba(10,10,15,0.9) 58%, rgba(10,10,15,0.5) 80%, rgba(10,10,15,0) 100%)",
             }}
           />
 
@@ -69,14 +88,13 @@ export default function HomeContent() {
             <h1 className="text-display leading-[1.05] font-bold tracking-tight text-fg text-center">
               <Line i={0}>{hero.name}</Line>
             </h1>
-            <p className="mt-5 text-center text-balance text-xl sm:text-3xl font-medium tracking-tight text-fg">
-              <Line i={1}>{hero.line}</Line>
-              <Line i={2} className="text-fg/80">
-                {hero.lineTwo}
+            <p className="mt-5 text-center text-balance text-xl sm:text-3xl tracking-tight">
+              <Line i={1} className="font-semibold text-fg">
+                {hero.line}
               </Line>
-            </p>
-            <p className="mt-4 font-mono text-xs sm:text-sm text-muted text-center">
-              <Line i={3}>{hero.roles}</Line>
+              <Line i={2} className="font-normal text-fg/75">
+                {glueDashes(hero.lineTwo)}
+              </Line>
             </p>
 
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-9 pointer-events-auto">
@@ -88,7 +106,7 @@ export default function HomeContent() {
               </Magnetic>
               <Link
                 href={socialLinks.resume}
-                className="px-6 py-2.5 rounded-lg border border-white/20 text-fg text-sm hover:border-accent/50 hover:text-accent transition-colors"
+                className="px-6 py-2.5 rounded-lg border border-fg/60 text-fg text-sm hover:border-accent hover:text-accent transition-colors"
               >
                 Resume
               </Link>
