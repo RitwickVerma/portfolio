@@ -150,42 +150,43 @@ export function SceneFog() {
 
 // ─── Rack definitions — asymmetric positions, no perfect grid ─────────────
 
-type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean; warning?: boolean };
+// `core` racks keep their label on narrow screens (< 768px shows fewer).
+type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean; warning?: boolean; core?: boolean };
 
 const RACKS: RackDef[] = [
-  { id: 'VM110', name: 'VM110 Gateway',  x: -3.20, z: -1.30, height: 2.5, gateway: true },
-  { id: 'CT101', name: 'CT101 Hermes',    x: -1.00, z: -1.20, height: 2.2 },
+  { id: 'VM110', name: 'VM110 Gateway',  x: -3.20, z: -1.30, height: 2.5, gateway: true, core: true },
+  { id: 'CT101', name: 'CT101 Hermes',    x: -1.00, z: -1.20, height: 2.2, core: true },
   { id: 'CT102', name: 'CT102 DNS',       x:  1.15, z: -1.28, height: 1.9 },
-  { id: 'CT104', name: 'CT104 Vaultwarden',x:  3.35, z: -1.15, height: 1.8, warning: true },
-  { id: 'CT106', name: 'CT106 Immich',    x: -3.15, z:  1.20, height: 2.3 },
+  { id: 'CT104', name: 'CT104 Vaultwarden',x:  3.35, z: -1.15, height: 1.8, warning: true, core: true },
+  { id: 'CT106', name: 'CT106 Immich',    x: -3.15, z:  1.20, height: 2.3, core: true },
   { id: 'CT107', name: 'CT107 Paperless',  x: -1.05, z:  1.30, height: 2.0 },
-  { id: 'CT111', name: 'CT111 Jellyfin',   x:  1.20, z:  1.18, height: 2.4 },
+  { id: 'CT111', name: 'CT111 Remux',      x:  1.20, z:  1.18, height: 2.4 },
   { id: 'CT113', name: 'CT113 Syncthing',  x:  3.28, z:  1.35, height: 1.8 },
 ];
 
 // ─── Rack screen (canvas texture — dynamic boot/log/glitch during flash) ───
 
 const BOOT_LOGS: Record<string, string[]> = {
-  VM110: ['VM110 login:', '[  OK  ] Traefik v3.6  ▸ active', '[  OK  ] Authelia OIDC ▸ ok', '[  OK  ] Headscale VPN ▸ up', '[  OK  ] WAN: 2.3 Gbps', 'VM110:~# _'],
-  CT101: ['CT101 login:', '[  OK  ] Hermes Agent ▸ live', '[  OK  ] deepseek-v4 ▸ loaded', '[  OK  ] Skills: 112 loaded', '[  OK  ] Memory: 2.1GB', 'CT101:~# _'],
-  CT102: ['CT102 login:', '[  OK  ] Pi-hole v6  ▸ active', '[  OK  ] Queries: 4.2k/h', '[  OK  ] Blocked: 23.1%', '[  OK  ] Cache hit: 89%', 'CT102:~# _'],
-  CT104: ['CT104 login:', '[  OK  ] Vaultwarden ▸ locked', '[  OK  ] Users: 2 enrolled', '[  OK  ] TOTP keys: 7', '[  OK  ] Last sync: 2 min', 'CT104:~# _'],
-  CT106: ['CT106 login:', '[  OK  ] Immich ▸ running', '[  OK  ] Photos: 12,847', '[  OK  ] ML: mobilenet ▸ idle', '[  OK  ] Backup: up to date', 'CT106:~# _'],
-  CT107: ['CT107 login:', '[  OK  ] Paperless-ngx ▸ up', '[  OK  ] Docs indexed: 2,103', '[  OK  ] Inbox: 14 unread', '[  OK  ] OCR: idle', 'CT107:~# _'],
-  CT111: ['CT111 login:', '[  OK  ] Jellyfin ▸ running', '[  OK  ] Library: 1.2 TB', '[  OK  ] Active streams: 0', '[  OK  ] Real-Debrid: ok', 'CT111:~# _'],
-  CT113: ['CT113 login:', '[  OK  ] Syncthing ▸ up', '[  OK  ] Peers: 5 online', '[  OK  ] Folders: 12 synced', '[  OK  ] Uptime: 14 days', 'CT113:~# _'],
+  VM110: ['VM110 login:', '[  OK  ] Traefik v3 ▸ active', '[  OK  ] Authelia OIDC ▸ ok', '[  OK  ] Headscale VPN ▸ up', '[  OK  ] CrowdSec ▸ active', 'VM110:~# _'],
+  CT101: ['CT101 login:', '[  OK  ] Hermes Agent ▸ live', '[  OK  ] SearXNG ▸ up', '[  OK  ] State DB ▸ SQLite', '[  OK  ] Cron ▸ scheduled', 'CT101:~# _'],
+  CT102: ['CT102 login:', '[  OK  ] Technitium ▸ active', '[  OK  ] Upstream ▸ DoH x3', '[  OK  ] Blocklists ▸ Hagezi x2', '[  OK  ] DHCP ▸ active', 'CT102:~# _'],
+  CT104: ['CT104 login:', '[  OK  ] Vaultwarden ▸ up', '[  OK  ] Watchtower ▸ up', '[  OK  ] TLS ▸ wildcard cert', '[  OK  ] Backup ▸ nightly', 'CT104:~# _'],
+  CT106: ['CT106 login:', '[  OK  ] Immich ▸ running', '[  OK  ] PostgreSQL ▸ ok', '[  OK  ] Redis ▸ ok', '[  OK  ] ML ▸ ready', 'CT106:~# _'],
+  CT107: ['CT107 login:', '[  OK  ] Paperless-ngx ▸ up', '[  OK  ] Redis ▸ ok', '[  OK  ] Gotenberg ▸ ok', '[  OK  ] Wake ▸ on demand', 'CT107:~# _'],
+  CT111: ['CT111 login:', '[  OK  ] Remux ▸ running', '[  OK  ] Media server ▸ up', '[  OK  ] Docker ▸ ok', '[  OK  ] Backup ▸ nightly', 'CT111:~# _'],
+  CT113: ['CT113 login:', '[  OK  ] Syncthing ▸ up', '[  OK  ] Mode ▸ peer-to-peer', '[  OK  ] Runtime ▸ systemd', '[  OK  ] Backup ▸ nightly', 'CT113:~# _'],
 };
 
 // Hover-inspection stats — real service data, concise (pairs with BOOT_LOGS).
 const RACK_STATS: Record<string, { role: string; stats: string[] }> = {
-  VM110: { role: 'Gateway', stats: ['Traefik v3.6 · active', 'Authelia OIDC · ok', 'WAN 2.3 Gbps'] },
-  CT101: { role: 'Hermes Agent', stats: ['deepseek-v4 · loaded', '112 skills', '3 sessions'] },
-  CT102: { role: 'DNS / DHCP', stats: ['Pi-hole v6 · active', '4.2k queries/h', '23.1% blocked'] },
-  CT104: { role: 'Vaultwarden', stats: ['2 users', '7 TOTP keys', 'last sync 2m'] },
-  CT106: { role: 'Immich', stats: ['12,847 photos', 'mobilenet · idle', 'backup current'] },
-  CT107: { role: 'Paperless-ngx', stats: ['2,103 docs', '14 unread', 'OCR idle'] },
-  CT111: { role: 'Jellyfin', stats: ['1.2 TB library', '0 streams', 'Real-Debrid ok'] },
-  CT113: { role: 'Syncthing', stats: ['5 peers online', '12 folders', '14d uptime'] },
+  VM110: { role: 'Gateway', stats: ['Traefik v3 · Authelia SSO', 'Headscale VPN', 'CrowdSec'] },
+  CT101: { role: 'Hermes Agent', stats: ['Self-hosted AI agent', 'SearXNG search', 'SQLite state'] },
+  CT102: { role: 'DNS / DHCP', stats: ['Technitium', 'DoH upstreams', 'Hagezi blocklists'] },
+  CT104: { role: 'Vaultwarden', stats: ['Password manager', 'Docker + Watchtower', 'Nightly backup'] },
+  CT106: { role: 'Immich', stats: ['Photo + video backup', 'ML search', 'PostgreSQL + Redis'] },
+  CT107: { role: 'Paperless-ngx', stats: ['Document management', 'OCR', 'Woken on demand'] },
+  CT111: { role: 'Remux', stats: ['Media server', 'Docker', 'Nightly backup'] },
+  CT113: { role: 'Syncthing', stats: ['Peer-to-peer file sync', 'systemd service', 'Nightly backup'] },
 };
 
 function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[], progress: number, flicker: boolean) {
@@ -233,9 +234,6 @@ function drawGlitch(ctx: CanvasRenderingContext2D, accent: string, logs: string[
   if (Math.random() < 0.4) {
     ctx.fillStyle = 'rgba(' + (Math.random()>0.5?'255':'0') + ',' + (Math.random()>0.5?'255':'0') + ',' + (Math.random()>0.5?'255':'0') + ',0.15)';
     ctx.fillRect(Math.random() * 200, Math.random() * 200, Math.random() * 60, Math.random() * 20);
-  }
-  for (let y = 0; y < 256; y += 8) {
-    ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fillRect(0, y, 256, 1);
   }
 }
 
@@ -367,6 +365,29 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
   );
 }
 
+// ─── Label safe area — clamp drei <Html> to the visible hero ───────────────
+// Below the fixed nav, clear of the bottom fade, and never past the canvas
+// edges (holds down to 360px viewports).
+
+const NAV_SAFE = 80;
+const BOTTOM_SAFE = 120;
+const EDGE_SAFE = 12;
+
+function clampedPosition(halfWidth: number) {
+  const v = new THREE.Vector3();
+  return (obj: THREE.Object3D, camera: THREE.Camera, size: { width: number; height: number }): [number, number] => {
+    v.setFromMatrixPosition(obj.matrixWorld).project(camera);
+    const x = (v.x * size.width) / 2 + size.width / 2;
+    const y = (-v.y * size.height) / 2 + size.height / 2;
+    const minX = EDGE_SAFE + halfWidth;
+    const maxX = Math.max(minX, size.width - EDGE_SAFE - halfWidth);
+    const maxY = Math.max(NAV_SAFE, size.height - BOTTOM_SAFE);
+    return [Math.min(Math.max(x, minX), maxX), Math.min(Math.max(y, NAV_SAFE), maxY)];
+  };
+}
+const labelPosition = clampedPosition(72);
+const tooltipPosition = clampedPosition(96);
+
 // ─── Rack (body + screen + indicator + lights + label) ─────────────────────
 
 function Rack({ rack }: { rack: RackDef }) {
@@ -376,6 +397,7 @@ function Rack({ rack }: { rack: RackDef }) {
   const halfH = h / 2;
   const [hovered, setHovered] = useState(false);
   const info = RACK_STATS[rack.id];
+  const narrow = useThree((st) => st.size.width < 768);
   return (
     <group
       position={[rack.x, 0, rack.z]}
@@ -393,21 +415,23 @@ function Rack({ rack }: { rack: RackDef }) {
           <RackLights accent={accent} rackId={rack.id} />
         </group>
       </group>
-      <Html position={[0, h + 0.5, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }} className="hidden sm:block">
-        <div className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: rack.warning ? WARN_ACCENT : accent, boxShadow: `0 0 6px ${rack.warning ? WARN_ACCENT : accent}` }} />
-          <span className="text-[10px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
-        </div>
-      </Html>
+      {(!narrow || rack.core) && (
+        <Html position={[0, h + 0.5, 0]} center calculatePosition={labelPosition} zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
+          <div className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: rack.warning ? WARN_ACCENT : accent, boxShadow: `0 0 6px ${rack.warning ? WARN_ACCENT : accent}` }} />
+            <span className="text-[11px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
+          </div>
+        </Html>
+      )}
       {hovered && info && (
-        <Html position={[0, h + 1.45, 0]} center zIndexRange={[60, 0]} style={{ pointerEvents: 'none' }} className="hidden sm:block">
+        <Html position={[0, h + 1.45, 0]} center calculatePosition={tooltipPosition} zIndexRange={[60, 0]} style={{ pointerEvents: 'none' }} className="hidden sm:block">
           <div className="pointer-events-none select-none whitespace-nowrap rounded-lg border border-accent/25 bg-[#0a0a0f]/90 px-3 py-2 backdrop-blur-md shadow-lg">
             <div className="flex items-center gap-2 mb-1.5">
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
-              <span className="text-[10px] font-mono tracking-wider text-accent uppercase">{info.role}</span>
+              <span className="text-[11px] font-mono tracking-wider text-accent uppercase">{info.role}</span>
             </div>
             {info.stats.map((s) => (
-              <div key={s} className="text-[10px] font-mono text-zinc-400 leading-relaxed">{s}</div>
+              <div key={s} className="text-[11px] font-mono text-zinc-400 leading-relaxed">{s}</div>
             ))}
           </div>
         </Html>
@@ -692,7 +716,7 @@ export function Datacenter() {
 //          cursor → interaction, datacenter → physical object
 // ════════════════════════════════════════════════════════════════════════════
 
-export default function HeroScene() {
+export default function HeroScene({ onReady }: { onReady?: () => void }) {
   initPointer();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
@@ -716,7 +740,7 @@ export default function HeroScene() {
       frameloop={inView ? 'always' : 'never'}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
       camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }}
-      onCreated={({ gl }) => { gl.domElement.tabIndex = -1; gl.domElement.style.outline = 'none'; }}
+      onCreated={({ gl }) => { gl.domElement.tabIndex = -1; gl.domElement.style.outline = 'none'; onReady?.(); }}
       style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f', cursor: 'none' }}
     >
       <Suspense fallback={null}>

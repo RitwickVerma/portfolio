@@ -1,127 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
+import { ANSI, PROMPT, WELCOME, COMMAND_NAMES, commandOutputs } from "@/lib/terminal";
 
-/* ------------------------------------------------------------------ */
-/* Terminal constants                                                  */
-/* ------------------------------------------------------------------ */
-
-const ANSI = {
-  reset: "\x1b[0m",
-  green: "\x1b[92m",
-  yellow: "\x1b[93m",
-  red: "\x1b[91m",
-  dim: "\x1b[90m",
-};
-
-const PROMPT = `${ANSI.green}ritwick@portfolio${ANSI.reset}:${ANSI.yellow}~${ANSI.reset}$ `;
-
-const ASCII_ART = [
-  "██████╗ ██╗ ███████╗ ██╗    ██╗ ██╗  ██████╗ ██╗  ██╗",
-  "██╔══██╗ ██║ ╚══██╔═╝ ██║    ██║ ██║ ██╔════╝ ██║ ██╔╝",
-  "██████╔╝ ██║    ██║ ██║ █╗ ██║ ██║ ██║     █████╔╝",
-  "██╔══██╗ ██║    ██║ ██║███╗██║ ██║ ██║     ██╔═██╗",
-  "██║  ██║ ██║    ██║ ╚███╔███╔╝ ██║ ╚██████╗ ██║  ██╗",
-  "╚═╝  ╚═╝ ╚═╝    ╚═╝  ╚══╝╚══╝ ╚═╝  ╚═════╝ ╚═╝  ╚═╝",
-].join("\r\n");
-
-const WELCOME = `${ANSI.green}${ASCII_ART}${ANSI.reset}\r\nWelcome to my terminal. Type 'help' for available commands.\r\n`;
-
-const COMMAND_NAMES = [
-  "help",
-  "whoami",
-  "projects",
-  "homelab",
-  "skills",
-  "experience",
-  "resume",
-  "contact",
-  "neofetch",
-  "matrix",
-  "clear",
-];
-
-const COMMAND_OUTPUTS: Record<string, string> = {
-  help:
-    `${ANSI.green}Available commands:${ANSI.reset}\r\n` +
-    "  help        Show this help message\r\n" +
-    "  whoami      About me\r\n" +
-    "  projects    Featured projects\r\n" +
-    "  homelab     Homelab services\r\n" +
-    "  skills      Skills by category\r\n" +
-    "  experience  Career timeline\r\n" +
-    "  resume      Resume download link\r\n" +
-    "  contact     Get in touch\r\n" +
-    "  neofetch    System info\r\n" +
-    "  matrix      Easter egg — don't press it\r\n" +
-    "  clear       Clear the terminal\r\n",
-
-  whoami:
-    `${ANSI.green}Ritwick Verma${ANSI.reset} — software engineer at eBay (San Francisco).\r\n` +
-    "MCS from UC Irvine. Built ShutUp (26k+ downloads) and a quant trading bot,\r\n" +
-    `and runs a 15-service homelab on Proxmox + Debian + Traefik.\r\n`,
-
-  projects:
-    `${ANSI.green}${"ShutUp".padEnd(24)}${ANSI.reset}Android gesture-based telephony — 26k+ downloads\r\n` +
-    `${ANSI.green}${"Plutus Bot".padEnd(24)}${ANSI.reset}Quant trading system — Python, Alpaca, live + backtest\r\n` +
-    `${ANSI.green}${"RPG Engine".padEnd(24)}${ANSI.reset}Custom game engine — C++ / SDL2\r\n` +
-    `${ANSI.green}${"Homelab".padEnd(24)}${ANSI.reset}15 services — Debian / Proxmox / Traefik\r\n` +
-    `${ANSI.green}${"Monster Sudoku Solver".padEnd(24)}${ANSI.reset}AI constraint-satisfaction solver — UC Irvine\r\n` +
-    `${ANSI.green}${"Solar EV DAQ".padEnd(24)}${ANSI.reset}Arduino + RPi + Firebase data acquisition\r\n`,
-
-  homelab:
-    `${ANSI.yellow}${"Service".padEnd(18)}${"Status".padEnd(12)}Purpose${ANSI.reset}\r\n` +
-    `${ANSI.green}${"VM110 Gateway".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}Debian gateway — Traefik + Authelia\r\n` +
-    `${ANSI.green}${"CT101 Hermes".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}AI agent host\r\n` +
-    `${ANSI.green}${"CT102 DNS".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}Technitium DNS\r\n` +
-    `${ANSI.green}${"CT104 Vaultwarden".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}Password manager\r\n` +
-    `${ANSI.green}${"CT106 Immich".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}Photo library\r\n` +
-    `${ANSI.green}${"CT107 Paperless".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}Document management\r\n` +
-    `${ANSI.green}${"CT111 Jellyfin".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}Media server\r\n` +
-    `${ANSI.green}${"CT113 Syncthing".padEnd(18)}${ANSI.reset}${ANSI.green}${"running".padEnd(12)}${ANSI.reset}File sync\r\n`,
-
-  skills:
-    `${ANSI.yellow}Languages${ANSI.reset}  C++  C  Python  Java  TypeScript  JavaScript  Kotlin\r\n` +
-    `${ANSI.yellow}Domains${ANSI.reset}     Backend  Android  Game Dev  AI/ML  DevOps  Embedded\r\n` +
-    `${ANSI.yellow}Tools${ANSI.reset}       Docker  Proxmox  Debian  Traefik  Git  Linux\r\n`,
-
-  experience:
-    `${ANSI.green}${"2021 — Present".padEnd(14)}${ANSI.reset}Software Engineer @ eBay\r\n` +
-    `${ANSI.green}${"2020".padEnd(14)}${ANSI.reset}Software Dev Intern @ Shoelace Wireless\r\n` +
-    `${ANSI.green}${"2019 — 2020".padEnd(14)}${ANSI.reset}MCS Computer Science @ UC Irvine\r\n` +
-    `${ANSI.green}${"2018".padEnd(14)}${ANSI.reset}Software Dev Intern @ Advanced Structures India\r\n` +
-    `${ANSI.green}${"2017".padEnd(14)}${ANSI.reset}Software Dev Intern @ BHEL\r\n`,
-
-  resume:
-    `${ANSI.green}Resume:${ANSI.reset} https://raw.githubusercontent.com/RitwickVerma/Resume/master/resume_ATS-letter.pdf\r\n`,
-
-  contact:
-    `${ANSI.green}Email:${ANSI.reset}    verma1997@gmail.com\r\n` +
-    `${ANSI.green}GitHub:${ANSI.reset}   https://github.com/RitwickVerma\r\n` +
-    `${ANSI.green}GitLab:${ANSI.reset}   https://gitlab.com/ritwick7\r\n` +
-    `${ANSI.green}Support:${ANSI.reset}  https://buycovfefefor.ritwickverma.dev\r\n` +
-    `${ANSI.green}LinkedIn:${ANSI.reset} https://www.linkedin.com/in/ritwickverma\r\n`,
-
-  neofetch:
-    `       ${ANSI.green}▄▄▄▄▄▄▄${ANSI.reset}        ${ANSI.yellow}OS:${ANSI.reset}      ritwickverma.dev\r\n` +
-    `    ${ANSI.green}▄███████████▄${ANSI.reset}     ${ANSI.yellow}Shell:${ANSI.reset}   portfolio v1.0\r\n` +
-    `   ${ANSI.green}███████████████${ANSI.reset}    ${ANSI.yellow}Uptime:${ANSI.reset}  since 2021\r\n` +
-    `  ${ANSI.green}█████████████████${ANSI.reset}   ${ANSI.yellow}Projects:${ANSI.reset} 6 featured\r\n` +
-    `  ${ANSI.green}█████████████████${ANSI.reset}   ${ANSI.yellow}Services:${ANSI.reset} 15 (homelab)\r\n` +
-    `  ${ANSI.green}█████████████████${ANSI.reset}   ${ANSI.yellow}Editor:${ANSI.reset}   vim\r\n` +
-    `   ${ANSI.green}███████████████${ANSI.reset}    ${ANSI.yellow}Email:${ANSI.reset}    verma1997@gmail.com\r\n` +
-    `    ${ANSI.green}▀███████████▀${ANSI.reset}     ${ANSI.yellow}Colors:${ANSI.reset}  ${ANSI.green}████${ANSI.reset}${ANSI.yellow}████${ANSI.reset}${ANSI.red}████${ANSI.reset}\r\n` +
-    `       ${ANSI.green}▀▀▀▀▀▀▀${ANSI.reset}        ${ANSI.yellow}WM:${ANSI.reset}       none (ssh)\r\n`,
-};
-
-/* ------------------------------------------------------------------ */
-/* Component                                                           */
-/* ------------------------------------------------------------------ */
+// The xterm body only — TerminalWrapper owns the section chrome and mounts
+// this lazily, so xterm never ships in the first-load bundle.
 
 export default function TerminalSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -130,16 +17,13 @@ export default function TerminalSection() {
   const currentCommandRef = useRef("");
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef(0);
-  const matrixActiveRef = useRef(false);
-  const matrixTimerRef = useRef<number | null>(null);
-  const matrixTimeoutRef = useRef<number | null>(null);
 
   /** Execute a full command and print its output (without echoing). */
   const handleCommand = useCallback((cmd: string) => {
     const term = terminalRef.current;
     if (!term) return;
 
-    const output = COMMAND_OUTPUTS[cmd];
+    const output = commandOutputs()[cmd];
     if (output) {
       term.write(output);
     } else {
@@ -213,45 +97,6 @@ export default function TerminalSection() {
       term.write(PROMPT + cmd);
     };
 
-    /* ---------------- matrix easter egg ---------------- */
-
-    const runMatrix = () => {
-      if (matrixActiveRef.current) return;
-      matrixActiveRef.current = true;
-      term.clear();
-
-      const cols = term.cols;
-      const rows = term.rows;
-      const glyphs =
-        "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789$#@%&*";
-      const speeds = Array.from({ length: cols }, () => Math.floor(Math.random() * 4) + 1);
-      const drops = Array.from({ length: cols }, () => Math.floor(Math.random() * rows));
-
-      matrixTimerRef.current = window.setInterval(() => {
-        for (let c = 0; c < cols; c++) {
-          if (Math.floor(Math.random() * speeds[c]) !== 0) continue;
-          const row = drops[c];
-          const ch = glyphs[Math.floor(Math.random() * glyphs.length)];
-          const color = Math.random() > 0.92 ? "\x1b[97m" : ANSI.green;
-          term.write(`\x1b[${row + 1};${c + 1}H${color}${ch}${ANSI.reset}`);
-          const tail = (row - 5 + rows) % rows;
-          term.write(`\x1b[${tail + 1};${c + 1}H `);
-          drops[c] = (row + 1) % rows;
-        }
-      }, 45);
-
-      matrixTimeoutRef.current = window.setTimeout(() => {
-        if (matrixTimerRef.current !== null) {
-          window.clearInterval(matrixTimerRef.current);
-          matrixTimerRef.current = null;
-        }
-        matrixActiveRef.current = false;
-        term.clear();
-        term.write(WELCOME);
-        term.write(PROMPT);
-      }, 3000);
-    };
-
     /* ---------------- tab completion ---------------- */
 
     const handleTab = () => {
@@ -268,9 +113,17 @@ export default function TerminalSection() {
       }
     };
 
+    // Tab completes; Escape hands focus back to the page so the terminal is
+    // never a keyboard trap.
     term.attachCustomKeyEventHandler((event) => {
-      if (event.type === "keydown" && event.key === "Tab") {
+      if (event.type !== "keydown") return true;
+      if (event.key === "Tab") {
+        event.preventDefault();
         handleTab();
+        return false;
+      }
+      if (event.key === "Escape") {
+        term.blur();
         return false;
       }
       return true;
@@ -279,8 +132,6 @@ export default function TerminalSection() {
     /* ---------------- input handling ---------------- */
 
     term.onData((data) => {
-      if (matrixActiveRef.current) return;
-
       if (data === "\r") {
         // Enter
         term.write("\r\n");
@@ -291,9 +142,6 @@ export default function TerminalSection() {
           historyIndexRef.current = historyRef.current.length;
           if (cmd === "clear") {
             term.clear();
-          } else if (cmd === "matrix") {
-            runMatrix();
-            return; // matrix restores welcome + prompt itself
           } else {
             handleCommand(cmd);
           }
@@ -342,10 +190,10 @@ export default function TerminalSection() {
       }
     });
 
-    // Welcome message + initial prompt
+    // Welcome message + initial prompt. No auto-focus: it would steal focus
+    // (and raise the keyboard on mobile) the moment the section scrolls in.
     term.write(WELCOME);
     term.write(PROMPT);
-    term.focus();
 
     /* ---------------- cleanup ---------------- */
 
@@ -353,43 +201,16 @@ export default function TerminalSection() {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       ro.disconnect();
-      if (matrixTimerRef.current !== null) window.clearInterval(matrixTimerRef.current);
-      if (matrixTimeoutRef.current !== null) window.clearTimeout(matrixTimeoutRef.current);
       terminalRef.current = null;
       term.dispose();
     };
   }, [handleCommand]);
 
   return (
-    <motion.section
-      id="terminal"
-      className="max-w-3xl mx-auto px-6 py-24 sm:py-32"
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-    >
-      <h2 className="font-mono text-accent text-sm mb-6 tracking-widest uppercase">
-        Terminal
-      </h2>
-
-      <div
-        className="rounded-lg overflow-hidden glass glow-border cursor-text"
-        onClick={() => terminalRef.current?.focus()}
-      >
-        {/* Window header bar */}
-        <div className="relative flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-white/[0.03]">
-          <span className="w-3 h-3 rounded-full bg-[#ff5f57]" aria-hidden="true" />
-          <span className="w-3 h-3 rounded-full bg-[#febc2e]" aria-hidden="true" />
-          <span className="w-3 h-3 rounded-full bg-[#28c840]" aria-hidden="true" />
-          <span className="absolute left-1/2 -translate-x-1/2 text-xs font-mono text-muted tracking-widest select-none">
-            terminal
-          </span>
-        </div>
-
-        {/* xterm mount point */}
-        <div ref={containerRef} className="h-[420px] w-full" />
-      </div>
-    </motion.section>
+    <div
+      ref={containerRef}
+      className="h-full w-full cursor-text"
+      onClick={() => terminalRef.current?.focus()}
+    />
   );
 }

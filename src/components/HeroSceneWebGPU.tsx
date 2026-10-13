@@ -35,7 +35,7 @@ async function createWebGPURenderer(canvas: HTMLCanvasElement) {
   return renderer;
 }
 
-export default function HeroSceneWebGPU() {
+export default function HeroSceneWebGPU({ onReady }: { onReady?: () => void }) {
   initPointer();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
@@ -59,7 +59,7 @@ export default function HeroSceneWebGPU() {
       frameloop={inView ? 'always' : 'never'}
       gl={createWebGPURenderer as unknown as ComponentProps<typeof Canvas>['gl']}
       camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }}
-      onCreated={({ gl }) => { gl.domElement.tabIndex = -1; gl.domElement.style.outline = 'none'; }}
+      onCreated={({ gl }) => { gl.domElement.tabIndex = -1; gl.domElement.style.outline = 'none'; onReady?.(); }}
       style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f', cursor: 'none' }}
     >
       <Suspense fallback={null}>
