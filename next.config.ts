@@ -2,14 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "export",
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "raw.githubusercontent.com",
-      },
-    ],
-  },
+  // /resume/index.html — works on any static host, not only nginx try_files.
+  trailingSlash: true,
 };
 
 export default nextConfig;
