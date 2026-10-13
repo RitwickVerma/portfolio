@@ -41,7 +41,7 @@ export default function AboutSection() {
             with no engine underneath it, an automated trading bot with a CI
             pipeline that refuses to deploy red. My Android app{" "}
             <span className="text-accent">ShutUp</span> reached 26,000+
-            downloads on Google Play.
+            downloads.
           </motion.p>
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             Outside of work I run a{" "}

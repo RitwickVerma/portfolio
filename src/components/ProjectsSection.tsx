@@ -8,6 +8,16 @@ import { usePointer } from "./PointerProvider";
 
 type ProjectData = (typeof projects)[number];
 
+const CATEGORY_LABEL: Record<ProjectData["category"], string> = {
+  android: "Android",
+  quant: "Quant",
+  infra: "Infra",
+  games: "Games",
+  ai: "AI",
+  embedded: "Embedded",
+  linux: "Linux desktop",
+};
+
 function TiltCard({ project }: { project: ProjectData }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const pointer = usePointer();
@@ -83,12 +93,12 @@ function TiltCard({ project }: { project: ProjectData }) {
 
         <header className="relative z-10 flex items-baseline justify-between gap-3">
           <h3 className="text-fg font-semibold text-lg">{project.title}</h3>
-          <span className="text-xs font-mono text-muted uppercase tracking-wider shrink-0">
-            {project.category}
+          <span className="text-xs font-mono text-fg/70 uppercase tracking-wider shrink-0">
+            {CATEGORY_LABEL[project.category]}
           </span>
         </header>
 
-        <p className="relative z-10 text-xs font-mono text-muted">{project.role}</p>
+        <p className="relative z-10 text-xs font-mono text-fg/70">{project.role}</p>
 
         <div className="relative z-10 border-l-2 border-accent/50 pl-3">
           <p className="font-mono text-accent text-xl leading-tight">
@@ -100,37 +110,42 @@ function TiltCard({ project }: { project: ProjectData }) {
         <p className="relative z-10 text-fg/80 text-sm leading-relaxed">
           {project.description}
         </p>
-        <p className="relative z-10 text-fg/70 text-sm leading-relaxed flex-1">
-          <span className="text-muted">Why it&apos;s interesting — </span>
+        <p className="relative z-10 text-fg/80 text-sm leading-relaxed">
+          <span className="block font-mono text-xs uppercase tracking-wider text-accent mb-0.5">
+            Why it&apos;s interesting
+          </span>
           {project.why}
         </p>
 
-        <ul className="relative z-10 flex flex-wrap gap-1.5">
-          {project.tech.map((t) => (
-            <li
-              key={t}
-              className="text-xs font-mono text-muted bg-white/[0.03] rounded px-1.5 py-px"
-            >
-              {t}
-            </li>
-          ))}
-        </ul>
-
-        {links.length > 0 && (
-          <div className="relative z-10 flex flex-wrap gap-4 mt-1">
-            {links.map((l) => (
-              <a
-                key={l.label}
-                href={l.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent text-sm hover:underline underline-offset-4 inline-flex items-center gap-1"
+        {/* Pinned to the bottom of the card so chips and links align across a row. */}
+        <div className="relative z-10 mt-auto pt-3 flex flex-col gap-3">
+          <ul className="flex flex-wrap gap-1.5">
+            {project.tech.map((t) => (
+              <li
+                key={t}
+                className="text-xs font-mono text-fg/80 bg-white/[0.06] border border-white/[0.08] rounded px-2 py-0.5"
               >
-                {l.label} →<span className="sr-only"> — {project.title}</span>
-              </a>
+                {t}
+              </li>
             ))}
-          </div>
-        )}
+          </ul>
+
+          {links.length > 0 && (
+            <div className="flex flex-wrap gap-x-5 gap-y-1">
+              {links.map((l) => (
+                <a
+                  key={l.label}
+                  href={l.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent text-sm hover:underline underline-offset-4"
+                >
+                  {project.title} on {l.label} →
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
       </motion.article>
     </div>
   );
@@ -142,6 +157,7 @@ function Grid({ items, className }: { items: ProjectData[]; className: string })
       {items.map((p, i) => (
         <motion.div
           key={p.slug}
+          className="h-full"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}

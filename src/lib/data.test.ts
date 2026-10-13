@@ -58,4 +58,15 @@ describe("data integrity", () => {
     expect(blob).not.toMatch(/\b(?:69\.69\.69|192\.168)\.\d+/);
     expect(blob).not.toMatch(/jellyfin|debrid|aiostreams|nixos|pi-hole|adguard|this session/i);
   });
+
+  it("never claims ShutUp is on Google Play / the Play Store (listing is gone)", () => {
+    const blob = JSON.stringify({ projects, experiences, education, services });
+    expect(blob).not.toMatch(/google play|play store|play\.google/i);
+  });
+
+  it("every project category is a distinct, specific kind", () => {
+    const cats = projects.map((p) => p.category);
+    expect(new Set(cats).size).toBe(cats.length);
+    expect(cats).not.toContain("systems");
+  });
 });

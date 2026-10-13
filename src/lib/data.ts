@@ -11,7 +11,7 @@ export const projects: Project[] = [
     description:
       "Android app that answers, silences and ends calls from proximity-sensor wave gestures.",
     role: "Author & maintainer · GPLv3",
-    metric: { value: "26,000+", label: "downloads · 4.3★ on Google Play" },
+    metric: { value: "26,000+", label: "lifetime downloads · 4.3★ rating" },
     why: "Turns a binary proximity sensor and the accelerometer into gestures: a double-wave timing window, pick-up from a flat surface, face-down detection mid-call.",
     tech: ["Java", "Kotlin", "Android", "EventBus"],
     links: { github: "https://github.com/RitwickVerma/ShutUp" },
@@ -29,7 +29,7 @@ export const projects: Project[] = [
     tech: ["Python", "Alpaca API", "SQLite", "APScheduler", "GitLab CI"],
     links: { gitlab: "https://gitlab.com/ritwick7/plutus-trading-bot" },
     featured: true,
-    category: "systems",
+    category: "quant",
   },
   {
     slug: "homelab",
@@ -50,12 +50,12 @@ export const projects: Project[] = [
     description:
       "2D RPG in C++ with no game engine: collisions, animation and dialogue trees written from scratch.",
     role: "Author",
-    metric: { value: "0", label: "game engines or physics libraries — SDL2 handles rendering" },
-    why: "Tiled XML maps drive the world; collision, sprite animation and branching dialogue are hand-rolled on top of SDL2.",
-    tech: ["C++", "SDL2", "Tiled"],
+    metric: { value: "44", label: "C++ source files — no game or physics engine" },
+    why: "Maps are authored in Tiled and loaded through tmxlite; collision, sprite animation, weapons and dialogue are hand-rolled on SDL2.",
+    tech: ["C++", "SDL2", "tmxlite", "Tiled"],
     links: { github: "https://github.com/RitwickVerma/RPG" },
     featured: true,
-    category: "systems",
+    category: "games",
   },
   {
     slug: "monster-sudoku",
@@ -73,7 +73,7 @@ export const projects: Project[] = [
     slug: "solar-ev-daq",
     title: "Solar EV Data Acquisition",
     description:
-      "Telemetry for a solar electric vehicle: Arduino sensor slaves feeding a Raspberry Pi.",
+      "Telemetry for a solar electric vehicle, built on Arduino sensor slaves.",
     role: "Designer & builder · B.Tech project",
     metric: { value: "3 tiers", label: "from sensor slaves to a Raspberry Pi to Firebase" },
     why: "A Raspberry Pi polls the Arduino slaves and uploads readings to Firebase asynchronously for remote monitoring.",
@@ -210,5 +210,4 @@ export const hero = {
   /** The one specific line — his voice, not a job-title list. */
   line: "Backend engineer at eBay.",
   lineTwo: "I build — and self-host — the systems I ship.",
-  roles: "Software engineer · homelab operator · builder",
 };

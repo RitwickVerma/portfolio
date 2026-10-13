@@ -38,7 +38,7 @@ describe("terminal output", () => {
 
   it("contains no stale or private claims", () => {
     const all = plain(Object.values(out).join("\n"));
-    expect(all).not.toMatch(/jellyfin|debrid|aiostreams|nixos|pi-hole|adguard|ramen\./i);
+    expect(all).not.toMatch(/jellyfin|debrid|aiostreams|nixos|pi-hole|adguard|ramen\.|google play|play store/i);
     expect(all).not.toMatch(/\b(?:69\.69\.69|192\.168)\./);
   });
 
