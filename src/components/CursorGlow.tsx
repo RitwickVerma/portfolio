@@ -11,11 +11,17 @@ export default function CursorGlow() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Respect reduced motion — no trail. Native cursor restored via CSS.
+    // No trail for reduced motion, and none without a mouse or trackpad: a
+    // finger has no cursor to replace. Both keep the native cursor.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    // Hide the native cursor only now that its replacement is running
+    // (globals.css: .custom-cursor). Pre-hydration visitors keep theirs.
+    document.documentElement.classList.add("custom-cursor");
 
     let mouseX = -100, mouseY = -100;
     let mouseInside = false;
@@ -30,21 +36,18 @@ export default function CursorGlow() {
     resize();
     window.addEventListener("resize", resize);
 
+    // The head dot *is* the cursor while this runs, so it must stay put when
+    // the mouse stops — including right after a click. Only leaving the window
+    // lets the trail decay.
     const onMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
       mouseX = e.clientX; mouseY = e.clientY;
       mouseInside = true;
       ensureRunning();
     };
-    const onDown = (e: PointerEvent) => {
-      mouseX = e.clientX; mouseY = e.clientY;
-      mouseInside = true;
-      ensureRunning();
-    };
-    const onUp = () => { mouseInside = false; };
     const onLeave = () => { mouseInside = false; };
     window.addEventListener("pointermove", onMove, { passive: true });
-    window.addEventListener("pointerdown", onDown, { passive: true });
-    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointerdown", onMove, { passive: true });
     window.addEventListener("pointerleave", onLeave);
 
     const step = () => {
@@ -106,10 +109,10 @@ export default function CursorGlow() {
     }
 
     return () => {
+      document.documentElement.classList.remove("custom-cursor");
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointerdown", onMove);
       window.removeEventListener("pointerleave", onLeave);
       cancelAnimationFrame(animId);
     };

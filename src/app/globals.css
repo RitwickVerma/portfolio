@@ -47,7 +47,6 @@
     line-height: 1.7;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    cursor: none;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -78,6 +77,15 @@
   outline: 2px solid rgba(100, 255, 218, 0.5);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* The cursor trail (CursorGlow) stands in for the native cursor — but only once
+   it is running. Before hydration, under reduced motion, on touch-only devices
+   and on /resume the class is absent and the native cursor stays. Links and
+   buttons included: the UA stylesheet would otherwise draw a second cursor. */
+.custom-cursor,
+.custom-cursor * {
+  cursor: none;
 }
 
 /* Hero line reveal — each line rises through its own mask. Tokens above. */
@@ -155,9 +163,6 @@ canvas {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-  body {
-    cursor: auto; /* custom trail is disabled — restore native cursor */
   }
   .scroll-indicator {
     display: none;
