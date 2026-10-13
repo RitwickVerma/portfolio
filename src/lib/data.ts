@@ -19,10 +19,10 @@ export const projects: Project[] = [
     slug: "plutus",
     title: "Plutus Trading Bot",
     description:
-      "Quantitative trading system on Alpaca Markets — point-in-time data, a risk governor, and live trading with a pre-registered benchmark.",
+      "Quant bot with walk-forward backtesting and live trading on Alpaca. 55 tests, CI/CD deploys only on green master.",
     longDescription:
-      "A production quantitative trading system running on Alpaca Markets. Built point-in-time data pipelines (delisted-inclusive, survivorship-free), a trend-gated risk governor that trades drawdown for tail protection, and live trading with a pre-registered benchmark and append-only scoreboard. CI enforces a quality gate: type-checking, lint, no bare excepts.",
-    tech: ["Python", "pandas", "Alpaca API", "SQLite", "CI/CD"],
+      "A production quantitative trading system on Alpaca Markets with paper-to-live cycles and strict evaluation discipline. Walk-forward tested; when a strategy's edge didn't survive out-of-sample data, it was killed and rebuilt rather than tuned into overfitting — the honest-number approach this portfolio runs on. Modular live/backtest architecture sharing core signal logic, SEC 10-K sentiment pipeline, momentum/AI signal layers, 55 passing tests, and CI/CD that refuses to deploy anything but green.",
+    tech: ["Python", "pandas", "Alpaca API", "SQLite", "GitLab CI"],
     links: {
       gitlab: "https://gitlab.com/ritwick7/plutus-trading-bot",
     },
@@ -47,10 +47,10 @@ export const projects: Project[] = [
     slug: "homelab",
     title: "Homelab Infrastructure",
     description:
-      "15-service Proxmox cluster with Debian gateway, Traefik, Authelia OIDC, and Headscale VPN.",
+      "15-guest Proxmox cluster: Docker gateway, Traefik, Authelia OIDC, Headscale VPN, CrowdSec WAF, IaC in GitLab CI.",
     longDescription:
-      "A complete self-hosted infrastructure running on Proxmox VE with 13 LXC containers and 2 VMs. The gateway runs Debian with Traefik v3 reverse proxy, Authelia SSO with OIDC, Headscale VPN (Tailscale-compatible), and CrowdSec intrusion prevention. Services include Home Assistant, Immich, Paperless-ngx, Jellyfin, Vaultwarden, Kavita, and more — all behind a single wildcard SSL certificate with automatic renewal.",
-    tech: ["Debian", "Proxmox", "Traefik", "Docker", "Authelia", "Headscale"],
+      "A production self-hosted infrastructure on Proxmox VE — 13 LXCs + 2 VMs running the services this site and my life depend on. The edge gateway is Debian + Docker (Traefik v3 reverse proxy, Authelia SSO with OIDC, Headscale VPN, CrowdSec WAF) — configs committed to a GitLab IaC repo with SOPS-encrypted secrets, not a stock appliance image. Services: Home Assistant, Immich (ML face/CLIP search), Paperless-ngx, Jellyfin + RD stack, Vaultwarden, Syncthing, Plutus, and this site — behind one wildcard cert, nightly PBS backups, and a health-check cron that reports real numbers.",
+    tech: ["Proxmox", "Docker", "Traefik", "Authelia", "Headscale", "GitLab CI"],
     links: {},
     featured: true,
     category: "infra",
