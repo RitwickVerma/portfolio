@@ -18,6 +18,11 @@
 }
 
 :root {
+  /* mirrors src/lib/motion.ts — motion.test.ts keeps them in sync */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-slow: 700ms;
+  --stagger-line: 90ms;
+
   --bg: #0a0a0f;
   --fg: #e4e4e7;
   --surface: rgba(255, 255, 255, 0.03);
@@ -72,12 +77,28 @@
   border-radius: 4px;
 }
 
-/* Grid background overlay */
-.bg-grid {
-  background-image:
-    linear-gradient(rgba(100, 255, 218, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(100, 255, 218, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
+/* Hero line reveal — each line rises through its own mask. Tokens above. */
+.line-mask {
+  display: block;
+  overflow: hidden;
+  /* room for descenders so the mask never clips them */
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+.line-mask > span {
+  display: block;
+  animation: line-rise var(--dur-slow) var(--ease-out-quint) both;
+  animation-delay: calc(120ms + var(--i, 0) * var(--stagger-line));
+}
+@keyframes line-rise {
+  from {
+    transform: translateY(110%);
+  }
+}
+
+/* Anchor targets sit below the fixed nav */
+section[id] {
+  scroll-margin-top: 4rem;
 }
 
 /* Glass surface */
@@ -138,6 +159,9 @@ canvas {
   .scroll-indicator {
     display: none;
   }
+  .line-mask > span {
+    animation: none;
+  }
 }
 
 /* ─── Print — clean, readable document (recruiters save to PDF) ────────── */
@@ -181,7 +205,12 @@ canvas {
     color: #555;
   }
 
+  /* The resume already prints its URLs as link text */
+  .resume a::after {
+    content: none !important;
+  }
+
   @page {
-    margin: 2cm;
+    margin: 1.5cm;
   }
 }
