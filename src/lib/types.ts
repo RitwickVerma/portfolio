@@ -15,7 +15,7 @@ export interface Project {
     gitlab?: string;
   };
   featured: boolean;
-  category: "android" | "quant" | "infra" | "games" | "ai" | "embedded" | "linux";
+  category: "android" | "quant" | "infra" | "tv" | "games" | "ai" | "embedded" | "linux";
 }
 
 export interface Experience {

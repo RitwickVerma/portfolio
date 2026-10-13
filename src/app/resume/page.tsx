@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 
 const contact = [
   { label: socialLinks.email, href: `mailto:${socialLinks.email}` },
-  { label: "linkedin.com/in/ritwickverma", href: "https://www.linkedin.com/in/ritwickverma" },
+  { label: "linkedin.com/in/ritwick-verma", href: socialLinks.linkedin },
   { label: "github.com/RitwickVerma", href: socialLinks.github },
   { label: "gitlab.com/ritwick7", href: socialLinks.gitlab },
 ];

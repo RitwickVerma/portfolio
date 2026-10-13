@@ -12,6 +12,7 @@ const CATEGORY_LABEL: Record<ProjectData["category"], string> = {
   android: "Android",
   quant: "Quant",
   infra: "Infra",
+  tv: "Smart TV",
   games: "Games",
   ai: "AI",
   embedded: "Embedded",
@@ -187,7 +188,7 @@ export default function ProjectsSection() {
 
       <div className="space-y-4">
         <Grid items={featured} className="md:grid-cols-2" />
-        <Grid items={rest} className="md:grid-cols-3" />
+        <Grid items={rest} className="md:grid-cols-2" />
       </div>
     </section>
   );

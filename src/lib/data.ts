@@ -23,11 +23,13 @@ export const projects: Project[] = [
     title: "Plutus",
     description:
       "Autonomous long-short equity bot: scores the Russell 1000, sizes by conviction, paper-trades on Alpaca.",
-    role: "Author",
+    role: "Author · private repository",
     metric: { value: "200+", label: "tests · CI deploys only on green master" },
     why: "Point-in-time backtests run nightly in CI to keep the signal honest; hard stops and a drawdown guard cap the risk.",
     tech: ["Python", "Alpaca API", "SQLite", "APScheduler", "GitLab CI"],
-    links: { gitlab: "https://gitlab.com/ritwick7/plutus-trading-bot" },
+    // The repository is private (checked 2026-10-13): a link would land visitors
+    // on GitLab's sign-in page. Re-add it only once the project is public.
+    links: {},
     featured: true,
     category: "quant",
   },
@@ -45,6 +47,19 @@ export const projects: Project[] = [
     category: "infra",
   },
   {
+    slug: "tizen-ambilight",
+    title: "TizenAmbilight",
+    description:
+      "Real-frame ambilight for Samsung Tizen TVs: a headless .NET service on the TV reads the decoded video plane from memory and drives a WLED strip over UDP.",
+    role: "Author",
+    metric: { value: "20–25 fps", label: "one process, one hop — no capture card, no HDMI splitter" },
+    why: "Samsung's capture API returns the static UI layer, so the app dlopens the video-plane entry point instead: NV12 in PQ HDR, tone-mapped per scene and gamut-mapped from BT.2020 to the LEDs.",
+    tech: ["C#", ".NET", "Tizen", "WLED", "HDR"],
+    links: { gitlab: "https://gitlab.com/ritwick7/TizenAmbilight" },
+    featured: true,
+    category: "tv",
+  },
+  {
     slug: "rpg-engine",
     title: "RPG Engine",
     description:
@@ -54,7 +69,7 @@ export const projects: Project[] = [
     why: "Maps are authored in Tiled and loaded through tmxlite; collision, sprite animation, weapons and dialogue are hand-rolled on SDL2.",
     tech: ["C++", "SDL2", "tmxlite", "Tiled"],
     links: { github: "https://github.com/RitwickVerma/RPG" },
-    featured: true,
+    featured: false,
     category: "games",
   },
   {
@@ -196,7 +211,9 @@ export const skills = {
 export const socialLinks = {
   github: "https://github.com/RitwickVerma",
   gitlab: "https://gitlab.com/ritwick7",
-  linkedin: "https://linkedin.com/in/ritwickverma",
+  // Public profile slug is ritwick-verma (search engines + the owner's own
+  // resume); /in/ritwickverma is not this profile.
+  linkedin: "https://www.linkedin.com/in/ritwick-verma/",
   support: "https://buycovfefefor.ritwickverma.dev/",
   sponsor: "https://github.com/sponsors/RitwickVerma",
   email: "verma1997@gmail.com",

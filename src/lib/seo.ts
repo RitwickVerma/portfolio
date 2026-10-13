@@ -20,7 +20,7 @@ export function personJsonLd() {
     sameAs: [
       socialLinks.github,
       socialLinks.gitlab,
-      "https://www.linkedin.com/in/ritwickverma",
+      socialLinks.linkedin,
     ],
   };
 }

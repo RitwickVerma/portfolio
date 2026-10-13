@@ -49,6 +49,10 @@ describe("data integrity", () => {
     ]);
   });
 
+  it("points LinkedIn at the ritwick-verma profile, the one search engines index for eBay", () => {
+    expect(socialLinks.linkedin).toBe("https://www.linkedin.com/in/ritwick-verma/");
+  });
+
   it("links the resume to the on-site page, not a PDF", () => {
     expect(socialLinks.resume).toBe("/resume/");
   });

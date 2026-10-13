@@ -128,7 +128,7 @@ export function commandOutputs(): Record<string, string> {
       `${g("Email:")}    ${socialLinks.email}\r\n` +
       `${g("GitHub:")}   ${socialLinks.github}\r\n` +
       `${g("GitLab:")}   ${socialLinks.gitlab}\r\n` +
-      `${g("LinkedIn:")} https://www.linkedin.com/in/ritwickverma\r\n`,
+      `${g("LinkedIn:")} ${socialLinks.linkedin}\r\n`,
 
     stack:
       `${g("How this site is built")}\r\n` +
