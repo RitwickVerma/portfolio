@@ -5,7 +5,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
-import { ANSI, PROMPT, WELCOME, COMMAND_NAMES, commandOutputs } from "@/lib/terminal";
+import { ANSI, PROMPT, welcome, COMMAND_NAMES, commandOutputs } from "@/lib/terminal";
 
 // The xterm body only — TerminalWrapper owns the section chrome and mounts
 // this lazily, so xterm never ships in the first-load bundle.
@@ -192,7 +192,7 @@ export default function TerminalSection() {
 
     // Welcome message + initial prompt. No auto-focus: it would steal focus
     // (and raise the keyboard on mobile) the moment the section scrolls in.
-    term.write(WELCOME);
+    term.write(welcome(term.cols));
     term.write(PROMPT);
 
     /* ---------------- cleanup ---------------- */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { commandOutputs, COMMAND_NAMES } from "./terminal";
+import { commandOutputs, COMMAND_NAMES, welcome } from "./terminal";
 import { services, projects } from "./data";
 
 const plain = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
@@ -40,5 +40,11 @@ describe("terminal output", () => {
     const all = plain(Object.values(out).join("\n"));
     expect(all).not.toMatch(/jellyfin|debrid|aiostreams|nixos|pi-hole|adguard|ramen\./i);
     expect(all).not.toMatch(/\b(?:69\.69\.69|192\.168)\./);
+  });
+
+  it("welcome banner drops the wide block art on narrow terminals", () => {
+    expect(plain(welcome(80))).toContain("██");
+    expect(plain(welcome(40))).not.toContain("██");
+    expect(plain(welcome(40))).toContain("RITWICK VERMA");
   });
 });

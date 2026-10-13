@@ -22,7 +22,12 @@ const ASCII_ART = [
   "╚═╝  ╚═╝ ╚═╝    ╚═╝  ╚══╝╚══╝ ╚═╝  ╚═════╝ ╚═╝  ╚═╝",
 ].join("\r\n");
 
-export const WELCOME = `${ANSI.green}${ASCII_ART}${ANSI.reset}\r\nType 'help' for available commands.\r\n`;
+/** The banner is 55 columns wide; narrower terminals (phones) get a plain heading instead of wrapped block art. */
+export function welcome(cols: number): string {
+  const head =
+    cols >= 56 ? `${ANSI.green}${ASCII_ART}${ANSI.reset}` : `${ANSI.green}RITWICK VERMA${ANSI.reset}`;
+  return `${head}\r\nType 'help' for available commands.\r\n`;
+}
 
 export const COMMAND_NAMES = [
   "help",
