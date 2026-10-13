@@ -50,7 +50,7 @@ export const projects: Project[] = [
     description:
       "2D RPG in C++ with no game engine: collisions, animation and dialogue trees written from scratch.",
     role: "Author",
-    metric: { value: "SDL2", label: "the only dependency — no engine, no physics lib" },
+    metric: { value: "0", label: "game engines or physics libraries — SDL2 handles rendering" },
     why: "Tiled XML maps drive the world; collision, sprite animation and branching dialogue are hand-rolled on top of SDL2.",
     tech: ["C++", "SDL2", "Tiled"],
     links: { github: "https://github.com/RitwickVerma/RPG" },
@@ -62,7 +62,7 @@ export const projects: Project[] = [
     title: "Monster Sudoku Solver",
     description: "Constraint-satisfaction solver for large Sudoku grids.",
     role: "UC Irvine AI coursework",
-    metric: { value: "MRV + LCV", label: "forward checking, Norvig propagation" },
+    metric: { value: "MRV + LCV", label: "ordering heuristics, with forward checking and Norvig-style propagation" },
     why: "Variable and value ordering plus constraint propagation turn brute-force backtracking into guided search.",
     tech: ["Python", "CSP", "Algorithms"],
     links: {},
@@ -75,7 +75,7 @@ export const projects: Project[] = [
     description:
       "Telemetry for a solar electric vehicle: Arduino sensor slaves feeding a Raspberry Pi.",
     role: "Designer & builder · B.Tech project",
-    metric: { value: "Pi + Arduino", label: "master/slave sensors, synced to Firebase" },
+    metric: { value: "3 tiers", label: "from sensor slaves to a Raspberry Pi to Firebase" },
     why: "A Raspberry Pi polls the Arduino slaves and uploads readings to Firebase asynchronously for remote monitoring.",
     tech: ["Arduino", "Raspberry Pi", "Python", "Firebase", "C++"],
     links: {},

@@ -150,15 +150,15 @@ export function SceneFog() {
 
 // ─── Rack definitions — asymmetric positions, no perfect grid ─────────────
 
-// `core` racks keep their label on narrow screens (< 768px shows fewer).
+// `core` racks keep their label on narrow screens (< 768px shows two, at opposite ends).
 type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean; warning?: boolean; core?: boolean };
 
 const RACKS: RackDef[] = [
   { id: 'VM110', name: 'VM110 Gateway',  x: -3.20, z: -1.30, height: 2.5, gateway: true, core: true },
-  { id: 'CT101', name: 'CT101 Hermes',    x: -1.00, z: -1.20, height: 2.2, core: true },
+  { id: 'CT101', name: 'CT101 Hermes',    x: -1.00, z: -1.20, height: 2.2 },
   { id: 'CT102', name: 'CT102 DNS',       x:  1.15, z: -1.28, height: 1.9 },
   { id: 'CT104', name: 'CT104 Vaultwarden',x:  3.35, z: -1.15, height: 1.8, warning: true, core: true },
-  { id: 'CT106', name: 'CT106 Immich',    x: -3.15, z:  1.20, height: 2.3, core: true },
+  { id: 'CT106', name: 'CT106 Immich',    x: -3.15, z:  1.20, height: 2.3 },
   { id: 'CT107', name: 'CT107 Paperless',  x: -1.05, z:  1.30, height: 2.0 },
   { id: 'CT111', name: 'CT111 Remux',      x:  1.20, z:  1.18, height: 2.4 },
   { id: 'CT113', name: 'CT113 Syncthing',  x:  3.28, z:  1.35, height: 1.8 },
@@ -372,13 +372,20 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
 const NAV_SAFE = 80;
 const BOTTOM_SAFE = 120;
 const EDGE_SAFE = 12;
+// Half-height of the centred hero text block on narrow screens; labels snap
+// to its nearest edge instead of printing over the name.
+const TEXT_BAND_HALF = 170;
 
 function clampedPosition(halfWidth: number) {
   const v = new THREE.Vector3();
   return (obj: THREE.Object3D, camera: THREE.Camera, size: { width: number; height: number }): [number, number] => {
     v.setFromMatrixPosition(obj.matrixWorld).project(camera);
     const x = (v.x * size.width) / 2 + size.width / 2;
-    const y = (-v.y * size.height) / 2 + size.height / 2;
+    let y = (-v.y * size.height) / 2 + size.height / 2;
+    if (size.width < 768) {
+      const mid = size.height / 2;
+      if (Math.abs(y - mid) < TEXT_BAND_HALF) y = y < mid ? mid - TEXT_BAND_HALF : mid + TEXT_BAND_HALF;
+    }
     const minX = EDGE_SAFE + halfWidth;
     const maxX = Math.max(minX, size.width - EDGE_SAFE - halfWidth);
     const maxY = Math.max(NAV_SAFE, size.height - BOTTOM_SAFE);
@@ -417,7 +424,7 @@ function Rack({ rack }: { rack: RackDef }) {
       </group>
       {(!narrow || rack.core) && (
         <Html position={[0, h + 0.5, 0]} center calculatePosition={labelPosition} zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
-          <div className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
+          <div aria-hidden="true" className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-[#0a0a0f]/70 px-2.5 py-1 backdrop-blur-sm">
             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: rack.warning ? WARN_ACCENT : accent, boxShadow: `0 0 6px ${rack.warning ? WARN_ACCENT : accent}` }} />
             <span className="text-[11px] font-medium tracking-wider text-zinc-300">{rack.name}</span>
           </div>
@@ -425,7 +432,7 @@ function Rack({ rack }: { rack: RackDef }) {
       )}
       {hovered && info && (
         <Html position={[0, h + 1.45, 0]} center calculatePosition={tooltipPosition} zIndexRange={[60, 0]} style={{ pointerEvents: 'none' }} className="hidden sm:block">
-          <div className="pointer-events-none select-none whitespace-nowrap rounded-lg border border-accent/25 bg-[#0a0a0f]/90 px-3 py-2 backdrop-blur-md shadow-lg">
+          <div aria-hidden="true" className="pointer-events-none select-none whitespace-nowrap rounded-lg border border-accent/25 bg-[#0a0a0f]/90 px-3 py-2 backdrop-blur-md shadow-lg">
             <div className="flex items-center gap-2 mb-1.5">
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
               <span className="text-[11px] font-mono tracking-wider text-accent uppercase">{info.role}</span>

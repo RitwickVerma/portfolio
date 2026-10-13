@@ -11,6 +11,7 @@ import HeroSceneWrapper from "@/components/HeroSceneWrapper";
 import TerminalWrapper from "@/components/TerminalWrapper";
 import Magnetic from "@/components/Magnetic";
 import { sceneState } from "@/lib/sceneState";
+import { EASE } from "@/lib/motion";
 import { hero, socialLinks } from "@/lib/data";
 
 /** One masked line of the hero reveal — per line, never per word. CSS-driven so text never waits on JS. */
@@ -68,7 +69,7 @@ export default function HomeContent() {
             <h1 className="text-display leading-[1.05] font-bold tracking-tight text-fg text-center">
               <Line i={0}>{hero.name}</Line>
             </h1>
-            <p className="mt-5 text-center text-xl sm:text-3xl font-medium tracking-tight text-fg max-w-[22ch] sm:max-w-none">
+            <p className="mt-5 text-center text-balance text-xl sm:text-3xl font-medium tracking-tight text-fg">
               <Line i={1}>{hero.line}</Line>
               <Line i={2} className="text-fg/80">
                 {hero.lineTwo}
@@ -100,7 +101,7 @@ export default function HomeContent() {
             aria-hidden="true"
             className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 scroll-indicator motion-reduce:hidden"
             animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 2, repeat: Infinity, ease: EASE.inOutCubic }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64ffda" strokeWidth="1.5">
               <path d="M12 5v14M5 12l7 7 7-7" />
