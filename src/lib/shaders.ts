@@ -11,6 +11,7 @@ varying vec2 vUv;
 uniform float uTime;
 uniform vec2  uMouse;
 uniform float uScroll;
+uniform float uHero; // 1 at the top of the page, 0 once the hero has scrolled away
 uniform vec2  uResolution;
 
 float hash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
@@ -61,17 +62,13 @@ void main() {
   // Mouse glow
   float mg=exp(-md*3.5)*0.1;
   
-  float a=grid+ng+pt+mg;
-  
-  // Dramatic color shift with scroll
-  vec3 teal=vec3(.392,1.,.855);
-  vec3 amber=vec3(1.,.82,.4);
-  vec3 purple=vec3(.6,.5,1.);
-  float t=uScroll;
-  vec3 col=mix(teal,amber,smoothstep(0.,.35,t));
-  col=mix(col,purple,smoothstep(.35,.65,t));
-  col=mix(col,teal,smoothstep(.65,1.,t));
-  col=mix(col,vec3(1.,.85,.5),exp(-md*2.5)*.2);
+  // The grid, nodes and particles belong to the hero: they fade out as it
+  // scrolls away so no ghost lines sit behind the content. Only the soft
+  // cursor glow remains below the fold.
+  float a=(grid+ng+pt)*uHero+mg;
+
+  // One accent colour.
+  vec3 col=vec3(.392,1.,.855);
   
   float vig=1.-smoothstep(.3,1.4,length(uv-.5)*2.);
   a*=vig;

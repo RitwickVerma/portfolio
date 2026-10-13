@@ -13,12 +13,14 @@ function ShaderPlane() {
   const pointer = usePointer();
   const scrollRef = useRef(0);
   const sectionRef = useRef(0);
+  const heroRef = useRef(1);
 
   const uniformsRef = useRef({
     uTime: { value: 0 },
     uMouse: { value: new THREE.Vector2(0.5, 0.5) },
     uScroll: { value: 0 },
     uSection: { value: 0 },
+    uHero: { value: 1 },
     uResolution: { value: new THREE.Vector2(size.width, size.height) },
   });
 
@@ -28,6 +30,8 @@ function ShaderPlane() {
     const onScroll = () => {
       const h = document.documentElement.scrollHeight - window.innerHeight;
       scrollRef.current = h > 0 ? window.scrollY / h : 0;
+      // 1 at the top → 0 after ~one viewport of scroll (the hero's pin window)
+      heroRef.current = Math.min(Math.max(1 - window.scrollY / (window.innerHeight * 0.9), 0), 1);
 
       // Determine which section is in view
       const vh = window.innerHeight;
@@ -57,6 +61,7 @@ function ShaderPlane() {
     mat.uniforms.uMouse.value.set(pointer.current.x, pointer.current.y);
     mat.uniforms.uScroll.value = scrollRef.current;
     mat.uniforms.uSection.value = sectionRef.current;
+    mat.uniforms.uHero.value = heroRef.current;
   });
 
   return (
