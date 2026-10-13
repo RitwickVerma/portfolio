@@ -67,7 +67,8 @@ export default function TerminalWrapper() {
       </div>
 
       <p className="mt-3 text-xs text-muted font-mono">
-        Click to type · Tab completes · Esc leaves the terminal
+        <span className="sm:hidden">Tap to type · Enter runs a command</span>
+        <span className="hidden sm:inline">Click to type · Tab completes · Esc leaves the terminal</span>
       </p>
     </section>
   );

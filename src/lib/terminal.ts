@@ -13,19 +13,23 @@ export const ANSI = {
 
 export const PROMPT = `${ANSI.green}ritwick@portfolio${ANSI.reset}:${ANSI.yellow}~${ANSI.reset}$ `;
 
+// figlet "ANSI Shadow", 49 columns. Every line is the same width — the test
+// checks, because one dropped space skews every letter below it.
 const ASCII_ART = [
-  "██████╗ ██╗ ███████╗ ██╗    ██╗ ██╗  ██████╗ ██╗  ██╗",
-  "██╔══██╗ ██║ ╚══██╔═╝ ██║    ██║ ██║ ██╔════╝ ██║ ██╔╝",
-  "██████╔╝ ██║    ██║ ██║ █╗ ██║ ██║ ██║     █████╔╝",
-  "██╔══██╗ ██║    ██║ ██║███╗██║ ██║ ██║     ██╔═██╗",
-  "██║  ██║ ██║    ██║ ╚███╔███╔╝ ██║ ╚██████╗ ██║  ██╗",
-  "╚═╝  ╚═╝ ╚═╝    ╚═╝  ╚══╝╚══╝ ╚═╝  ╚═════╝ ╚═╝  ╚═╝",
-].join("\r\n");
+  "██████╗ ██╗████████╗██╗    ██╗██╗ ██████╗██╗  ██╗",
+  "██╔══██╗██║╚══██╔══╝██║    ██║██║██╔════╝██║ ██╔╝",
+  "██████╔╝██║   ██║   ██║ █╗ ██║██║██║     █████╔╝ ",
+  "██╔══██╗██║   ██║   ██║███╗██║██║██║     ██╔═██╗ ",
+  "██║  ██║██║   ██║   ╚███╔███╔╝██║╚██████╗██║  ██╗",
+  "╚═╝  ╚═╝╚═╝   ╚═╝    ╚══╝╚══╝ ╚═╝ ╚═════╝╚═╝  ╚═╝",
+];
+export const BANNER_COLS = ASCII_ART[0].length;
+const BANNER = ASCII_ART.join("\r\n");
 
-/** The banner is 55 columns wide; narrower terminals (phones) get a plain heading instead of wrapped block art. */
+/** Terminals narrower than the banner (phones) get a plain heading instead of wrapped block art. */
 export function welcome(cols: number): string {
   const head =
-    cols >= 56 ? `${ANSI.green}${ASCII_ART}${ANSI.reset}` : `${ANSI.green}RITWICK VERMA${ANSI.reset}`;
+    cols > BANNER_COLS ? `${ANSI.green}${BANNER}${ANSI.reset}` : `${ANSI.green}RITWICK VERMA${ANSI.reset}`;
   return `${head}\r\nType 'help' for available commands.\r\n`;
 }
 
@@ -38,12 +42,40 @@ export const COMMAND_NAMES = [
   "experience",
   "resume",
   "contact",
+  "stack",
   "neofetch",
   "clear",
 ];
 
 const g = (s: string) => `${ANSI.green}${s}${ANSI.reset}`;
 const y = (s: string) => `${ANSI.yellow}${s}${ANSI.reset}`;
+
+/** Columns a hand-written command may use: xterm's default desktop width. */
+export const TERMINAL_COLS = 80;
+
+/**
+ * `Label      item  item  item`, wrapped between items so no word ever breaks
+ * mid-way on an 80-column terminal. Continuation lines indent under the first item.
+ */
+export function wrapList(label: string, items: readonly string[], cols = TERMINAL_COLS): string {
+  const indent = 11;
+  const lines: string[] = [];
+  let line = "";
+  for (const item of items) {
+    const next = line ? `${line}  ${item}` : item;
+    if (line && indent + next.length > cols) {
+      lines.push(line);
+      line = item;
+    } else {
+      line = next;
+    }
+  }
+  if (line) lines.push(line);
+  if (!lines.length) return "";
+  return lines
+    .map((l, i) => (i === 0 ? y(label.padEnd(indent)) + l : " ".repeat(indent) + l))
+    .join("\r\n") + "\r\n";
+}
 
 export function commandOutputs(): Record<string, string> {
   const guests = services.length;
@@ -61,6 +93,7 @@ export function commandOutputs(): Record<string, string> {
       "  experience  Career timeline\r\n" +
       "  resume      Printable resume page\r\n" +
       "  contact     Get in touch\r\n" +
+      "  stack       How this site is built\r\n" +
       "  neofetch    Site info\r\n" +
       "  clear       Clear the terminal\r\n",
 
@@ -81,9 +114,9 @@ export function commandOutputs(): Record<string, string> {
       `${ANSI.dim}${guests} guests. Static inventory, not live status.${ANSI.reset}\r\n`,
 
     skills:
-      `${y("Languages")}  ${skills.languages.join("  ")}\r\n` +
-      `${y("Domains")}    ${skills.domains.join("  ")}\r\n` +
-      `${y("Tools")}      ${skills.tools.join("  ")}\r\n`,
+      wrapList("Languages", skills.languages) +
+      wrapList("Domains", skills.domains) +
+      wrapList("Tools", skills.tools),
 
     experience: experiences
       .map((e) => `${g(e.period.padEnd(18))}${e.role} @ ${e.company}\r\n`)
@@ -96,6 +129,17 @@ export function commandOutputs(): Record<string, string> {
       `${g("GitHub:")}   ${socialLinks.github}\r\n` +
       `${g("GitLab:")}   ${socialLinks.gitlab}\r\n` +
       `${g("LinkedIn:")} https://www.linkedin.com/in/ritwickverma\r\n`,
+
+    stack:
+      `${g("How this site is built")}\r\n` +
+      `${y("Build")}    Next.js 16 static export: plain HTML/JS/CSS, no server runtime\r\n` +
+      `${y("Host")}     nginx on CT114, a container on the Proxmox host listed above\r\n` +
+      `${y("Hero")}     three.js + React Three Fiber, loaded after idle behind an SVG poster\r\n` +
+      "         WebGPU + a TSL compute airflow layer is opt-in: ?renderer=webgpu\r\n" +
+      `${y("Terminal")} xterm.js, fetched only when this section nears the viewport\r\n` +
+      `${y("Motion")}   framer-motion, one token file; reduced-motion gets a static site\r\n` +
+      `${y("Privacy")}  no third-party requests, no analytics, no cookies\r\n` +
+      `${y("CI")}       lint + typecheck + test on every push; master rebuilds on the host\r\n`,
 
     neofetch:
       `       ${g("▄▄▄▄▄▄▄")}        ${y("Host:")}     ritwickverma.dev\r\n` +

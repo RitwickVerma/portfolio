@@ -10,6 +10,12 @@ import { ANSI, PROMPT, welcome, COMMAND_NAMES, commandOutputs } from "@/lib/term
 // The xterm body only — TerminalWrapper owns the section chrome and mounts
 // this lazily, so xterm never ships in the first-load bundle.
 
+/** The site's mono font under the name next/font gave it (globals.css: --font-mono). */
+function siteMonoFont(): string {
+  const mono = getComputedStyle(document.documentElement).getPropertyValue("--font-geist-mono").trim();
+  return mono ? `${mono}, monospace` : "monospace";
+}
+
 export default function TerminalSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
@@ -37,172 +43,188 @@ export default function TerminalSection() {
     const container = containerRef.current;
     if (!container) return;
 
-    // Safety net for StrictMode double-mount: drop any leftover DOM.
-    container.innerHTML = "";
+    const mount = (): (() => void) => {
+      // Safety net for StrictMode double-mount: drop any leftover DOM.
+      container.innerHTML = "";
 
-    const term = new Terminal({
-      cursorBlink: true,
-      cursorStyle: "bar",
-      fontSize: 14,
-      fontFamily: "'JetBrains Mono', 'Geist Mono', monospace",
-      theme: {
-        background: "#0a0a0f",
-        foreground: "#e4e4e7",
-        cursor: "#64ffda",
-        selectionBackground: "rgba(100,255,218,0.15)",
-        green: "#64ffda",
-        brightGreen: "#64ffda",
-        yellow: "#fbbf24",
-        red: "#ef4444",
-        cyan: "#64ffda",
-        brightCyan: "#64ffda",
-      },
-      allowProposedApi: true,
-      disableStdin: false,
-      cols: 80,
-      rows: 24,
-    });
-    terminalRef.current = term;
+      const term = new Terminal({
+        cursorBlink: true,
+        cursorStyle: "bar",
+        fontSize: 14,
+        fontFamily: siteMonoFont(),
+        theme: {
+          background: "#0a0a0f",
+          foreground: "#e4e4e7",
+          cursor: "#64ffda",
+          selectionBackground: "rgba(100,255,218,0.15)",
+          green: "#64ffda",
+          brightGreen: "#64ffda",
+          yellow: "#fbbf24",
+          red: "#ef4444",
+          cyan: "#64ffda",
+          brightCyan: "#64ffda",
+        },
+        allowProposedApi: true,
+        disableStdin: false,
+        cols: 80,
+        rows: 24,
+      });
+      terminalRef.current = term;
 
-    term.open(container);
+      term.open(container);
 
-    // FitAddon is loaded after the terminal is open in the DOM.
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.loadAddon(new WebLinksAddon());
+      // FitAddon is loaded after the terminal is open in the DOM.
+      const fitAddon = new FitAddon();
+      term.loadAddon(fitAddon);
+      term.loadAddon(new WebLinksAddon());
 
-    const fit = () => {
-      if (container.clientWidth === 0 || container.clientHeight === 0) return;
-      try {
-        fitAddon.fit();
-      } catch {
-        // container not measurable yet — next resize/rAF will retry
-      }
-    };
-    fit();
-    const raf = requestAnimationFrame(fit);
+      const fit = () => {
+        if (container.clientWidth === 0 || container.clientHeight === 0) return;
+        try {
+          fitAddon.fit();
+        } catch {
+          // container not measurable yet — next resize/rAF will retry
+        }
+      };
+      fit();
+      const raf = requestAnimationFrame(fit);
 
-    const onResize = () => fit();
-    window.addEventListener("resize", onResize);
-    const ro = new ResizeObserver(() => requestAnimationFrame(fit));
-    ro.observe(container);
+      const onResize = () => fit();
+      window.addEventListener("resize", onResize);
+      const ro = new ResizeObserver(() => requestAnimationFrame(fit));
+      ro.observe(container);
 
-    /* ---------------- helpers ---------------- */
+      /* ---------------- helpers ---------------- */
 
-    const redrawInput = (cmd: string) => {
-      currentCommandRef.current = cmd;
-      const wraps = Math.floor((PROMPT.length + cmd.length) / term.cols);
-      if (wraps > 0) term.write(`\x1b[${wraps}A`);
-      term.write("\r\x1b[J");
-      term.write(PROMPT + cmd);
-    };
+      const redrawInput = (cmd: string) => {
+        currentCommandRef.current = cmd;
+        const wraps = Math.floor((PROMPT.length + cmd.length) / term.cols);
+        if (wraps > 0) term.write(`\x1b[${wraps}A`);
+        term.write("\r\x1b[J");
+        term.write(PROMPT + cmd);
+      };
 
-    /* ---------------- tab completion ---------------- */
+      /* ---------------- tab completion ---------------- */
 
-    const handleTab = () => {
-      const input = currentCommandRef.current;
-      if (input.length === 0) return;
-      const matches = COMMAND_NAMES.filter((c) => c.startsWith(input));
-      if (matches.length === 1) {
-        const completion = matches[0];
-        term.write(completion.slice(input.length));
-        currentCommandRef.current = completion;
-      } else if (matches.length > 1) {
-        term.write(`\r\n${ANSI.yellow}${matches.join("  ")}${ANSI.reset}\r\n`);
-        term.write(PROMPT + currentCommandRef.current);
-      }
-    };
+      const handleTab = () => {
+        const input = currentCommandRef.current;
+        if (input.length === 0) return;
+        const matches = COMMAND_NAMES.filter((c) => c.startsWith(input));
+        if (matches.length === 1) {
+          const completion = matches[0];
+          term.write(completion.slice(input.length));
+          currentCommandRef.current = completion;
+        } else if (matches.length > 1) {
+          term.write(`\r\n${ANSI.yellow}${matches.join("  ")}${ANSI.reset}\r\n`);
+          term.write(PROMPT + currentCommandRef.current);
+        }
+      };
 
-    // Tab completes; Escape hands focus back to the page so the terminal is
-    // never a keyboard trap.
-    term.attachCustomKeyEventHandler((event) => {
-      if (event.type !== "keydown") return true;
-      if (event.key === "Tab") {
-        event.preventDefault();
-        handleTab();
-        return false;
-      }
-      if (event.key === "Escape") {
-        term.blur();
-        return false;
-      }
-      return true;
-    });
+      // Tab completes; Escape hands focus back to the page so the terminal is
+      // never a keyboard trap.
+      term.attachCustomKeyEventHandler((event) => {
+        if (event.type !== "keydown") return true;
+        if (event.key === "Tab") {
+          event.preventDefault();
+          handleTab();
+          return false;
+        }
+        if (event.key === "Escape") {
+          term.blur();
+          return false;
+        }
+        return true;
+      });
 
-    /* ---------------- input handling ---------------- */
+      /* ---------------- input handling ---------------- */
 
-    term.onData((data) => {
-      if (data === "\r") {
-        // Enter
-        term.write("\r\n");
-        const cmd = currentCommandRef.current.trim();
-        currentCommandRef.current = "";
-        if (cmd) {
-          historyRef.current.push(cmd);
-          historyIndexRef.current = historyRef.current.length;
-          if (cmd === "clear") {
-            term.clear();
-          } else {
-            handleCommand(cmd);
+      term.onData((data) => {
+        if (data === "\r") {
+          // Enter
+          term.write("\r\n");
+          const cmd = currentCommandRef.current.trim();
+          currentCommandRef.current = "";
+          if (cmd) {
+            historyRef.current.push(cmd);
+            historyIndexRef.current = historyRef.current.length;
+            if (cmd === "clear") {
+              term.clear();
+            } else {
+              handleCommand(cmd);
+            }
           }
+          term.write(PROMPT);
+        } else if (data === "\x7f") {
+          // Backspace
+          if (currentCommandRef.current.length > 0) {
+            redrawInput(currentCommandRef.current.slice(0, -1));
+          }
+        } else if (data === "\x1b[A") {
+          // ArrowUp — history back
+          if (historyIndexRef.current > 0) {
+            historyIndexRef.current -= 1;
+            redrawInput(historyRef.current[historyIndexRef.current] ?? "");
+          }
+        } else if (data === "\x1b[B") {
+          // ArrowDown — history forward
+          if (historyIndexRef.current < historyRef.current.length - 1) {
+            historyIndexRef.current += 1;
+            redrawInput(historyRef.current[historyIndexRef.current] ?? "");
+          } else {
+            historyIndexRef.current = historyRef.current.length;
+            redrawInput("");
+          }
+        } else if (data === "\x03") {
+          // Ctrl+C
+          term.write("^C\r\n");
+          currentCommandRef.current = "";
+          term.write(PROMPT);
+        } else if (data === "\x0c") {
+          // Ctrl+L
+          term.clear();
+          term.write(PROMPT + currentCommandRef.current);
+        } else if (data.length > 1) {
+          // Paste
+          const cleaned = data.replace(/[\r\n\x1b]/g, "");
+          if (cleaned) {
+            currentCommandRef.current += cleaned;
+            term.write(cleaned);
+          }
+        } else if (data >= " ") {
+          // Printable character
+          currentCommandRef.current += data;
+          term.write(data);
         }
-        term.write(PROMPT);
-      } else if (data === "\x7f") {
-        // Backspace
-        if (currentCommandRef.current.length > 0) {
-          redrawInput(currentCommandRef.current.slice(0, -1));
-        }
-      } else if (data === "\x1b[A") {
-        // ArrowUp — history back
-        if (historyIndexRef.current > 0) {
-          historyIndexRef.current -= 1;
-          redrawInput(historyRef.current[historyIndexRef.current] ?? "");
-        }
-      } else if (data === "\x1b[B") {
-        // ArrowDown — history forward
-        if (historyIndexRef.current < historyRef.current.length - 1) {
-          historyIndexRef.current += 1;
-          redrawInput(historyRef.current[historyIndexRef.current] ?? "");
-        } else {
-          historyIndexRef.current = historyRef.current.length;
-          redrawInput("");
-        }
-      } else if (data === "\x03") {
-        // Ctrl+C
-        term.write("^C\r\n");
-        currentCommandRef.current = "";
-        term.write(PROMPT);
-      } else if (data === "\x0c") {
-        // Ctrl+L
-        term.clear();
-        term.write(PROMPT + currentCommandRef.current);
-      } else if (data.length > 1) {
-        // Paste
-        const cleaned = data.replace(/[\r\n\x1b]/g, "");
-        if (cleaned) {
-          currentCommandRef.current += cleaned;
-          term.write(cleaned);
-        }
-      } else if (data >= " ") {
-        // Printable character
-        currentCommandRef.current += data;
-        term.write(data);
-      }
+      });
+
+      // Welcome message + initial prompt. No auto-focus: it would steal focus
+      // (and raise the keyboard on mobile) the moment the section scrolls in.
+      term.write(welcome(term.cols));
+      term.write(PROMPT);
+
+      return () => {
+        cancelAnimationFrame(raf);
+        window.removeEventListener("resize", onResize);
+        ro.disconnect();
+        terminalRef.current = null;
+        term.dispose();
+      };
+    };
+
+    // xterm measures a glyph once at open and sizes every cell from it, so it
+    // must see the real font. The promise is already settled by the time this
+    // section scrolls in (the nav uses Geist Mono from first paint); on a slow
+    // connection the terminal waits rather than measuring the fallback.
+    let disposed = false;
+    let unmount: (() => void) | undefined;
+    const fontsReady = document.fonts?.ready ?? Promise.resolve();
+    fontsReady.then(() => {
+      if (!disposed) unmount = mount();
     });
-
-    // Welcome message + initial prompt. No auto-focus: it would steal focus
-    // (and raise the keyboard on mobile) the moment the section scrolls in.
-    term.write(welcome(term.cols));
-    term.write(PROMPT);
-
-    /* ---------------- cleanup ---------------- */
 
     return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", onResize);
-      ro.disconnect();
-      terminalRef.current = null;
-      term.dispose();
+      disposed = true;
+      unmount?.();
     };
   }, [handleCommand]);
 
