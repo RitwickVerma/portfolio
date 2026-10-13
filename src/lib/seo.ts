@@ -2,7 +2,7 @@ import { SITE_URL, socialLinks } from "./data";
 
 export const SITE_TITLE = "Ritwick Verma — Software Engineer";
 export const SITE_DESCRIPTION =
-  "Backend engineer at eBay. I build — and self-host — the systems I ship: Android apps, a trading bot, a C++ game engine and a 15-guest Proxmox homelab.";
+  "Backend engineer at eBay. Case studies with the numbers: reverse-engineering a TV's video capture for an ambilight, falsifying my own trading bot, and running a 15-guest homelab like production.";
 
 /** schema.org Person for the home and resume pages. */
 export function personJsonLd() {

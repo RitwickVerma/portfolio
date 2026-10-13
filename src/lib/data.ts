@@ -62,7 +62,7 @@ export const projects: Project[] = [
     title: "Monster Sudoku Solver",
     description: "Constraint-satisfaction solver for large Sudoku grids.",
     role: "UC Irvine AI coursework",
-    metric: { value: "MRV + LCV", label: "ordering heuristics, with forward checking and Norvig-style propagation" },
+    metric: { value: "MRV + LCV", label: "ordering heuristics + forward checking" },
     why: "Variable and value ordering plus constraint propagation turn brute-force backtracking into guided search.",
     tech: ["Python", "CSP", "Algorithms"],
     links: {},
