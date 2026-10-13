@@ -3,6 +3,9 @@
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--fg);
+  /* `fg` is the name every component uses (text-fg, text-fg/70, border-fg/60).
+     Without this alias those utilities generate nothing and render full-strength. */
+  --color-fg: var(--fg);
   --color-surface: var(--surface);
   --color-accent: var(--accent);
   --color-muted: var(--muted);
