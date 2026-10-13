@@ -49,7 +49,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Row({ left, right }: { left: React.ReactNode; right?: string }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-6">
       <h3 className="text-fg font-medium">{left}</h3>
       {right && <span className="font-mono text-xs text-muted print:text-[9pt]">{right}</span>}
     </div>
@@ -85,7 +85,7 @@ export default function ResumePage() {
           <p className="mt-1 text-fg/80 print:mt-0">
             {hero.line} {hero.lineTwo}
           </p>
-          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-sm print:mt-1 print:text-[9pt]">
+          <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 w-fit font-mono text-sm print:mt-1 print:grid-cols-2 print:text-[9pt]">
             {contact.map((c) => (
               <li key={c.href}>
                 <a href={c.href} className="text-accent hover:underline underline-offset-4">
@@ -124,7 +124,7 @@ export default function ResumePage() {
             {projects.map((p) => (
               <li key={p.slug} className="text-sm print:text-[10pt]">
                 <span className="text-fg font-medium">{p.title}</span>{" "}
-                <span className="font-mono text-xs text-muted print:text-[9pt]">
+                <span className="font-mono text-xs text-fg/70 print:text-[9pt]">
                   ({p.tech.join(", ")})
                 </span>{" "}
                 — {p.description}{" "}
@@ -137,17 +137,11 @@ export default function ResumePage() {
         </Section>
 
         <Section title="Education">
-          <ul className="space-y-2 print:space-y-0.5">
+          <ul className="space-y-3 print:space-y-1">
             {education.map((ed) => (
               <li key={ed.school}>
-                <Row
-                  left={
-                    <>
-                      {ed.school} <span className="text-muted font-normal">— {ed.degree}</span>
-                    </>
-                  }
-                  right={ed.period}
-                />
+                <Row left={ed.school} right={ed.period} />
+                <p className="text-sm text-fg/70 print:text-[10pt]">{ed.degree}</p>
               </li>
             ))}
           </ul>
