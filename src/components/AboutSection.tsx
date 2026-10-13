@@ -1,11 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { skills, experiences, education, services } from "@/lib/data";
+import { skills, experiences, education, services, projects } from "@/lib/data";
 import { VARIANTS } from "@/lib/motion";
 
 const { stagger, fadeUp } = VARIANTS;
 const inView = { once: true, margin: "-50px" } as const;
+
+// The bio quotes the ShutUp download count: read it from the project entry so
+// one edit in lib/data updates the card, the resume and this paragraph.
+const shutup = projects.find((p) => p.slug === "shutup");
 
 export default function AboutSection() {
   return (
@@ -40,8 +44,8 @@ export default function AboutSection() {
             I like working where systems and software meet — a C++ game engine
             with no engine underneath it, an automated trading bot with a CI
             pipeline that refuses to deploy red. My Android app{" "}
-            <span className="text-accent">ShutUp</span> reached 26,000+
-            downloads.
+            <span className="text-accent">ShutUp</span> reached{" "}
+            {shutup?.metric.value ?? "26,000+"} downloads.
           </motion.p>
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             Outside of work I run a{" "}

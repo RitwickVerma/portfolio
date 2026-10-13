@@ -7,3 +7,6 @@ node_modules/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Serena (editor agent) workspace config
+.serena/

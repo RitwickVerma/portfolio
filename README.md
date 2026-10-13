@@ -8,15 +8,16 @@ server runtime, no third-party requests at view time.
 ## Stack
 
 - **Next.js 16** (App Router, static export) + React 19 + TypeScript
-- **three.js / React Three Fiber** — the 3D datacenter hero. WebGPU + a TSL
-  compute airflow layer when an adapter is available, otherwise the WebGL2
-  scene. Both load lazily after idle behind a static SVG poster.
+- **three.js / React Three Fiber** — the 3D datacenter hero (WebGL2), loaded
+  lazily after idle behind a static SVG poster. A WebGPU build with a TSL
+  compute airflow layer exists behind `?renderer=webgpu`; it stays opt-in
+  until it has been verified on real GPUs.
 - **framer-motion** — the only animation library; every curve and duration
   comes from `src/lib/motion.ts`
 - **xterm.js** — the terminal section; mounted when it nears the viewport
 - **Tailwind CSS v4**
 - **Vitest** — pure logic only (data integrity, terminal output, motion
-  tokens, SEO helpers, the hero phase machine)
+  tokens, SEO helpers, the hero phase machine, hero label layout)
 
 ## Layout
 
@@ -37,12 +38,13 @@ stars) are snapshots — re-check them before editing.
 npm ci
 npm run dev      # local dev server
 npm run lint     # ESLint (0 warnings expected)
+npm run typecheck
 npm test         # Vitest
 npm run build    # static export → out/
 ```
 
 ## Deploy
 
-CI runs `lint + tsc + test` on every push; a push to `master` then has CI SSH
+CI runs `lint + typecheck + test` on every push; a push to `master` then has CI SSH
 to the build host and run its `rebuild.sh` (pull, `npm ci`, `npm run build`,
 copy `out/` into the nginx web root). Nothing is built on the runner.
