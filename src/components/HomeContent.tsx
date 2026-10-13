@@ -77,10 +77,21 @@ export default function HomeContent() {
               Radii are px-clamped: on a 360px phone the block is nearly full-width. */}
           <div
             aria-hidden="true"
-            className="absolute inset-0 pointer-events-none z-[5] print:hidden"
+            className="absolute inset-0 pointer-events-none z-[5] print:hidden hidden sm:block"
             style={{
               background:
                 "radial-gradient(ellipse clamp(330px, 46vw, 760px) clamp(250px, 36vh, 400px) at 50% 50%, rgba(10,10,15,0.94) 0%, rgba(10,10,15,0.9) 58%, rgba(10,10,15,0.5) 80%, rgba(10,10,15,0) 100%)",
+            }}
+          />
+          {/* Phones: the text block spans the full width, so a desktop-strength scrim
+              blacks out the whole scene. Lighter core, tighter falloff — the large
+              white type still holds contrast, and the racks stay visible. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none z-[5] print:hidden sm:hidden"
+            style={{
+              background:
+                "radial-gradient(ellipse 62% 26% at 50% 50%, rgba(10,10,15,0.72) 0%, rgba(10,10,15,0.55) 60%, rgba(10,10,15,0) 100%)",
             }}
           />
 
