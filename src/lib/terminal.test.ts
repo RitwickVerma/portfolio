@@ -31,6 +31,13 @@ describe("terminal output", () => {
     for (const p of projects) expect(text).toContain(p.title);
   });
 
+  it("experience keeps a gap between the period column and the role", () => {
+    for (const line of plain(out.experience).split("\r\n").filter(Boolean)) {
+      expect(line, line).toMatch(/\S  +\S/);
+      expect(line).toMatch(/ @ /);
+    }
+  });
+
   it("points the resume command at the /resume page, not a PDF", () => {
     expect(plain(out.resume)).toContain("/resume");
     expect(plain(out.resume)).not.toMatch(/raw\.githubusercontent|\.pdf/);

@@ -81,6 +81,8 @@ export function commandOutputs(): Record<string, string> {
   const guests = services.length;
   const featured = projects.filter((p) => p.featured).length;
   const ebay = experiences[0];
+  // Period column sized to the longest period, so the role never runs into it.
+  const periodCol = Math.max(...experiences.map((e) => e.period.length)) + 2;
 
   return {
     help:
@@ -98,9 +100,9 @@ export function commandOutputs(): Record<string, string> {
       "  clear       Clear the terminal\r\n",
 
     whoami:
-      `${g("Ritwick Verma")} — backend engineer at eBay (${ebay.location?.split(",")[0]}).\r\n` +
-      "MCS from UC Irvine. Writes Android apps, a trading bot and a C++ game\r\n" +
-      `engine, and runs a ${guests}-guest homelab on Proxmox.\r\n`,
+      `${g("Ritwick Verma")} — ${ebay.role} at eBay (${ebay.location?.split(",")[0]}),\r\n` +
+      "on Cassini, eBay's C++ search engine. MCS from UC Irvine. Writes Android\r\n" +
+      `apps, a trading bot and a C++ game engine; runs a ${guests}-guest homelab.\r\n`,
 
     projects: projects
       .map((p) => `${g(p.title.padEnd(24))}${p.metric.value} ${p.metric.label}\r\n`)
@@ -119,7 +121,7 @@ export function commandOutputs(): Record<string, string> {
       wrapList("Tools", skills.tools),
 
     experience: experiences
-      .map((e) => `${g(e.period.padEnd(18))}${e.role} @ ${e.company}\r\n`)
+      .map((e) => `${g(e.period.padEnd(periodCol))}${e.role} @ ${e.company}\r\n`)
       .join(""),
 
     resume: `${g("Resume:")} ${SITE_URL}/resume  ${ANSI.dim}(Save as PDF from the page)${ANSI.reset}\r\n`,

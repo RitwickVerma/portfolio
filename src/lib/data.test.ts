@@ -34,6 +34,14 @@ describe("data integrity", () => {
     expect(services.filter((s) => s.ct.startsWith("VM"))).toHaveLength(2);
   });
 
+  it("lists the current eBay role first, then the earlier eBay level, newest first", () => {
+    expect(experiences[0]).toMatchObject({ company: "eBay", role: "Software Engineer 3" });
+    expect(experiences[0].period).toMatch(/Present$/);
+    expect(experiences[1]).toMatchObject({ company: "eBay", role: "Software Engineer 2" });
+    expect(experiences.filter((e) => e.company === "eBay")).toHaveLength(2);
+    expect(experiences.find((e) => e.company === "Shoelace Wireless")?.period).toBe("Jun — Sep 2020");
+  });
+
   it("every experience has company, role, and period", () => {
     for (const e of experiences) {
       expect(e.company.length).toBeGreaterThan(0);

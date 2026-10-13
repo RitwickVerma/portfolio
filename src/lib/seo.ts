@@ -2,7 +2,7 @@ import { SITE_URL, socialLinks } from "./data";
 
 export const SITE_TITLE = "Ritwick Verma — Software Engineer";
 export const SITE_DESCRIPTION =
-  "Backend engineer at eBay. I build — and self-host — the systems I ship: Android apps, a trading bot, a C++ game engine and a 15-guest Proxmox homelab.";
+  "Backend engineer on eBay's C++ search engine. I build — and self-host — the systems I ship: Android apps, a trading bot, a C++ game engine and a 15-guest Proxmox homelab.";
 
 /** schema.org Person for the home and resume pages. */
 export function personJsonLd() {
@@ -11,7 +11,7 @@ export function personJsonLd() {
     "@type": "Person",
     name: "Ritwick Verma",
     url: SITE_URL,
-    jobTitle: "Software Engineer",
+    jobTitle: "Software Engineer 3",
     worksFor: { "@type": "Organization", name: "eBay", url: "https://www.ebay.com" },
     alumniOf: [
       { "@type": "CollegeOrUniversity", name: "University of California, Irvine" },

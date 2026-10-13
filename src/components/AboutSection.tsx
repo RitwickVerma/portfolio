@@ -35,10 +35,13 @@ export default function AboutSection() {
         >
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             I&apos;m a software engineer at{" "}
-            <span className="text-accent">eBay</span> in San Francisco, where I
-            build backend services at scale. I earned my MCS from{" "}
-            <span className="text-accent">UC Irvine</span> and my BTech in CS
-            from SRM Institute.
+            <span className="text-accent">eBay</span> in San Francisco, on the
+            Search Backend org&apos;s Query Search Stack team: Cassini, eBay&apos;s
+            distributed C++ search engine. Since 2023 I own{" "}
+            <span className="text-accent">fitment</span>, the subsystem that
+            decides whether a listing fits the product a query names. MCS from{" "}
+            <span className="text-accent">UC Irvine</span>, BTech in CS from SRM
+            Institute.
           </motion.p>
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             I like working where systems and software meet — a C++ game engine
@@ -105,7 +108,7 @@ export default function AboutSection() {
         <ol className="space-y-0">
           {experiences.map((exp) => (
             <motion.li
-              key={exp.company}
+              key={`${exp.company} ${exp.period}`}
               variants={fadeUp}
               className="relative pl-8 pb-8 border-l border-white/[0.08]"
             >

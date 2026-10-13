@@ -38,8 +38,8 @@ const contact = [
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-8 print:mt-3">
-      <h2 className="font-mono text-accent text-sm tracking-widest uppercase pb-2 mb-4 border-b border-white/[0.08] print:mb-1.5 print:pb-0.5 print:text-[9pt] print:border-black">
+    <section className="mt-8 print:mt-2">
+      <h2 className="font-mono text-accent text-sm tracking-widest uppercase pb-2 mb-4 border-b border-white/[0.08] print:mb-1 print:pb-0 print:text-[9pt] print:border-black">
         {title}
       </h2>
       {children}
@@ -76,7 +76,7 @@ export default function ResumePage() {
       <main
         id="main"
         tabIndex={-1}
-        className="focus:outline-none max-w-3xl mx-auto px-6 py-12 text-fg/90 print:max-w-none print:p-0 print:text-[10pt] print:leading-snug"
+        className="focus:outline-none max-w-3xl mx-auto px-6 py-12 text-fg/90 print:max-w-none print:p-0 print:text-[10pt] print:leading-tight"
       >
         <header>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-fg print:text-[20pt]">
@@ -99,7 +99,7 @@ export default function ResumePage() {
         <Section title="Experience">
           <ul className="space-y-5 print:space-y-1.5">
             {experiences.map((e) => (
-              <li key={e.company}>
+              <li key={`${e.company} ${e.period}`}>
                 <Row
                   left={
                     <>
@@ -140,8 +140,17 @@ export default function ResumePage() {
           <ul className="space-y-3 print:space-y-1">
             {education.map((ed) => (
               <li key={ed.school}>
-                <Row left={ed.school} right={ed.period} />
-                <p className="text-sm text-fg/70 print:text-[10pt]">{ed.degree}</p>
+                {/* Screen: degree on its own line. Print: inline, to hold one page. */}
+                <Row
+                  left={
+                    <>
+                      {ed.school}
+                      <span className="hidden print:inline font-normal"> — {ed.degree}</span>
+                    </>
+                  }
+                  right={ed.period}
+                />
+                <p className="text-sm text-fg/70 print:hidden">{ed.degree}</p>
               </li>
             ))}
           </ul>

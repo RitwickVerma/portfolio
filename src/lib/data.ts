@@ -112,23 +112,36 @@ export const projects: Project[] = [
   },
 ];
 
+// Roles, dates and the Cassini/QSS/fitment wording follow the owner's public
+// LinkedIn profile (read 2026-10-13). Newest first; the terminal's `whoami`
+// reads experiences[0] as the current role.
 export const experiences: Experience[] = [
   {
     company: "eBay",
-    role: "Software Engineer",
+    role: "Software Engineer 3",
     location: "San Francisco, CA",
-    period: "2021 — Present",
+    period: "Jun 2023 — Present",
     description: [
-      "Backend services at scale for one of the world's largest e-commerce platforms.",
+      "Own and maintain fitment, the Cassini subsystem that decides whether a sellable item is compatible with the product a buyer's query names.",
     ],
-    tech: [],
+    tech: ["C++", "Cassini", "Search"],
+  },
+  {
+    company: "eBay",
+    role: "Software Engineer 2",
+    location: "San Jose, CA",
+    period: "Mar 2021 — Jun 2023",
+    description: [
+      "Query Search Stack (QSS) team in the Search Backend org: Cassini, eBay's distributed, highly available C++ search engine.",
+    ],
+    tech: ["C++", "Cassini", "Search"],
   },
   {
     company: "Shoelace Wireless",
     role: "Software Development Intern",
-    period: "Jun — Dec 2020",
+    period: "Jun — Sep 2020",
     description: [
-      "Built a tool that records radio-technology metrics during network speed tests.",
+      "Built a tool that records radio-technology metrics (5G, WCDMA) during network speed tests, stored in Room (SQLite) and uploaded to AWS.",
       "Built a map-based crowd-density app on MapBox with an MVVM architecture and a Retrofit API client.",
     ],
     tech: ["Android", "MapBox", "Retrofit", "MVVM"],
