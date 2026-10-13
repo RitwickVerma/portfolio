@@ -2,50 +2,47 @@
 
 Personal portfolio — [www.ritwickverma.dev](https://www.ritwickverma.dev)
 
+A static site (`output: "export"`): pure HTML/JS/CSS, served by nginx. No
+server runtime, no third-party requests at view time.
+
 ## Stack
 
-- **Next.js 16** + React 19 + TypeScript
-- **Three.js** / React Three Fiber — 3D homelab datacenter hero
-- **Custom GLSL shader** — full-viewport animated network grid background
-- **Framer Motion** — stagger reveals, 3D tilt cards
-- **GSAP ScrollTrigger** — hero pinning + cinematic reveals
-- **xterm.js** — interactive terminal with command system
-- **Tailwind CSS v4** — dark theme, glassmorphism
+- **Next.js 16** (App Router, static export) + React 19 + TypeScript
+- **three.js / React Three Fiber** — the 3D datacenter hero. WebGPU + a TSL
+  compute airflow layer when an adapter is available, otherwise the WebGL2
+  scene. Both load lazily after idle behind a static SVG poster.
+- **framer-motion** — the only animation library; every curve and duration
+  comes from `src/lib/motion.ts`
+- **xterm.js** — the terminal section; mounted when it nears the viewport
+- **Tailwind CSS v4**
+- **Vitest** — pure logic only (data integrity, terminal output, motion
+  tokens, SEO helpers, the hero phase machine)
 
-## Features
-
-- **3D datacenter** — isometric Proxmox rack visualization with mouse-reactive camera
-- **Shader background** — live network grid that breathes, shifts color, and reacts to scroll
-- **Interactive terminal** — `whoami`, `projects`, `homelab`, `neofetch`, `matrix` and more
-- **3D tilt cards** — project cards rotate toward cursor with perspective glow
-- **Custom cursor** — particle trail that follows mouse
-- **Cinematic scroll** — hero pins while content scrolls over, sections sweep in
-
-## Hosting
-
-Served from a Proxmox LXC (CT114) on my homelab infrastructure:
+## Layout
 
 ```
-Cloudflare → VM110 (Traefik) → CT114:3456 (Next.js)
+src/app/(site)/    home page + nav, footer, backdrop, cursor trail
+src/app/resume/    /resume — print-optimised, rendered from lib/data
+src/app/og.png/    Open Graph card, rendered to a real .png at build
+src/lib/data.ts    single source for home, /resume and the terminal
+src/lib/motion.ts  easing, duration, stagger, spring tokens
 ```
+
+Everything the site claims lives in `src/lib/data.ts`. Counts (guests, tests,
+stars) are snapshots — re-check them before editing.
 
 ## Development
 
 ```bash
-npm install
+npm ci
 npm run dev      # local dev server
-npm run build    # production build
-npm run lint     # ESLint
+npm run lint     # ESLint (0 warnings expected)
+npm test         # Vitest
+npm run build    # static export → out/
 ```
 
 ## Deploy
 
-```bash
-# Manual: build + push to CT114
-npm run build
-tar czf deploy.tar.gz --exclude='node_modules' --exclude='.git' --exclude='.next/cache' .next package.json package-lock.json next.config.ts public/
-scp deploy.tar.gz root@192.168.86.114:/tmp/
-ssh root@192.168.86.114 "cd /opt/portfolio && rm -rf .next public && tar xzf /tmp/deploy.tar.gz && npm ci --omit=dev && systemctl restart portfolio"
-
-# Or via CI (auto-deploy on push to main)
-```
+CI runs `lint + tsc + test` on every push; a push to `master` then has CI SSH
+to the build host and run its `rebuild.sh` (pull, `npm ci`, `npm run build`,
+copy `out/` into the nginx web root). Nothing is built on the runner.
