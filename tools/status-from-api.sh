@@ -5,7 +5,10 @@
 # One-time setup on the Proxmox host (read-only, no shell access):
 #   pveum user add status@pve
 #   pveum user token add status@pve site --privsep 1
+#   pveum acl modify / --users status@pve --roles PVEAuditor
 #   pveum acl modify / --tokens 'status@pve!site' --roles PVEAuditor
+# (Both: with --privsep 1 a token gets only what the user ALSO holds, so the
+# role on the token alone yields 403.)
 # Put the printed secret in /etc/portfolio-status.env (chmod 600):
 #   PVE_URL=https://<host LAN address>:8006   # CT114 reaches it; checked: HTTP 401 without a token
 #   PVE_NODE=<node name>
@@ -58,4 +61,4 @@ JS
 # Publish only a non-empty guest list, atomically.
 node -e 'const d=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); if(d.schema!==1||!d.guests.length) process.exit(1)' "$TMP"
 mkdir -p "$(dirname "$OUT")"
-cp "$TMP" "$OUT.new" && mv "$OUT.new" "$OUT"
+cp "$TMP" "$OUT.new" && chmod 644 "$OUT.new" && mv "$OUT.new" "$OUT"
