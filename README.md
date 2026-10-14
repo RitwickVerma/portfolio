@@ -31,7 +31,7 @@ src/app/(site)/notes/  /notes index and /notes/[slug] pages, one OG card each
 src/content/notes/ the notes themselves, MDX; registered in lib/notes.ts
 src/app/resume/    /resume — print-optimised, rendered from lib/data
 src/lib/status.ts  /status.json contract (schema 1) + pure helpers; statusStore.ts fetches it once
-tools/             status-producer.sh (runs on the Proxmox host, cron */5) + status.example.json
+tools/             status-from-api.sh (cron on the web container) + fixtures + example
 src/app/og.png/    Open Graph card, rendered to a real .png at build
 src/lib/data.ts    single source for home, /resume and the terminal
 src/lib/motion.ts  easing, duration, stagger, spring tokens
@@ -54,12 +54,19 @@ npm run build    # static export → out/
 ## Live status
 
 The Homelab section, the hero's rack LEDs and the terminal's `status` command
-read `/status.json` if the host publishes one: guest ids, running/stopped,
-uptime, host load. Nothing that identifies a machine. `tools/status-producer.sh`
-writes it from `pct`/`qm` and pushes it into the web container; nginx serves it
-from outside the deploy root with `Cache-Control: no-store`. Without the file
-(any local build) every reader shows the static inventory. `parseStatus`
-rejects anything off-schema so a bad file can never render as a half-truth.
+read `/status.json` if one exists: guest ids, running/stopped, uptime, host
+load. Nothing that identifies a machine.
+
+The site is served from a container on the lab it describes, so that
+container produces the file itself: `tools/status-from-api.sh` calls the
+Proxmox API with a read-only token (role PVEAuditor, no shell access) every
+five minutes and writes the JSON atomically outside the deploy root. The
+script header has the three `pveum` commands, the env file and the cron line.
+Nothing is pushed from the host and nothing is installed on it. Without the
+file (any local build) every reader shows the static inventory.
+`parseStatus` rejects anything off-schema, so a bad file never renders as a
+half-truth; a test runs the script against recorded API fixtures and feeds
+the result through that parser.
 
 ## Deploy
 

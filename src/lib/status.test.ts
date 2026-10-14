@@ -12,6 +12,10 @@ import {
 } from "./status";
 import { services } from "./data";
 import example from "../../tools/status.example.json";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const NOW = Date.parse("2026-10-13T20:00:00Z");
 
@@ -91,5 +95,19 @@ describe("views and formatting", () => {
     expect(formatAge(2 * 3_600_000)).toBe("2 h ago");
     expect(formatAge(72 * 3_600_000)).toBe("3 d ago");
     expect(ageMs(s, NOW)).toBe(3 * 60_000);
+  });
+});
+
+describe("tools/status-from-api.sh", () => {
+  it("turns Proxmox API fixtures into a file the site accepts", () => {
+    const out = join(mkdtempSync(join(tmpdir(), "status-")), "status.json");
+    execFileSync("sh", ["tools/status-from-api.sh"], {
+      env: { ...process.env, OUT: out, PVE_FIXTURE_DIR: "tools/fixtures" },
+    });
+    const status = parseStatus(JSON.parse(readFileSync(out, "utf8")));
+    expect(status).not.toBeNull();
+    expect(status!.guests.map((g) => g.id)).toEqual(["CT107", "CT114", "VM110"]); // storage rows dropped, numeric order
+    expect(status!.guests.find((g) => g.id === "CT107")).toEqual({ id: "CT107", state: "stopped" });
+    expect(status!.host.load1).toBe(0.38);
   });
 });

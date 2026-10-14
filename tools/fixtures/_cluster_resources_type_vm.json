@@ -1,0 +1,1 @@
+{"data":[{"type":"lxc","vmid":114,"status":"running","uptime":88212,"name":"portfolio"},{"type":"lxc","vmid":107,"status":"stopped","name":"paperless"},{"type":"qemu","vmid":110,"status":"running","uptime":2371701,"name":"gateway"},{"type":"storage","id":"x"}]}
