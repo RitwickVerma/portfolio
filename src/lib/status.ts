@@ -1,6 +1,6 @@
 // Live homelab status: the shape of /status.json, its validation, and the
 // pure helpers the Homelab section, the hero LEDs and the terminal share.
-// The file is written on the Proxmox host by tools/status-producer.sh every
+// The file is written on the web container by tools/status-from-api.sh every
 // five minutes and served same-origin by nginx. Nothing in it identifies a
 // machine beyond the CT/VM id already printed on the page.
 
