@@ -77,7 +77,7 @@ export default function AboutSection() {
                 {group.items.map((s) => (
                   <li
                     key={s}
-                    className="px-3 py-1 rounded-full text-xs glass border-border text-fg/80"
+                    className="px-2.5 py-1 rounded-md text-xs font-mono glass text-fg/80"
                   >
                     {s}
                   </li>

@@ -9,7 +9,7 @@ export default function NotesSection() {
       <div className="flex items-baseline justify-between gap-6 mb-8">
         <h2 className="font-mono text-muted text-sm tracking-widest uppercase">Notes</h2>
         <Link href="/notes/" className="text-sm text-accent hover:underline underline-offset-4">
-          All notes →
+          All notes →
         </Link>
       </div>
       <ol className="grid md:grid-cols-2 gap-x-12 gap-y-10">
