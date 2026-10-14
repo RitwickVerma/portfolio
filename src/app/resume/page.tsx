@@ -4,16 +4,16 @@ import PrintButton from "@/components/PrintButton";
 import { experiences, education, projects, skills, socialLinks, hero } from "@/lib/data";
 
 const DESCRIPTION =
-  "Résumé of Ritwick Verma — backend engineer at eBay. Experience, projects, education and skills.";
+  "Resume of Ritwick Verma, software engineer at eBay. Experience, projects, education and skills.";
 
-const OG_ALT = "Resume — Ritwick Verma, backend engineer at eBay.";
+const OG_ALT = "Resume of Ritwick Verma, software engineer at eBay.";
 
 export const metadata: Metadata = {
   title: "Resume",
   description: DESCRIPTION,
   alternates: { canonical: "/resume/" },
   openGraph: {
-    title: "Resume — Ritwick Verma",
+    title: "Resume · Ritwick Verma",
     description: DESCRIPTION,
     url: "/resume/",
     siteName: "ritwickverma.dev",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Resume — Ritwick Verma",
+    title: "Resume · Ritwick Verma",
     description: DESCRIPTION,
     images: [{ url: "/resume/og.png", alt: OG_ALT }],
   },
@@ -31,15 +31,15 @@ export const metadata: Metadata = {
 
 const contact = [
   { label: socialLinks.email, href: `mailto:${socialLinks.email}` },
-  { label: "linkedin.com/in/ritwickverma", href: "https://www.linkedin.com/in/ritwickverma" },
+  { label: "linkedin.com/in/ritwick-verma", href: socialLinks.linkedin },
   { label: "github.com/RitwickVerma", href: socialLinks.github },
   { label: "gitlab.com/ritwick7", href: socialLinks.gitlab },
 ];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-8 print:mt-3">
-      <h2 className="font-mono text-accent text-sm tracking-widest uppercase pb-2 mb-4 border-b border-white/[0.08] print:mb-1.5 print:pb-0.5 print:text-[9pt] print:border-black">
+    <section className="mt-8 print:mt-2">
+      <h2 className="font-mono text-muted text-sm tracking-widest uppercase pb-2 mb-4 border-b border-border print:mb-1 print:pb-0 print:text-[9pt] print:border-black">
         {title}
       </h2>
       {children}
@@ -58,8 +58,8 @@ function Row({ left, right }: { left: React.ReactNode; right?: string }) {
 
 export default function ResumePage() {
   return (
-    <div className="resume cursor-auto min-h-screen">
-      <div className="print:hidden border-b border-white/[0.06]">
+    <div className="resume min-h-screen">
+      <div className="print:hidden border-b border-border">
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
           <Link href="/" className="font-mono text-sm text-accent hover:underline underline-offset-4">
             ← ritwickverma.dev
@@ -76,7 +76,7 @@ export default function ResumePage() {
       <main
         id="main"
         tabIndex={-1}
-        className="focus:outline-none max-w-3xl mx-auto px-6 py-12 text-fg/90 print:max-w-none print:p-0 print:text-[10pt] print:leading-snug"
+        className="focus:outline-none max-w-3xl mx-auto px-6 py-12 text-fg/90 print:max-w-none print:p-0 print:text-[10pt] print:leading-tight"
       >
         <header>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-fg print:text-[20pt]">
@@ -99,7 +99,7 @@ export default function ResumePage() {
         <Section title="Experience">
           <ul className="space-y-5 print:space-y-1.5">
             {experiences.map((e) => (
-              <li key={e.company}>
+              <li key={`${e.company} ${e.period}`}>
                 <Row
                   left={
                     <>
@@ -121,13 +121,12 @@ export default function ResumePage() {
 
         <Section title="Projects">
           <ul className="space-y-3 print:space-y-1">
-            {projects.map((p) => (
+            {projects.filter((p) => p.onResume !== false).map((p) => (
               <li key={p.slug} className="text-sm print:text-[10pt]">
                 <span className="text-fg font-medium">{p.title}</span>{" "}
                 <span className="font-mono text-xs text-fg/70 print:text-[9pt]">
                   ({p.tech.join(", ")})
-                </span>{" "}
-                — {p.description}{" "}
+                </span>: {p.description}{" "}
                 <span className="text-fg/80">
                   {p.metric.value} {p.metric.label}.
                 </span>
@@ -140,8 +139,17 @@ export default function ResumePage() {
           <ul className="space-y-3 print:space-y-1">
             {education.map((ed) => (
               <li key={ed.school}>
-                <Row left={ed.school} right={ed.period} />
-                <p className="text-sm text-fg/70 print:text-[10pt]">{ed.degree}</p>
+                {/* Screen: degree on its own line. Print: inline, to hold one page. */}
+                <Row
+                  left={
+                    <>
+                      {ed.school}
+                      <span className="hidden print:inline font-normal">, {ed.degree}</span>
+                    </>
+                  }
+                  right={ed.period}
+                />
+                <p className="text-sm text-fg/70 print:hidden">{ed.degree}</p>
               </li>
             ))}
           </ul>

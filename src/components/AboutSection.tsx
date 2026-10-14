@@ -1,11 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { skills, experiences, education, services } from "@/lib/data";
+import { skills, experiences, education, services, projects } from "@/lib/data";
 import { VARIANTS } from "@/lib/motion";
 
 const { stagger, fadeUp } = VARIANTS;
 const inView = { once: true, margin: "-50px" } as const;
+
+// The bio quotes the ShutUp download count: read it from the project entry so
+// one edit in lib/data updates the card, the resume and this paragraph.
+const shutup = projects.find((p) => p.slug === "shutup");
 
 export default function AboutSection() {
   return (
@@ -15,7 +19,7 @@ export default function AboutSection() {
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: "-100px" }}
-        className="font-mono text-accent text-sm mb-6 tracking-widest uppercase"
+        className="font-mono text-muted text-sm mb-6 tracking-widest uppercase"
       >
         About
       </motion.h2>
@@ -31,24 +35,24 @@ export default function AboutSection() {
         >
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             I&apos;m a software engineer at{" "}
-            <span className="text-accent">eBay</span> in San Francisco, where I
-            build backend services at scale. I earned my MCS from{" "}
-            <span className="text-accent">UC Irvine</span> and my BTech in CS
-            from SRM Institute.
+            <span className="text-accent">eBay</span> in San Francisco, on the
+            Search Backend org&apos;s Query Search Stack team: Cassini, eBay&apos;s
+            distributed C++ search engine. Since 2023 I own{" "}
+            <span className="text-accent">fitment</span>, the subsystem that
+            decides whether a listing fits the product a query names. MCS from{" "}
+            <span className="text-accent">UC Irvine</span>, BTech in CS from SRM
+            Institute.
           </motion.p>
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
-            I like working where systems and software meet — a C++ game engine
-            with no engine underneath it, an automated trading bot with a CI
-            pipeline that refuses to deploy red. My Android app{" "}
-            <span className="text-accent">ShutUp</span> reached 26,000+
-            downloads.
+            Outside work I take apart things that were not meant to be opened:
+            a TV&apos;s video plane, a keyboard&apos;s stock firmware, a
+            phone&apos;s hinge sensor. <span className="text-accent">ShutUp</span>,
+            an Android app I wrote in college, passed{" "}
+            {shutup?.metric.value ?? "26,000+"} downloads.
           </motion.p>
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
-            Outside of work I run a{" "}
-            <span className="text-accent">{services.length}-guest homelab</span>{" "}
-            on a single Proxmox host behind a Debian + Docker gateway,
-            self-host everything from my password manager to my photo library,
-            and obsess over infrastructure automation.
+            I also run a small Proxmox lab, {services.length} guests declared in
+            OpenTofu and diffed nightly by CI. It serves this site.
           </motion.p>
         </motion.div>
 
@@ -73,7 +77,7 @@ export default function AboutSection() {
                 {group.items.map((s) => (
                   <li
                     key={s}
-                    className="px-3 py-1 rounded-full text-xs glass border-white/[0.08] text-fg/80"
+                    className="px-2.5 py-1 rounded-md text-xs font-mono glass text-fg/80"
                   >
                     {s}
                   </li>
@@ -101,9 +105,9 @@ export default function AboutSection() {
         <ol className="space-y-0">
           {experiences.map((exp) => (
             <motion.li
-              key={exp.company}
+              key={`${exp.company} ${exp.period}`}
               variants={fadeUp}
-              className="relative pl-8 pb-8 border-l border-white/[0.08]"
+              className="relative pl-8 pb-8 border-l border-border"
             >
               <div className="absolute left-[-4px] top-2 w-2 h-2 rounded-full bg-accent/60" />
               <div className="space-y-1">
@@ -126,7 +130,7 @@ export default function AboutSection() {
             <motion.li
               key={ed.school}
               variants={fadeUp}
-              className={`relative pl-8 border-l border-white/[0.08] ${
+              className={`relative pl-8 border-l border-border ${
                 i < education.length - 1 ? "pb-6" : ""
               }`}
             >

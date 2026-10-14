@@ -13,9 +13,24 @@ export interface Project {
   links: {
     github?: string;
     gitlab?: string;
+    /** An on-site page or anchor, with the link text. */
+    page?: string;
+    pageLabel?: string;
   };
   featured: boolean;
-  category: "android" | "quant" | "infra" | "games" | "ai" | "embedded" | "linux";
+  /** Listed on /resume. Default true; the printed page is curated to hold one sheet. */
+  onResume?: boolean;
+  category:
+    | "android"
+    | "quant"
+    | "infra"
+    | "tv"
+    | "firmware"
+    | "games"
+    | "desktop"
+    | "security"
+    | "foldable"
+    | "linux";
 }
 
 export interface Experience {

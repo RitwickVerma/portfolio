@@ -1,74 +1,84 @@
 "use client";
 
+import { useEffect } from "react";
+import Link from "next/link";
 import { services } from "@/lib/data";
+import { loadStatus, useStatus } from "@/lib/statusStore";
+import { ageMs, formatAge, formatUptime, guestView, runningCount, type GuestView } from "@/lib/status";
 
-const stack = [
-  { label: "Proxmox", css: "bg-accent/10 text-accent border-accent/30" },
-  { label: "Debian + Docker gateway", css: "bg-white/10 text-fg border-white/20" },
-  { label: "Traefik v3", css: "bg-white/5 text-fg/80 border-white/10" },
-  { label: "Authelia OIDC", css: "bg-white/5 text-fg/80 border-white/10" },
-  { label: "Headscale VPN", css: "bg-white/5 text-fg/80 border-white/10" },
-  { label: "CrowdSec", css: "bg-white/5 text-fg/80 border-white/10" },
-];
+const DOT: Record<GuestView, string> = {
+  up: "bg-accent",
+  down: "bg-warn",
+  unknown: "bg-white/25",
+};
+const DOT_LABEL: Record<GuestView, string> = { up: "running", down: "stopped", unknown: "state unknown" };
 
 export default function HomelabSection() {
   const vms = services.filter((s) => s.ct.startsWith("VM")).length;
   const cts = services.length - vms;
+  const snap = useStatus();
+  useEffect(loadStatus, []);
+  const live = snap.status ? snap : null;
 
   return (
-    <section id="homelab" className="max-w-6xl mx-auto px-6 py-24 sm:py-32">
-      <h2 className="font-mono text-accent text-sm mb-6 tracking-widest uppercase">
-        Homelab
-      </h2>
+    <section id="homelab" className="max-w-6xl mx-auto px-6 py-20 sm:py-24">
+      <h2 className="font-mono text-muted text-sm mb-6 tracking-widest uppercase">Homelab</h2>
 
-      <div className="glass rounded-xl p-6 sm:p-8 border-white/[0.06]">
-        <p className="text-fg/80 text-sm leading-relaxed mb-8">
-          {services.length} guests on a single Proxmox VE host: {cts} LXC
-          containers and {vms} VMs. A Debian + Docker gateway fronts everything
-          with Traefik, Authelia SSO and a Headscale VPN, and Proxmox takes a
-          nightly backup of every guest.
+      <div className="grid lg:grid-cols-[1fr_auto] gap-x-12 gap-y-4 items-start mb-8">
+        <p className="text-fg/80 text-sm leading-relaxed max-w-2xl">
+          One Proxmox host, {cts} containers and {vms} VMs, declared in OpenTofu and diffed
+          against the live host nightly by CI. A Debian gateway fronts it with Traefik,
+          Authelia and Headscale; secrets are SOPS-encrypted in the same repo; every guest
+          is backed up nightly and copied off the host. It serves this site.{" "}
+          <Link href="/notes/homelab-git-is-the-truth/" className="text-accent hover:underline underline-offset-4 whitespace-nowrap">
+            Git is the truth: how the lab runs →
+          </Link>
         </p>
 
-        <ul className="flex items-center justify-center gap-3 sm:gap-4 mb-8 flex-wrap">
-          {stack.map((item) => (
-            <li
-              key={item.label}
-              className={`px-3 py-1 rounded-full text-xs font-mono border ${item.css}`}
-            >
-              {item.label}
-            </li>
-          ))}
-        </ul>
+        {live && (
+          <p
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-xs ${
+              live.phase === "live"
+                ? "border-accent/30 text-accent bg-accent/5"
+                : "border-white/15 text-muted bg-white/5"
+            }`}
+            aria-live="polite"
+          >
+            <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${live.phase === "live" ? "bg-accent" : "bg-white/30"}`} />
+            {live.phase === "live" ? "Live" : "Stale"} · {runningCount(live.status)}/{services.length} running ·{" "}
+            {formatAge(ageMs(live.status))}
+          </p>
+        )}
+      </div>
 
-        <ul className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {services.map((s) => (
+      <ul className="flex flex-wrap gap-2">
+        {services.map((s) => {
+          const view = guestView(live?.status ?? null, s.ct);
+          const guest = live?.status.guests.find((g) => g.id === s.ct);
+          return (
             <li
               key={s.ct}
-              className="glass-hover rounded-lg p-4 border border-white/[0.04] transition-all"
+              title={s.description}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1.5 font-mono text-xs"
             >
-              <span className="text-xs font-mono text-accent">{s.ct}</span>
-              <h3 className="text-fg text-sm font-medium mt-1">{s.name}</h3>
-              <p className="text-fg/70 text-xs mt-1 leading-relaxed">
-                {s.description}
-              </p>
-              <ul className="flex flex-wrap gap-1 mt-3">
-                {s.tech.slice(0, 2).map((t) => (
-                  <li
-                    key={t}
-                    className="text-xs font-mono text-muted bg-white/[0.02] rounded px-1.5 py-px"
-                  >
-                    {t}
-                  </li>
-                ))}
-              </ul>
+              {live && (
+                <span role="img" aria-label={DOT_LABEL[view]} className={`inline-block h-1.5 w-1.5 rounded-full ${DOT[view]}`} />
+              )}
+              <span className="text-accent">{s.ct}</span>
+              <span className="text-fg/85">{s.name}</span>
+              {live && view === "up" && guest?.uptimeSeconds !== undefined && (
+                <span className="text-muted">{formatUptime(guest.uptimeSeconds)}</span>
+              )}
             </li>
-          ))}
-        </ul>
+          );
+        })}
+      </ul>
 
-        <p className="text-muted text-xs mt-6 font-mono">
-          Static inventory, not a live status page.
-        </p>
-      </div>
+      <p className="text-muted text-xs mt-5 font-mono">
+        {live
+          ? "Live: the host writes /status.json every five minutes. Guest state and uptime only."
+          : "Static inventory, not a live status page."}
+      </p>
     </section>
   );
 }

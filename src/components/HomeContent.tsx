@@ -9,7 +9,8 @@ import HomelabSection from "@/components/HomelabSection";
 import SectionReveal from "@/components/SectionReveal";
 import HeroSceneWrapper from "@/components/HeroSceneWrapper";
 import TerminalWrapper from "@/components/TerminalWrapper";
-import Magnetic from "@/components/Magnetic";
+import NotesSection from "@/components/NotesSection";
+import KeyboardSection from "@/components/KeyboardSection";
 import { sceneState } from "@/lib/sceneState";
 import { EASE } from "@/lib/motion";
 import { hero, socialLinks } from "@/lib/data";
@@ -43,7 +44,7 @@ function Line({ i, className, children }: { i: number; className?: string; child
 }
 
 export default function HomeContent() {
-  // Pin the hero for one full viewport of scroll: 200vh wrapper, sticky hero.
+  // Pin the hero for half a viewport of scroll: 150vh wrapper, sticky hero.
   // Fade over that first 100vh by mapping scrollY (px) against viewport height.
   const { scrollY } = useScroll();
   const opacity = useTransform(scrollY, (y) => {
@@ -64,36 +65,15 @@ export default function HomeContent() {
 
   return (
     <div className="relative">
-      <div className="h-[200vh] print:h-auto">
+      <div className="h-[150vh] print:h-auto">
         <motion.section
           id="hero"
           style={{ opacity }}
           className="sticky top-0 h-screen overflow-hidden print:static print:h-auto"
         >
+          {/* Scene, poster and the text scrim: the scrim lives inside the wrapper so it
+              always sits between the canvas and the rack labels, whatever the fade is doing. */}
           <HeroSceneWrapper />
-
-          {/* Scrim: a calm, near-opaque field behind the whole text block (name, value
-              line, CTAs) that falls off to nothing, so the scene reads clearly around it.
-              Radii are px-clamped: on a 360px phone the block is nearly full-width. */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 pointer-events-none z-[5] print:hidden hidden sm:block"
-            style={{
-              background:
-                "radial-gradient(ellipse clamp(330px, 46vw, 760px) clamp(250px, 36vh, 400px) at 50% 50%, rgba(10,10,15,0.94) 0%, rgba(10,10,15,0.9) 58%, rgba(10,10,15,0.5) 80%, rgba(10,10,15,0) 100%)",
-            }}
-          />
-          {/* Phones: the text block spans the full width, so a desktop-strength scrim
-              blacks out the whole scene. Lighter core, tighter falloff — the large
-              white type still holds contrast, and the racks stay visible. */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 pointer-events-none z-[5] print:hidden sm:hidden"
-            style={{
-              background:
-                "radial-gradient(ellipse 62% 26% at 50% 50%, rgba(10,10,15,0.72) 0%, rgba(10,10,15,0.55) 60%, rgba(10,10,15,0) 100%)",
-            }}
-          />
 
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 px-6">
             <h1 className="text-display leading-[1.05] font-bold tracking-tight text-fg text-center">
@@ -109,30 +89,30 @@ export default function HomeContent() {
             </p>
 
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-9 pointer-events-auto">
-              <Magnetic
+              <a
                 href="#projects"
-                className="px-6 py-2.5 rounded-lg bg-accent text-[#0a0a0f] text-sm font-medium hover:bg-accent/90 transition-colors"
+                className="px-6 py-3 rounded-lg bg-accent text-background text-sm font-medium hover:bg-accent/90 transition-colors"
               >
                 See the work
-              </Magnetic>
+              </a>
               <Link
                 href={socialLinks.resume}
-                className="px-6 py-2.5 rounded-lg border border-fg/60 text-fg text-sm hover:border-accent hover:text-accent transition-colors"
+                className="px-6 py-3 rounded-lg border border-fg/60 text-fg text-sm hover:border-accent hover:text-accent transition-colors"
               >
                 Resume
               </Link>
             </div>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a0f] to-transparent pointer-events-none z-10" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
 
           <motion.div
             aria-hidden="true"
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 scroll-indicator motion-reduce:hidden"
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 scroll-indicator motion-reduce:hidden text-accent"
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: EASE.inOutCubic }}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64ffda" strokeWidth="1.5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M12 5v14M5 12l7 7 7-7" />
             </svg>
           </motion.div>
@@ -142,6 +122,8 @@ export default function HomeContent() {
       <div className="relative z-10">
         <SectionReveal><AboutSection /></SectionReveal>
         <SectionReveal><ProjectsSection /></SectionReveal>
+        <SectionReveal><KeyboardSection /></SectionReveal>
+        <SectionReveal><NotesSection /></SectionReveal>
         <SectionReveal><HomelabSection /></SectionReveal>
         <SectionReveal><TerminalWrapper /></SectionReveal>
       </div>

@@ -10,31 +10,24 @@ const REVEAL_VIEWPORT = { once: true, amount: "some", margin: "0px 0px -10% 0px"
 
 /**
  * Section-level reveal: hairline sweep + content fade-up.
- * Honors prefers-reduced-motion (content appears, nothing moves).
+ * The same element tree renders for every visitor; reduced motion turns the
+ * initial state off (content simply appears) instead of swapping trees, which
+ * would disagree with the server HTML and could leave sections hidden.
  */
 export default function SectionReveal({ children }: { children: React.ReactNode }) {
   const reduce = useReducedMotion();
 
-  if (reduce) {
-    return (
-      <div>
-        <div className="h-px bg-gradient-to-r from-accent/60 via-accent/20 to-transparent mb-12 origin-left" />
-        <div>{children}</div>
-      </div>
-    );
-  }
-
   return (
     <div>
       <motion.div
-        initial={{ scaleX: 0 }}
+        initial={reduce ? false : { scaleX: 0 }}
         whileInView={{ scaleX: 1 }}
         viewport={REVEAL_VIEWPORT}
         transition={{ duration: DURATION.slow, ease: EASE.outExpo }}
         className="h-px bg-gradient-to-r from-accent/60 via-accent/20 to-transparent mb-12 origin-left"
       />
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
+        initial={reduce ? false : { opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={REVEAL_VIEWPORT}
         transition={{ duration: DURATION.base, ease: EASE.outQuart }}

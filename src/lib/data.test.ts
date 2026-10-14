@@ -28,10 +28,18 @@ describe("data integrity", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("lists the 15 Proxmox guests: 13 LXC + 2 VM", () => {
-    expect(services).toHaveLength(15);
-    expect(services.filter((s) => s.ct.startsWith("CT"))).toHaveLength(13);
+  it("lists the 16 Proxmox guests: 14 LXC + 2 VM", () => {
+    expect(services).toHaveLength(16);
+    expect(services.filter((s) => s.ct.startsWith("CT"))).toHaveLength(14);
     expect(services.filter((s) => s.ct.startsWith("VM"))).toHaveLength(2);
+  });
+
+  it("lists the current eBay role first, then the earlier eBay level, newest first", () => {
+    expect(experiences[0]).toMatchObject({ company: "eBay", role: "Software Engineer 3" });
+    expect(experiences[0].period).toMatch(/Present$/);
+    expect(experiences[1]).toMatchObject({ company: "eBay", role: "Software Engineer 2" });
+    expect(experiences.filter((e) => e.company === "eBay")).toHaveLength(2);
+    expect(experiences.find((e) => e.company === "Shoelace Wireless")?.period).toBe("Jun – Sep 2020");
   });
 
   it("every experience has company, role, and period", () => {
@@ -47,6 +55,10 @@ describe("data integrity", () => {
       "University of California",
       "SRM Institute of Science and Technology",
     ]);
+  });
+
+  it("points LinkedIn at the ritwick-verma profile, the one search engines index for eBay", () => {
+    expect(socialLinks.linkedin).toBe("https://www.linkedin.com/in/ritwick-verma/");
   });
 
   it("links the resume to the on-site page, not a PDF", () => {
@@ -68,5 +80,25 @@ describe("data integrity", () => {
     const cats = projects.map((p) => p.category);
     expect(new Set(cats).size).toBe(cats.length);
     expect(cats).not.toContain("systems");
+  });
+
+  it("featured projects fill the 2×2 grid and the rest fill a 3-column grid", () => {
+    expect(projects.filter((p) => p.featured)).toHaveLength(4);
+    expect(projects.filter((p) => !p.featured).length % 3).toBe(0);
+  });
+
+  it("the resume lists every featured project and at most seven in all", () => {
+    const listed = projects.filter((p) => p.onResume !== false);
+    for (const p of projects.filter((p) => p.featured)) expect(listed).toContain(p);
+    expect(listed.length).toBeLessThanOrEqual(6);
+  });
+
+  it("Plutus describes the current trader, not the retired multi-signal pipeline", () => {
+    const plutus = projects.find((p) => p.slug === "plutus")!;
+    const blob = JSON.stringify(plutus).toLowerCase();
+    expect(blob).not.toMatch(/russell|200\+ tests|conviction|hard stops/);
+    expect(blob).toMatch(/momentum/);
+    expect(plutus.links).toEqual({});
+    expect(projects.find((p) => p.slug === "crush80-firmware")?.links.page).toBe("/#keyboard");
   });
 });

@@ -2,10 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SITE_URL } from "@/lib/data";
 import { SITE_TITLE, SITE_DESCRIPTION, personJsonLd, jsonLdString } from "@/lib/seo";
+import { BG } from "@/lib/theme";
 import "./globals.css";
 
 const OG_ALT =
-  "Ritwick Verma — backend engineer at eBay. I build and self-host the systems I ship.";
+  "Ritwick Verma, software engineer at eBay. I build and self-host the systems I ship.";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: SITE_TITLE, template: "%s — Ritwick Verma" },
+  title: { default: SITE_TITLE, template: "%s · Ritwick Verma" },
   description: SITE_DESCRIPTION,
   alternates: { canonical: "/" },
   openGraph: {
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0f",
+  themeColor: BG,
   colorScheme: "dark",
 };
 
@@ -50,10 +51,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[#0a0a0f] text-fg flex flex-col">
+      <body className="min-h-full bg-background text-fg flex flex-col">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-[#0a0a0f] focus:text-accent focus:border focus:border-accent/40 focus:rounded-lg"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-background focus:text-accent focus:border focus:border-accent/40 focus:rounded-lg"
         >
           Skip to content
         </a>

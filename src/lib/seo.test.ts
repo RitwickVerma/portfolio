@@ -20,6 +20,7 @@ describe("personJsonLd", () => {
     ]);
     expect(p.sameAs).toHaveLength(3);
     for (const url of p.sameAs) expect(url).toMatch(/^https:\/\//);
+    expect(p.sameAs).toContain("https://www.linkedin.com/in/ritwick-verma/");
   });
 
   it("exposes no contact details", () => {

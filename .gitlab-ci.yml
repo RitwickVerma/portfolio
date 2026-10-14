@@ -21,7 +21,7 @@ check:
   script:
     - npm ci --prefer-offline
     - npm run lint
-    - npx tsc --noEmit
+    - npm run typecheck
     - npm run test
 
 # Orchestrates only: SSH to CT114 and run /root/rebuild.sh. The build happens

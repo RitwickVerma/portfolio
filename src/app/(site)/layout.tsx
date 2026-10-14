@@ -2,16 +2,14 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import ClientShell from "@/components/ClientShell";
 import Backdrop from "@/components/Backdrop";
-import CursorGlow from "@/components/CursorGlow";
 import { PointerProvider } from "@/components/PointerProvider";
 
-// Everything that makes the home page "the experience": backdrop shader,
-// cursor trail, nav, footer. /resume deliberately sits outside this group.
+// The site shell: backdrop shader, nav, footer. /resume deliberately sits
+// outside this group so it prints as a plain document.
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <PointerProvider>
       <Backdrop />
-      <CursorGlow />
       <ClientShell>
         <Nav />
         <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">

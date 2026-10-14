@@ -35,6 +35,7 @@ import {
 } from 'three/tsl';
 import { sceneState } from '@/lib/sceneState';
 import { pickGpuMoteTier, type GpuMoteTier } from '@/lib/gpu';
+import { ACCENT, rgbUnit } from '@/lib/theme';
 
 // Mote field (world units — rack cluster spans x ∈ [-3.2, 3.35], z ∈ [-1.35, 1.35])
 const ANCHOR_X = 3.0; // half-width of anchor strip over the rack area
@@ -54,7 +55,7 @@ type FlowApi = {
   teardown: () => void;
 };
 
-const TEAL = vec3(0x64 / 255, 0xff / 255, 0xda / 255); // #64ffda
+const TEAL = vec3(...rgbUnit(ACCENT));
 
 export default function GPUParticleAirflow() {
   const gl = useThree((s) => s.gl);

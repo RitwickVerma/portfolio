@@ -9,6 +9,10 @@ import { createNoise2D } from 'simplex-noise';
 import { sceneState } from '@/lib/sceneState';
 import { advancePhase, phaseProgress, type PhaseState } from '@/lib/phaseMachine';
 import { mulberry32 } from '@/lib/random';
+import { placeLabel } from '@/lib/labels';
+import { getStatusSnapshot, loadStatus } from '@/lib/statusStore';
+import { guestView } from '@/lib/status';
+import { ACCENT, GATEWAY as GATEWAY_ACCENT, WARN as WARN_ACCENT, BG, INK, RACK_BODY, RACK_BODY_GATEWAY, RACK_FLOOR, ROOM_LIGHT } from '@/lib/theme';
 
 // ─── Shared pointer + drag state ──────────────────────────────────────────
 
@@ -47,6 +51,7 @@ function onDragUp() {
   drag.active = false;
   window.removeEventListener('pointermove', onDragMove);
   window.removeEventListener('pointerup', onDragUp);
+  window.removeEventListener('pointercancel', onDragUp);
 }
 
 export function GrabHandler() {
@@ -61,12 +66,14 @@ export function GrabHandler() {
       drag.velocityX = 0; drag.velocityY = 0;
       window.addEventListener('pointermove', onDragMove, { passive: true });
       window.addEventListener('pointerup', onDragUp, { once: true });
+      window.addEventListener('pointercancel', onDragUp, { once: true });
     };
     el.addEventListener('pointerdown', onDown);
     return () => {
       el.removeEventListener('pointerdown', onDown);
       window.removeEventListener('pointermove', onDragMove);
       window.removeEventListener('pointerup', onDragUp);
+      window.removeEventListener('pointercancel', onDragUp);
     };
   }, [gl]);
   return null;
@@ -74,9 +81,7 @@ export function GrabHandler() {
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
-export const ACCENT = '#64ffda';
-const GATEWAY_ACCENT = '#ffd166';
-const WARN_ACCENT = '#ff4444';
+export { ACCENT };
 
 // ─── Scene lighting ───────────────────────────────────────────────────────
 
@@ -85,10 +90,10 @@ export function SceneLighting() {
   useFrame(({ clock }) => {
     if (lightRef.current) {
       const pulse = Math.sin(clock.getElapsedTime() * 1.2) * 0.3 + 0.7;
-      lightRef.current.intensity = 10 + sceneState.spin * 5 + pulse * 2;
+      lightRef.current.intensity = 5 + sceneState.spin * 3 + pulse;
     }
   });
-  return <pointLight ref={lightRef} position={[0, 2.5, 0]} intensity={10} distance={18} color={ACCENT} />;
+  return <pointLight ref={lightRef} position={[0, 2.5, 0]} intensity={5} distance={18} color={ROOM_LIGHT} />;
 }
 
 // ─── Camera rig — asymmetric framing, not mathematically perfect ──────────
@@ -142,7 +147,10 @@ export function SceneFog() {
   const size = useThree((s) => s.size);
   useEffect(() => {
     const isMobile = size.width < 768;
-    scene.fog = new THREE.Fog('#0a0a0f', isMobile ? 12 : 6, isMobile ? 32 : 18);
+    // The camera sits ~11 units out on desktop (~22 on phones); the nearest
+    // rack is ~8 away. Fog starts past the whole cluster so it only softens
+    // the far corner, not the room.
+    scene.fog = new THREE.Fog(BG, isMobile ? 28 : 15, isMobile ? 52 : 34);
     return () => { scene.fog = null; };
   }, [scene, size]);
   return null;
@@ -151,17 +159,23 @@ export function SceneFog() {
 // ─── Rack definitions — asymmetric positions, no perfect grid ─────────────
 
 // `core` racks form the mobile legend row (< 768px shows these two).
-type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean; warning?: boolean; core?: boolean };
+type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean; core?: boolean };
+
+// A rack's red indicator is live: it means the guest is stopped in the latest
+// /status.json. With no status file every rack reads as healthy.
+function rackDown(id: string): boolean {
+  return guestView(getStatusSnapshot().status, id) === 'down';
+}
 
 const RACKS: RackDef[] = [
   { id: 'VM110', name: 'VM110 Gateway',  x: -3.20, z: -1.30, height: 2.5, gateway: true, core: true },
   { id: 'CT101', name: 'CT101 Hermes',    x: -1.00, z: -1.20, height: 2.2 },
   { id: 'CT102', name: 'CT102 DNS',       x:  1.15, z: -1.28, height: 1.9 },
-  { id: 'CT104', name: 'CT104 Vaultwarden',x:  3.35, z: -1.15, height: 1.8, warning: true, core: true },
+  { id: 'CT104', name: 'CT104 Vaultwarden',x:  3.35, z: -1.15, height: 1.8, core: true },
   { id: 'CT106', name: 'CT106 Immich',    x: -3.15, z:  1.20, height: 2.3 },
   { id: 'CT107', name: 'CT107 Paperless',  x: -1.05, z:  1.30, height: 2.0 },
   { id: 'CT111', name: 'CT111 Remux',      x:  1.20, z:  1.18, height: 2.4 },
-  { id: 'CT113', name: 'CT113 Syncthing',  x:  3.28, z:  1.35, height: 1.8 },
+  { id: 'CT114', name: 'CT114 Portfolio',  x:  3.28, z:  1.35, height: 1.8 },
 ];
 
 // ─── Rack screen (canvas texture — dynamic boot/log/glitch during flash) ───
@@ -174,7 +188,7 @@ const BOOT_LOGS: Record<string, string[]> = {
   CT106: ['CT106 login:', '[  OK  ] Immich ▸ running', '[  OK  ] PostgreSQL ▸ ok', '[  OK  ] Redis ▸ ok', '[  OK  ] ML ▸ ready', 'CT106:~# _'],
   CT107: ['CT107 login:', '[  OK  ] Paperless-ngx ▸ up', '[  OK  ] Redis ▸ ok', '[  OK  ] Gotenberg ▸ ok', '[  OK  ] Wake ▸ on demand', 'CT107:~# _'],
   CT111: ['CT111 login:', '[  OK  ] Remux ▸ running', '[  OK  ] Media server ▸ up', '[  OK  ] Docker ▸ ok', '[  OK  ] Backup ▸ nightly', 'CT111:~# _'],
-  CT113: ['CT113 login:', '[  OK  ] Syncthing ▸ up', '[  OK  ] Mode ▸ peer-to-peer', '[  OK  ] Runtime ▸ systemd', '[  OK  ] Backup ▸ nightly', 'CT113:~# _'],
+  CT114: ['CT114 login:', '[  OK  ] nginx ▸ active', '[  OK  ] Site ▸ static export', '[  OK  ] Deploy ▸ CI on master', '[  OK  ] Serving ▸ this page', 'CT114:~# _'],
 };
 
 // Hover-inspection stats — real service data, concise (pairs with BOOT_LOGS).
@@ -186,13 +200,13 @@ const RACK_STATS: Record<string, { role: string; stats: string[] }> = {
   CT106: { role: 'Immich', stats: ['Photo + video backup', 'ML search', 'PostgreSQL + Redis'] },
   CT107: { role: 'Paperless-ngx', stats: ['Document management', 'OCR', 'Woken on demand'] },
   CT111: { role: 'Remux', stats: ['Media server', 'Docker', 'Nightly backup'] },
-  CT113: { role: 'Syncthing', stats: ['Peer-to-peer file sync', 'systemd service', 'Nightly backup'] },
+  CT114: { role: 'Portfolio', stats: ['Serving this page', 'nginx, static export', 'Rebuilt by CI on master'] },
 };
 
 function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[], progress: number, flicker: boolean) {
   const visible = Math.floor(progress * logs.length) + (flicker && Math.random() < 0.15 ? 0 : 1);
   ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
-  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
+  ctx.fillStyle = INK; ctx.globalAlpha = 1;
   ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
   ctx.fillText(logs[0].split(' ')[0].toUpperCase(), 10, 18);
   ctx.fillStyle = accent; ctx.globalAlpha = flicker ? 0.6 + Math.random() * 0.4 : 0.85;
@@ -211,9 +225,23 @@ function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[],
   }
 }
 
+// At rest a machine that is on shows a login prompt, not a dead panel. Dim,
+// so the LEDs and labels still lead; the cursor blinks at 2 Hz.
+function drawIdle(ctx: CanvasRenderingContext2D, accent: string, logs: string[], cursorOn: boolean) {
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.22; ctx.fillRect(0, 0, 256, 36);
+  ctx.fillStyle = INK; ctx.globalAlpha = 0.9;
+  ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
+  ctx.fillText(logs[0].split(' ')[0].toUpperCase(), 10, 18);
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.38;
+  ctx.font = '12px monospace';
+  ctx.fillText(logs[0], 10, 48);
+  if (cursorOn) ctx.fillText('_', 10 + ctx.measureText(logs[0] + ' ').width, 48);
+  ctx.globalAlpha = 1;
+}
+
 function drawGlitch(ctx: CanvasRenderingContext2D, accent: string, logs: string[]) {
   ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
-  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
+  ctx.fillStyle = INK; ctx.globalAlpha = 1;
   ctx.font = 'bold 13px monospace'; ctx.fillText(logs[0].split(' ')[0].toUpperCase(), 10, 18);
   ctx.fillStyle = accent; ctx.globalAlpha = 0.85; ctx.font = '12px monospace';
   for (let i = 1; i < logs.length; i++) ctx.fillText(logs[i], 10, 48 + (i - 1) * 36);
@@ -242,6 +270,7 @@ function RackScreen({ accent, rackId, height }: { accent: string; rackId: string
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const texRef = useRef<THREE.CanvasTexture | null>(null);
+  const lastPhase = useRef(-1);
   const logs = useMemo(() => BOOT_LOGS[rackId] || [rackId + ' login:', '[  OK  ] system running', rackId + ':~# _'], [rackId]);
 
   useEffect(() => {
@@ -268,9 +297,17 @@ function RackScreen({ accent, rackId, height }: { accent: string; rackId: string
     const phase = sceneState._flashPhase;
     const p = sceneState._flashProgress;
 
+    // At rest only the cursor blink changes, twice a second: redraw on those
+    // ticks alone instead of re-uploading eight 256² textures every frame.
+    // Every live phase redraws each frame.
+    const blink = Math.floor(Date.now() / 500) % 2 === 0;
+    const idleKey = blink ? 0 : -2;
+    if (phase === 0 && lastPhase.current === idleKey) return;
+    lastPhase.current = phase === 0 ? idleKey : phase;
+
     ctx.clearRect(0, 0, 256, 256);
     ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, 256, 256);
-    if (phase === 0) { /* off — true black */ }
+    if (phase === 0) drawIdle(ctx, accent, logs, blink);
     else if (phase === 1) drawBoot(ctx, accent, logs, p, true);
     else if (phase === 2) drawBoot(ctx, accent, logs, 1.0, false);
     else if (phase === 3) drawGlitch(ctx, accent, logs);
@@ -290,16 +327,23 @@ function RackScreen({ accent, rackId, height }: { accent: string; rackId: string
 
 // ─── Rack indicator (unique per-rack blink pattern) ────────────────────────
 
-function RackIndicator({ accent, rackId, warning }: { accent: string; rackId: string; warning?: boolean }) {
+function RackIndicator({ accent, rackId }: { accent: string; rackId: string }) {
   const ref = useRef<THREE.Mesh>(null);
   const blinkOffset = useRef(rackId.charCodeAt(2) * 0.3 % 2);
-  const color = warning ? WARN_ACCENT : accent;
+  const shown = useRef<string>('');
   useFrame(({ clock }) => {
     if (!ref.current) return;
     const t = clock.getElapsedTime();
+    const warning = rackDown(rackId);
+    const color = warning ? WARN_ACCENT : accent;
+    const mat = ref.current.material as THREE.MeshStandardMaterial;
+    if (shown.current !== color) {
+      shown.current = color;
+      mat.color.set(color);
+      mat.emissive.set(color);
+    }
     const baseRate = warning ? 3.5 : 1.2 + (rackId.charCodeAt(1) % 7) * 0.25;
     const rate = baseRate + sceneState.spin * 8;
-    const mat = ref.current.material as THREE.MeshStandardMaterial;
     // Flash boost
     let flashEmit = 0;
     const phase = sceneState._flashPhase;
@@ -312,7 +356,7 @@ function RackIndicator({ accent, rackId, warning }: { accent: string; rackId: st
   return (
     <mesh ref={ref} position={[0, 0.68, 0]}>
       <sphereGeometry args={[0.055, 12, 12]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.3} />
+      <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.3} />
     </mesh>
   );
 }
@@ -327,7 +371,7 @@ const RACK_LED_PATTERNS: Record<string, number[]> = {
   CT106: [0.4, 0.5, 0.3],
   CT107: [0.2, 0.6, 0.1],
   CT111: [0.35, 0.15, 0.5],
-  CT113: [0.0, 0.0, 0.0],
+  CT114: [0.3, 0.4, 0.2],
 };
 
 function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
@@ -365,85 +409,33 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
   );
 }
 
-// ─── Label safe area — clamp drei <Html> to the visible hero ───────────────
-// Below the fixed nav, clear of the bottom fade, and never past the canvas
-// edges (holds down to 360px viewports).
+// ─── Label placement — the rules live in lib/labels.ts (unit-tested) ──────
 
-const NAV_SAFE = 80;
-const BOTTOM_SAFE = 120;
-const EDGE_SAFE = 12;
-// The centred hero text block (name, value line, CTAs), as a half-size box
-// around the canvas centre. Labels over it are pushed out its nearest top/bottom edge.
-const TEXT_HALF_W = 330;
-const TEXT_HALF_H = 180;
-const TEXT_FEATHER = 140;
+type ScreenSize = { width: number; height: number };
+const TOOLTIP_HALF_W = 96;
 
-function clampedPosition(halfWidth: number) {
-  const v = new THREE.Vector3();
-  return (obj: THREE.Object3D, camera: THREE.Camera, size: { width: number; height: number }): [number, number] => {
-    v.setFromMatrixPosition(obj.matrixWorld).project(camera);
-    const x = (v.x * size.width) / 2 + size.width / 2;
-    let y = (-v.y * size.height) / 2 + size.height / 2;
-    const cx = size.width / 2;
-    const cy = size.height / 2;
-    const hw = TEXT_HALF_W + halfWidth;
-    // Continuous push: a label over the text block slides out the nearest
-    // vertical edge, and the push fades to zero over TEXT_FEATHER px of
-    // horizontal distance — no teleporting as the scene turns.
-    const dy = y - cy;
-    const reach = (hw + TEXT_FEATHER - Math.abs(x - cx)) / TEXT_FEATHER;
-    const fx = Math.min(Math.max(reach, 0), 1);
-    if (fx > 0 && Math.abs(dy) < TEXT_HALF_H) {
-      const dir = dy < 0 ? -1 : 1;
-      y += dir * (TEXT_HALF_H - Math.abs(dy)) * fx;
-    }
-    const minX = EDGE_SAFE + halfWidth;
-    const maxX = Math.max(minX, size.width - EDGE_SAFE - halfWidth);
-    const maxY = Math.max(NAV_SAFE, size.height - BOTTOM_SAFE);
-    return [Math.min(Math.max(x, minX), maxX), Math.min(Math.max(y, NAV_SAFE), maxY)];
-  };
-}
-const labelPosition = clampedPosition(78);
-const tooltipPosition = clampedPosition(96);
-
-// One label style everywhere: near-opaque ground so the text never depends on
-// what the scene is doing behind it (≥ 9:1 even over a white pixel).
-function LabelPill({ name, color }: { name: string; color: string }) {
-  return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/25 bg-[#0a0a0f]/90 px-2.5 py-1"
-    >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }} />
-      <span className="text-xs font-medium tracking-wider text-zinc-100">{name}</span>
-    </div>
-  );
+function toScreen(v: THREE.Vector3, camera: THREE.Camera, size: ScreenSize): [number, number] {
+  v.project(camera);
+  return [(v.x * size.width) / 2 + size.width / 2, (-v.y * size.height) / 2 + size.height / 2];
 }
 
-// Below 768px the labels don't chase the racks (they'd land on the text);
-// they sit as one centred, wrapping row inside the page gutters under the nav.
-function NarrowLegend() {
-  return (
-    <Html fullscreen zIndexRange={[7, 7]} style={{ pointerEvents: 'none' }}>
-      <div className="pointer-events-none absolute left-6 right-6 top-[88px] flex flex-wrap items-center justify-center gap-2">
-        {RACKS.filter((r) => r.core).map((r) => (
-          <LabelPill key={r.id} name={r.name} color={r.warning ? WARN_ACCENT : r.gateway ? GATEWAY_ACCENT : ACCENT} />
-        ))}
-      </div>
-    </Html>
-  );
+// drei <Html calculatePosition> for the hover tooltip: a single label on its own.
+const tooltipVec = new THREE.Vector3();
+function tooltipPosition(obj: THREE.Object3D, camera: THREE.Camera, size: ScreenSize): [number, number] {
+  const [x, y] = toScreen(tooltipVec.setFromMatrixPosition(obj.matrixWorld), camera, size);
+  return placeLabel(x, y, TOOLTIP_HALF_W, size);
 }
 
-// ─── Rack (body + screen + indicator + lights + label) ─────────────────────
+
+// ─── Rack (body + screen + indicator + lights + hover tooltip) ──────────────
 
 function Rack({ rack }: { rack: RackDef }) {
   const accent = rack.gateway ? GATEWAY_ACCENT : ACCENT;
-  const bodyColor = rack.gateway ? '#221f2e' : '#17171f';
+  const bodyColor = rack.gateway ? RACK_BODY_GATEWAY : RACK_BODY;
   const h = rack.height;
   const halfH = h / 2;
   const [hovered, setHovered] = useState(false);
   const info = RACK_STATS[rack.id];
-  const narrow = useThree((st) => st.size.width < 768);
   return (
     <group
       position={[rack.x, 0, rack.z]}
@@ -452,29 +444,24 @@ function Rack({ rack }: { rack: RackDef }) {
     >
       <mesh position={[0, halfH, 0]}>
         <boxGeometry args={[1, h, 0.9]} />
-        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.35} emissive={accent} emissiveIntensity={hovered ? 0.4 : 0.08} />
+        <meshStandardMaterial color={bodyColor} metalness={0.25} roughness={0.7} emissive={accent} emissiveIntensity={hovered ? 0.18 : 0.025} />
       </mesh>
       <group position={[0, halfH, 0]}>
         <RackScreen accent={accent} rackId={rack.id} height={h} />
-        <RackIndicator accent={accent} rackId={rack.id} warning={rack.warning} />
+        <RackIndicator accent={accent} rackId={rack.id} />
         <group position={[0, -(h * 0.31) - 0.06, 0.46]}>
           <RackLights accent={accent} rackId={rack.id} />
         </group>
       </group>
-      {!narrow && (
-        <Html position={[0, h + 0.5, 0]} center calculatePosition={labelPosition} zIndexRange={[7, 7]} style={{ pointerEvents: 'none' }}>
-          <LabelPill name={rack.name} color={rack.warning ? WARN_ACCENT : accent} />
-        </Html>
-      )}
       {hovered && info && (
         <Html position={[0, h + 1.45, 0]} center calculatePosition={tooltipPosition} zIndexRange={[60, 0]} style={{ pointerEvents: 'none' }} className="hidden sm:block">
-          <div aria-hidden="true" className="pointer-events-none select-none whitespace-nowrap rounded-lg border border-accent/25 bg-[#0a0a0f]/90 px-3 py-2 backdrop-blur-md shadow-lg">
+          <div aria-hidden="true" className="pointer-events-none select-none whitespace-nowrap rounded-lg border border-border bg-background px-3 py-2">
             <div className="flex items-center gap-2 mb-1.5">
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
               <span className="text-[11px] font-mono tracking-wider text-accent uppercase">{info.role}</span>
             </div>
             {info.stats.map((s) => (
-              <div key={s} className="text-[11px] font-mono text-zinc-400 leading-relaxed">{s}</div>
+              <div key={s} className="text-[11px] font-mono text-fg/70 leading-relaxed">{s}</div>
             ))}
           </div>
         </Html>
@@ -508,7 +495,7 @@ function StaticCable({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
   }, [from, to]);
   return (
     <mesh geometry={geometry}>
-      <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.55} transparent opacity={0.7} roughness={0.35} metalness={0.2} />
+      <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.3} transparent opacity={0.5} roughness={0.5} metalness={0.1} />
     </mesh>
   );
 }
@@ -692,26 +679,18 @@ function CablePulses() {
 export function Datacenter() {
   const group = useRef<THREE.Group>(null);
   const { gl } = useThree();
-  const narrowScreen = useThree((st) => st.size.width < 768);
   const flashState = useRef<PhaseState>({ phase: 0, timer: 0 });
-  const lastClick = useRef(0);
   useEffect(() => {
     const canvas = gl.domElement;
-    const handler = (e: PointerEvent) => {
+    // Native dblclick, bubble phase. A capture-phase pointerdown that called
+    // stopPropagation() here used to kill GrabHandler's pointerdown on the same
+    // element, so dragging never started.
+    const onDoubleClick = (e: MouseEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-      const now = performance.now();
-      if (now - lastClick.current < 400) {
-        if (flashState.current.phase === 0) {
-          flashState.current = { phase: 1, timer: 0 };
-        }
-        lastClick.current = 0;
-      } else {
-        lastClick.current = now;
-      }
+      if (flashState.current.phase === 0) flashState.current = { phase: 1, timer: 0 };
     };
-    canvas.addEventListener('pointerdown', handler, { capture: true });
-    return () => canvas.removeEventListener('pointerdown', handler, { capture: true });
+    canvas.addEventListener('dblclick', onDoubleClick);
+    return () => canvas.removeEventListener('dblclick', onDoubleClick);
   }, [gl]);
   useFrame((state, delta) => {
     const t = state.clock.getElapsedTime();
@@ -733,25 +712,25 @@ export function Datacenter() {
     sceneState.dcRotY = g.rotation.y;
     sceneState.dcRotX = g.rotation.x;
     sceneState.spin = Math.hypot(drag.velocityX, drag.velocityY);
-    sceneState.mouseX = smoothedPointer.x;
-    sceneState.mouseY = smoothedPointer.y;
     // Phase machine
     const fs = flashState.current;
     const dt = Math.min(delta, 0.1);
     flashState.current = advancePhase(fs, dt);
     sceneState._flashPhase = flashState.current.phase;
     sceneState._flashProgress = phaseProgress(flashState.current);
-  });
+    // Children project into screen space this frame (labels, tooltip): give
+    // them fresh world matrices now rather than the renderer's post-frame pass.
+    g.updateMatrixWorld(true);
+  }, -1); // negative priority: before every child, so they read this frame's rotation
   return (
     <group ref={group}>
       <mesh position={[0, -0.05, 0]}>
         <boxGeometry args={[9.4, 0.08, 4.2]} />
-        <meshStandardMaterial color="#0d0d14" metalness={0.4} roughness={0.6} transparent opacity={0.55} emissive={ACCENT} emissiveIntensity={0.03} />
+        <meshStandardMaterial color={RACK_FLOOR} metalness={0.2} roughness={0.8} transparent opacity={0.55} emissive={ACCENT} emissiveIntensity={0.012} />
       </mesh>
       {RACKS.map(rack => <Rack key={rack.id} rack={rack} />)}
       <Cables />
       <CablePulses />
-      {narrowScreen && <NarrowLegend />}
     </group>
   );
 }
@@ -763,6 +742,13 @@ export function Datacenter() {
 
 export default function HeroScene({ onReady }: { onReady?: () => void }) {
   initPointer();
+  useEffect(loadStatus, []);
+  // `?debug` exposes the scene state so a browser test can read rotation and phase.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('debug')) {
+      (window as unknown as { __sceneState?: typeof sceneState }).__sceneState = sceneState;
+    }
+  }, []);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
 
@@ -786,7 +772,7 @@ export default function HeroScene({ onReady }: { onReady?: () => void }) {
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
       camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }}
       onCreated={({ gl }) => { gl.domElement.tabIndex = -1; gl.domElement.style.outline = 'none'; onReady?.(); }}
-      style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f', cursor: 'none' }}
+      style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: BG }}
     >
       <Suspense fallback={null}>
         <GrabHandler />
@@ -794,7 +780,7 @@ export default function HeroScene({ onReady }: { onReady?: () => void }) {
         <SceneFog />
         <ambientLight intensity={0.4} />
         <directionalLight position={[6, 9, 5]} intensity={1.2} />
-        <directionalLight position={[-6, 5, -4]} intensity={0.35} color={ACCENT} />
+        <directionalLight position={[-6, 5, -4]} intensity={0.3} color={ROOM_LIGHT} />
         <SceneLighting />
         <AirflowLayer />
         <Datacenter />

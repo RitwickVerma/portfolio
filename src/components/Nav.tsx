@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
 import { SPRING, DURATION, EASE } from "@/lib/motion";
 import { socialLinks } from "@/lib/data";
@@ -10,12 +11,24 @@ const sections = [
   { id: "hero", label: "Home" },
   { id: "about", label: "About" },
   { id: "projects", label: "Projects" },
+  { id: "keyboard", label: "Keyboard" },
+  { id: "notes", label: "Notes" },
   { id: "homelab", label: "Homelab" },
   { id: "terminal", label: "Terminal" },
 ];
-const links = sections.slice(1);
+// Terminal tracks scroll (so Homelab is not highlighted over it) but has no link.
+const links = sections.filter((s) => s.id !== "hero" && s.id !== "terminal");
 
 export default function Nav() {
+  // On the home page every item is a same-document hash and the active one
+  // follows scroll. Elsewhere the items point back at "/#id", except Notes,
+  // which has its own pages and is active on them.
+  const pathname = usePathname();
+  const home = pathname === "/";
+  const onNotes = pathname.startsWith("/notes");
+  const hrefFor = (id: string) => (id === "notes" && !home ? "/notes/" : home ? `#${id}` : `/#${id}`);
+  const isActive = (id: string) => (home ? active === id : id === "notes" && onNotes);
+
   const [active, setActive] = useState("hero");
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -34,6 +47,7 @@ export default function Nav() {
   // Scroll-based (not IntersectionObserver): the pinned hero never leaves the
   // viewport, so an observer would never hand the highlight back to it.
   useEffect(() => {
+    if (!home) return;
     let raf = 0;
     const update = () => {
       raf = 0;
@@ -56,7 +70,7 @@ export default function Nav() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, []);
+  }, [home]);
 
   // Disclosure menu: focus the first link on open, Esc closes and returns
   // focus to the toggle, a click outside closes.
@@ -86,7 +100,7 @@ export default function Nav() {
       aria-label="Primary"
       className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${
         scrolled || open
-          ? "bg-[#0a0a0f]/85 backdrop-blur-xl border-b border-white/[0.06]"
+          ? "bg-background/85 backdrop-blur-xl border-b border-border"
           : "bg-transparent"
       }`}
       onBlur={(e) => {
@@ -95,34 +109,34 @@ export default function Nav() {
       }}
     >
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <a
-          href="#hero"
-          aria-current={active === "hero" ? "location" : undefined}
-          className="font-mono text-accent text-sm tracking-wider hover:opacity-80 transition-opacity"
+        <Link
+          href={home ? "#hero" : "/"}
+          aria-current={home && active === "hero" ? "location" : undefined}
+          className="font-mono text-accent text-sm tracking-wider py-3 -my-3 hover:opacity-80 transition-opacity"
         >
           ritwickverma<span className="text-muted">.dev</span>
-        </a>
+        </Link>
 
         {/* Inline links from 640px up */}
-        <ul className="hidden sm:flex items-center gap-1">
+        <ul className="hidden md:flex items-center gap-1">
           {links.map((s) => (
             <li key={s.id}>
-              <a
-                href={`#${s.id}`}
-                aria-current={active === s.id ? "location" : undefined}
+              <Link
+                href={hrefFor(s.id)}
+                aria-current={isActive(s.id) ? (home ? "location" : "page") : undefined}
                 className={`relative block px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  active === s.id ? "text-accent" : "text-muted hover:text-fg"
+                  isActive(s.id) ? "text-accent" : "text-muted hover:text-fg"
                 }`}
               >
                 {s.label}
-                {active === s.id && (
+                {isActive(s.id) && (
                   <motion.span
                     layoutId="nav-active"
                     transition={SPRING.snappy}
                     className="absolute left-3 right-3 -bottom-0.5 h-px bg-accent"
                   />
                 )}
-              </a>
+              </Link>
             </li>
           ))}
           <li>
@@ -143,7 +157,7 @@ export default function Nav() {
           aria-expanded={open}
           aria-controls="mobile-menu"
           aria-label={open ? "Close menu" : "Open menu"}
-          className="sm:hidden p-2 -mr-2 text-muted hover:text-fg"
+          className="md:hidden p-3 -mr-3 text-muted hover:text-fg"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             {open ? (
@@ -164,23 +178,24 @@ export default function Nav() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: DURATION.fast, ease: EASE.outQuart }}
-            className="sm:hidden border-b border-white/[0.06] px-6 py-3 flex flex-col"
+            className="md:hidden border-b border-border px-6 py-3 flex flex-col"
           >
             {links.map((s) => (
-              <a
+              <Link
                 key={s.id}
-                href={`#${s.id}`}
+                href={hrefFor(s.id)}
                 onClick={() => setOpen(false)}
-                aria-current={active === s.id ? "location" : undefined}
+                aria-current={isActive(s.id) ? (home ? "location" : "page") : undefined}
                 className={`px-3 py-3 rounded-lg text-base ${
-                  active === s.id ? "text-accent" : "text-fg/80 hover:text-fg"
+                  isActive(s.id) ? "text-accent" : "text-fg/80 hover:text-fg"
                 }`}
               >
                 {s.label}
-              </a>
+              </Link>
             ))}
             <Link
               href={socialLinks.resume}
+              onClick={() => setOpen(false)}
               className="px-3 py-3 rounded-lg text-base text-accent"
             >
               Resume

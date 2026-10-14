@@ -1,0 +1,58 @@
+Plutus is a systematic US-equity trader. It runs on a timer in my homelab against a paper account, and its backtest over 2007 to 2026 shows a Sharpe of 1.04 against 0.63 for SPY. The Sharpe is one path through one history. This note covers the bot it replaced, the caveats, and the ideas I dropped.
+
+## The version that lost
+
+The first bot had five signals: price trend, a fundamentals score, a "moat" score, news sentiment and a layer that asked a language model for a view. It was busy and it felt rigorous. Then I attributed its returns signal by signal with a point-in-time backtest, the kind where each decision sees only the data that existed on that day.
+
+One signal had predictive power. Price trend, with an information coefficient around 0.15. The rest measured zero or negative, and they were weighting the portfolio anyway. The point-in-time backtest of the whole thing lost to SPY, with an 82% drawdown along the way.
+
+So the rewrite keeps the one thing that worked and adds two overlays from the literature: a trend filter and volatility targeting. That is the whole strategy.
+
+## The strategy
+
+Universe: S&P 500 and S&P 400 constituents, plus names that were removed but are still listed, which softens survivorship bias without removing it. A stock must be above five dollars and trade twenty million dollars a day by 20-day median. Rank by 6- and 12-month momentum, skipping the most recent ten trading days; the skip was swept over 0, 5, 10, 15 and 21 days and the curve is a smooth hump, not a spike, which is what you want from a parameter. Hold only names above their own 200-day average. If SPY is below its own 200-day average, the book goes risk-off into bonds, gold or bills by their own six-month momentum. Size the whole thing to a 30% ex-ante volatility from a 60-day window. Rebalance monthly. Orders fill at the next open with ten basis points of slippage assumed each way.
+
+Every knob is in one config file, every key maps onto a dataclass, and an unknown key fails loudly.
+
+## What the number says
+
+Over 2007-01 to 2026-10, 1,107 tickers, $100k start, 10 bps per side:
+
+| | Plutus | SPY | Equal-weight universe |
+|---|---|---|---|
+| CAGR | +26.1% | +11.0% | +17.3% |
+| Sharpe | 1.04 | 0.63 | 0.80 |
+| Max drawdown | −36.9% | −55.2% | −52.1% |
+| Worst year | −23.0% | −36.8% | −29.4% |
+
+2008 was +35%, from being risk-off in long bonds and gold. 2022 was −23%, worse than SPY's −18%: a trend filter is late by construction, and that year the usual risk-off assets fell with stocks.
+
+## What the number cannot say
+
+Three caveats sit in the README above the results.
+
+**It is one path.** A stationary block bootstrap of daily returns puts the Sharpe's 95% interval at [0.62, 1.47] and the CAGR's at [+13.5%, +39.8%]. The median bootstrapped drawdown is −37%; the fifth percentile is −52%. The strategy family, momentum plus trend filter plus vol targeting, was chosen from the literature rather than fitted here. The defaults were still picked knowing this history. That is selection, and it does not wash out.
+
+**Survivorship bias is only partly corrected.** An equal-weight buy-and-hold of the backtest universe beats SPY by 6.3% a year. That gap is a rough size for the bias that remains after adding still-listed removals. Any strategy on this universe starts with a tailwind that will not exist going forward.
+
+**Turnover is high.** 419% a year one-way, 4,347 trades. The 10 bps assumption is defensible for large caps at the open; it is not free.
+
+## Tested and rejected
+
+Each of these is a config option that still exists, defaulted off, with its result recorded next to it. The point of keeping them is that the next person, or the next me, does not re-run the experiment.
+
+| Idea | Source | Result here |
+|---|---|---|
+| 20% hard stop-loss (also 15%, 30%) | Han, Zhou & Zhu 2016 | Sharpe −0.01 to −0.03, worst year slightly worse: whipsaw |
+| Daily regime exit, sell when SPY crosses its average mid-month | common practice | CAGR −1.3%, worst year −18% against −13%: whipsaw |
+| Ensemble of 100- and 200-day filters | Faber variants | Sharpe −0.04 |
+| Leverage at 1.5× and 2× | | Lower CAGR, deeper drawdowns: borrow cost eats the extra return |
+| Add S&P 600 small caps (1,708 names) | | Sharpe 0.58 to 0.73, drawdowns −44% to −55%: worse per unit of risk for barely more return |
+
+Two sleeves survived testing and run in the paper account at 10% each: a leveraged Nasdaq ETF held only while the market filter is on, with a daily exit, and a bitcoin slice gated on its own 200-day average. Both raise Sharpe and lower the worst year in the sample. Both come with warnings in the README: the sample has no Nasdaq-specific crash like 2000 to 2002, where a monthly-gated 3× position would have lost most of its value before the filter fired, and bitcoin history only starts in 2014. These are the knobs I would turn off first if I stopped believing the backtest.
+
+## Running it
+
+The repository is private; it has keys in its deployment path and the state of a brokerage account. The shape is public enough to describe. A GitLab pipeline runs commit-lint, the test suite and ruff on every push; on green `master` it rsyncs to a container in the homelab, installs a systemd timer, and runs a doctor command. Deploying never places an order. The trader runs once per weekday morning from the timer, writes a JSON record of what it decided and why, and that record is what I read, not the broker's dashboard.
+
+The broker abstraction has an in-memory fake, so every test that touches order logic runs without a network. The live trader and the backtester share the rebalance schedule and phase, with a test that the two produce the same decision days, so the run record can be compared against what the simulator would have done on the same day with the same data.
