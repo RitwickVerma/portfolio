@@ -7,7 +7,7 @@
 #   pveum user token add status@pve site --privsep 1
 #   pveum acl modify / --tokens 'status@pve!site' --roles PVEAuditor
 # Put the printed secret in /etc/portfolio-status.env (chmod 600):
-#   PVE_URL=https://<host>:8006
+#   PVE_URL=https://<host LAN address>:8006   # CT114 reaches it; checked: HTTP 401 without a token
 #   PVE_NODE=<node name>
 #   PVE_TOKEN='status@pve!site=<secret>'
 #   PVE_CACERT=/etc/ssl/pve-root-ca.pem     # pin the host's CA; no -k
