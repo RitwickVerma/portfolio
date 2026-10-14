@@ -142,6 +142,15 @@ canvas {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Notes: fenced code inherits the <pre> styling, not the inline-code pill */
+.note pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
 /* Terminal styles */
 .xterm-viewport::-webkit-scrollbar {
   width: 4px;

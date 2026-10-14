@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import SceneBoundary from "@/components/SceneBoundary";
 import { hasWebGL2, prefersReducedMotion } from "@/lib/gpu";
@@ -15,17 +16,18 @@ const ShaderBackground = dynamic(() => import("@/components/ShaderBackground"), 
 });
 
 export default function Backdrop() {
+  const home = usePathname() === "/";
   const idle = useIdleReady(2500);
   const [capable, setCapable] = useState(false);
 
   useEffect(() => {
-    if (!idle) return;
+    if (!idle || !home) return;
     // Probe from a callback, one frame on, not from the effect body itself.
     const id = requestAnimationFrame(() => setCapable(hasWebGL2() && !prefersReducedMotion()));
     return () => cancelAnimationFrame(id);
-  }, [idle]);
+  }, [idle, home]);
 
-  if (!capable) return null;
+  if (!capable || !home) return null;
   return (
     <SceneBoundary label="backdrop">
       <ShaderBackground />

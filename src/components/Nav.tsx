@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
 import { SPRING, DURATION, EASE } from "@/lib/motion";
 import { socialLinks } from "@/lib/data";
@@ -16,6 +17,12 @@ const sections = [
 const links = sections.slice(1);
 
 export default function Nav() {
+  // Section links are same-document hashes on the home page and "/#id" from
+  // any other route (notes), where the sections do not exist.
+  const pathname = usePathname();
+  const home = pathname === "/";
+  const onNotes = pathname.startsWith("/notes");
+  const hash = (id: string) => (home ? `#${id}` : `/#${id}`);
   const [active, setActive] = useState("hero");
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -34,6 +41,7 @@ export default function Nav() {
   // Scroll-based (not IntersectionObserver): the pinned hero never leaves the
   // viewport, so an observer would never hand the highlight back to it.
   useEffect(() => {
+    if (!home) return;
     let raf = 0;
     const update = () => {
       raf = 0;
@@ -56,7 +64,7 @@ export default function Nav() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, []);
+  }, [home]);
 
   // Disclosure menu: focus the first link on open, Esc closes and returns
   // focus to the toggle, a click outside closes.
@@ -95,27 +103,27 @@ export default function Nav() {
       }}
     >
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <a
-          href="#hero"
-          aria-current={active === "hero" ? "location" : undefined}
+        <Link
+          href={home ? "#hero" : "/"}
+          aria-current={home && active === "hero" ? "location" : undefined}
           className="font-mono text-accent text-sm tracking-wider hover:opacity-80 transition-opacity"
         >
           ritwickverma<span className="text-muted">.dev</span>
-        </a>
+        </Link>
 
         {/* Inline links from 640px up */}
         <ul className="hidden sm:flex items-center gap-1">
           {links.map((s) => (
             <li key={s.id}>
               <a
-                href={`#${s.id}`}
-                aria-current={active === s.id ? "location" : undefined}
+                href={hash(s.id)}
+                aria-current={home && active === s.id ? "location" : undefined}
                 className={`relative block px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  active === s.id ? "text-accent" : "text-muted hover:text-fg"
+                  home && active === s.id ? "text-accent" : "text-muted hover:text-fg"
                 }`}
               >
                 {s.label}
-                {active === s.id && (
+                {home && active === s.id && (
                   <motion.span
                     layoutId="nav-active"
                     transition={SPRING.snappy}
@@ -125,6 +133,24 @@ export default function Nav() {
               </a>
             </li>
           ))}
+          <li>
+            <Link
+              href="/notes/"
+              aria-current={onNotes ? "page" : undefined}
+              className={`relative block px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                onNotes ? "text-accent" : "text-muted hover:text-fg"
+              }`}
+            >
+              Notes
+              {onNotes && (
+                <motion.span
+                  layoutId="nav-active"
+                  transition={SPRING.snappy}
+                  className="absolute left-3 right-3 -bottom-0.5 h-px bg-accent"
+                />
+              )}
+            </Link>
+          </li>
           <li>
             <Link
               href={socialLinks.resume}
@@ -169,18 +195,27 @@ export default function Nav() {
             {links.map((s) => (
               <a
                 key={s.id}
-                href={`#${s.id}`}
+                href={hash(s.id)}
                 onClick={() => setOpen(false)}
-                aria-current={active === s.id ? "location" : undefined}
+                aria-current={home && active === s.id ? "location" : undefined}
                 className={`px-3 py-3 rounded-lg text-base ${
-                  active === s.id ? "text-accent" : "text-fg/80 hover:text-fg"
+                  home && active === s.id ? "text-accent" : "text-fg/80 hover:text-fg"
                 }`}
               >
                 {s.label}
               </a>
             ))}
             <Link
+              href="/notes/"
+              onClick={() => setOpen(false)}
+              aria-current={onNotes ? "page" : undefined}
+              className={`px-3 py-3 rounded-lg text-base ${onNotes ? "text-accent" : "text-fg/80 hover:text-fg"}`}
+            >
+              Notes
+            </Link>
+            <Link
               href={socialLinks.resume}
+              onClick={() => setOpen(false)}
               className="px-3 py-3 rounded-lg text-base text-accent"
             >
               Resume

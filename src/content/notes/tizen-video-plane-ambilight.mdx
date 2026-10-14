@@ -1,0 +1,96 @@
+Every ambilight has to see the picture. The usual answer is hardware: an HDMI splitter feeding a capture card feeding a small computer. For a 4K HDR signal that is a few hundred dollars of boxes, an HDCP fight, and a device that only sees what comes in over HDMI. The TV's own apps never pass through that cable at all.
+
+So I went the other way. The TV is a Samsung S84F on Tizen 9. Tizen apps are .NET. A .NET app running *on the TV* can read the TV's own memory, if you know where to look. [TizenAmbilight](https://gitlab.com/ritwick7/TizenAmbilight) is one headless service that does exactly that: it reads the decoded video frame, reduces it to perimeter colours, and drives a WLED strip over UDP. One process, one hop, 20 to 25 frames a second.
+
+This note is about the three parts that were actually hard: finding a frame that follows the film, getting HDR colour onto SDR LEDs without inventing saturation, and making the thing fail in ways you can see.
+
+## The frame that follows the film
+
+Samsung ships a capture API. `dc_request_capture_to_file_sync` in `libdisplay-capture-api.so` writes a real PNG of the screen. [HyperTizen](https://github.com/reisxd/HyperTizen) builds on the same idea. It works, and it is the wrong layer: it returns the **UI compositor**, which goes static the moment a film starts playing. HDMI inputs and DRM content arrive as black. An ambilight built on it lights up for the menus and goes dark for the movie.
+
+The plane that follows playback is the **video plane**, and the entry point that reads it is `secvideo_api_capture_video_main(w, h, param)` in `libvideo-capture.so.0.1.0`. It fills caller-owned buffers with a Y plane plus interleaved chroma, NV12, at 960×540, and returns 0 on success. No file, no encoder, no decoder anywhere on the path.
+
+Both entry points are reached through `dlopen` and `dlsym`. There is no link-time dependency on any Samsung library, no NuGet package, and the app never opens a `/dev` node. I recovered the ABI by static analysis of the TV's own libraries, anchored to the return values of a sideloaded probe app. Return codes, as observed:
+
+| rc | meaning |
+|---|---|
+| 0 | success |
+| -1 | "not ready"; self-clears, a short burst after app start is normal |
+| -2 | scaler failure; a wedge, the TV needs a power cycle |
+| -4 | DRM-protected content |
+
+The screen-capture path stays in the app as a non-default backend, because I had already mapped its request struct and it is a useful fallback. The struct is 296 bytes:
+
+| offset | type | field | value used |
+|---|---|---|---|
+| +0x00 | u32 | `app_type` (≤6) | 4 |
+| +0x04 | u32 | `capture_mode` (≤4) | 0 is the mode that works; 1 and 2 return rc=1 and write nothing |
+| +0x08 | u32 | `compress_type` | 0 PNG, 1 JPEG |
+| +0x0c | u32 | `jpeg_quality` | 90 |
+| +0x10 | char* | `dir_path` (checked with `access(W_OK)`) | the app's own data dir |
+| +0x14 | char* | `file_name` | anything |
+| +0x18 | int | `width` (in/out) | requested; the library clamps, floor 480×270 |
+| +0x1c | int | `height` (in/out) | |
+| +0x20 | int | `ret_width` (out) | |
+| +0x24 | int | `ret_height` (out) | |
+| +0x28 | char[256] | `ret_path` (out) | authoritative |
+
+`rc == 0` with a non-empty `ret_path` and a file on disk is a usable frame. `rc == 1` with an empty path means there is nothing on screen, standby or an unchanging UI, not a broken API. Malformed input returns a clean -1, so a bad struct cannot crash the TV. That last property is what made iterating on it safe.
+
+## Zones
+
+The strip has 73 zones, clockwise from the frame's top-left, matching where the LEDs physically sit: 23 across the top, 13 down the right, 24 across the bottom, 13 up the left. Each zone averages a border band 8% of the frame dimension deep, so 77×43 px at 960×540, and the centre of the picture is never sampled.
+
+Two decisions mattered more than the zone count:
+
+- **Every side-edge zone keeps its own vertical segment.** The lazy version samples the full active height for each side zone. All 13 zones on an edge then return the *same* colour by construction, 22 of 73 LEDs duplicate their neighbour, and it costs 3.7× more to compute the duplicate.
+- **Subsampling.** Stepping both axes by 3 cuts the per-zone work by 9× for a 1.4% mean error against the every-pixel reference. Zone extraction, not capture, is the frame-rate ceiling, so this is where the frames come from.
+
+The mapping to LEDs is 1:1, zones 0 to 72 to LEDs 0 to 72, and every remaining LED is written black explicitly each frame. Spreading zones proportionally across a longer strip accumulates drift and breaks corner alignment, and an unwritten LED keeps showing WLED's own segment output.
+
+## Colour: the plane is PQ, the LEDs are not
+
+The video plane carries HDR codes in PQ, SMPTE ST 2084. Decode those as if they were SDR and you throw away the upper half of the signal. The whole colour chain follows from taking that seriously:
+
+- **Matrix in the PQ code domain** (BT.2020, non-constant luminance, full range), then **tone-map the luma** and scale R, G and B by that one factor. The tempting alternative, applying the transfer function per channel, widens the gaps between channels and *invents* saturation. Measured: +18% mean saturation and a visible hue shift on exactly the most saturated zones.
+- **Gamut.** HDR content is BT.2020-primed; the LEDs are effectively 709/sRGB. Feeding 2020 triples straight through renders them *less* saturated. Converting measured a +63% chroma spread, and the colours that land outside the LED gamut are soft-mapped, desaturated toward their own luminance by the smallest amount that brings them back, rather than clamped, which crushes a channel and distorts hue.
+- **Adaptive gamma.** No single curve serves both a film whose picture sits at 0.09 to 0.28 nits and a bright game. The tone curve is driven by the frame's **median** PQ code, not the mean, because a lamp or a specular highlight biases the mean badly. It is EMA-smoothed with a 2 s tau and quantised so the LUT is not rebuilt every frame.
+- **Brightness belongs in gamma, not gain.** Gain above 1 multiplies the top of the range and clips. Gamma lifts the low and mid range and provably cannot clip.
+- **Saturation scales chroma magnitude.** That preserves hue and cannot create colour in a neutral zone. It is not a tint control and it does not repair a wrong transfer function.
+
+On coloured test content, once each zone's sampling box sits inside the painted band: hue error 0.3° to 2.2°, output-to-input peak ratio 0.97 to 1.00 per edge.
+
+## Output
+
+WLED's realtime DRGB protocol over UDP, port 21324. One datagram per frame, so a frame is atomic. The timeout byte is raised to 4 s so a few lost packets leave the strip latched rather than reverting.
+
+Two things about DRGB that are not obvious until they bite. It is last-packet-wins, so exactly one sender may own the strip; two senders produce a visible flicker between them. And the blank-the-strip paths, no frame, standby, shutdown, all go through one shared hold that **re-sends** at most once per second, because a single blackout datagram expires, WLED reverts to its stored colour, and the ambilight ends up glowing orange at idle.
+
+## Failing where you can see it
+
+Most of the code that exists today exists because a silent failure looked identical to a healthy run.
+
+- **The TV's power state is probed on the TV itself**, via its own local API, reachable from inside the sandbox, cached for 1 s. In standby the capture call is skipped entirely. The probe **fails toward trying**: if it cannot answer, the app assumes the panel is on and keeps capturing, so a broken probe can never leave it believing an awake TV is off.
+- **A stale frame is not a live frame.** A closed or paused video leaves the last decoded frame in the plane, so capture keeps succeeding while the picture is frozen. A cheap Y-plane signature detects it and fades the strip out, ramping up fast and down slow, so resuming never feels laggy.
+- **Capture success is not evidence the pipeline works.** Every safety mechanism reports its own counter in telemetry. The app posts a JSON report every 5 s: decode settings, the adaptive state (median code, scene nits, effective gamma), tone, smoothing, mapping, bar detection, I/O counters, loop exceptions, and a log tail. Two rules for that telemetry: a key must describe what it actually holds (a field named for a file size once reported an in-memory size, and was trusted), and anything invisible in telemetry may as well not exist. A fix has to be verifiable, not asserted.
+- **A live control channel.** The app polls a URL every 250 ms and applies a comma-separated body: `pause`, `run`, `gamma=`, `peak=`, `hdr=0/1`, `backend=0/1`, a frame dump, and so on. Values are numbers only; the parser skips anything that fails a numeric parse, and rejects NaN and infinity explicitly, because a NaN cast to int wraps into a legal-looking, wrong mapping offset.
+
+## What bit me
+
+**Installing over a capturing app wedges the TV.** `tizen install` SIGKILLs the running app. Killed mid-capture it can leave the scaler allocated, and every later capture returns rc=-2 until the TV is power-cycled. Three out of three deploys. That is why the `pause` token exists at all: pause, install, resume.
+
+**Letterbox detection ships on and should be off on at least this panel.** The plane carries no letterbox rows, because the library scales content to fill the requested box, so the row test can only produce false positives. I watched it crop 25% of the picture and re-fire every few seconds. The column test did detect a real 4:3 pillarbox. One flag drives both axes, so turning it off also turns off the genuine detection. It needs two switches.
+
+**There is no auto-restart on crash.** The Tizen on-boot flag covers boot only. A runtime crash leaves the service down until someone notices. This fails safe on purpose: resuming on a timer would risk installing over a live capture and wedging the scaler, which is strictly worse than a dark strip.
+
+## Tests
+
+The decoders are first-party code; the app has zero NuGet dependencies, so the PNG decoder, the baseline JPEG decoder, the JSON writer and the capture P/Invoke are all mine. A host harness compiles the same decoders the app uses and byte-compares: the JPEG decoder against libjpeg-turbo on 4:4:4, 4:2:2, 4:2:0, grayscale, restart-marker and odd-dimension inputs, worst per-channel error 3/255, mean at most 0.13. Both decoders are checked to **reject** what they do not support, CMYK, progressive, 12-bit, truncated files, rather than decode them wrongly. The same PNG decoder self-checks on the device at startup against an embedded 8×8 image and reports PASS or FAIL in the first telemetry report.
+
+## Limits, stated
+
+The capture ABI is reverse-engineered against one firmware on one model. The struct offsets and plane layout are not versioned and not documented for third-party apps. The app clamps the returned dimensions and pitch, bounds-checks every read, and reports the capture API as `ok` or `UNAVAILABLE`, so a changed ABI shows up as a visible state rather than a sheared picture. A firmware update is still a real risk.
+
+The video plane is pre-tone-map. A faithful mapping of a dark HDR film produces a dark strip, because the source is dark. Adaptive gamma softens that; it does not remove it.
+
+The idea, the DRGB protocol and a great deal of hard-won practical detail come from [Hyperion](https://github.com/hyperion-project/hyperion.ng), [HyperHDR](https://github.com/awawa-dev/HyperHDR) and [HyperTizen](https://github.com/reisxd/HyperTizen). This project exists because the compositor they capture cannot see the film, and the plane that can is reachable from inside the TV.

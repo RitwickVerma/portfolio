@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { commandOutputs, COMMAND_NAMES, welcome, wrapList, BANNER_COLS, TERMINAL_COLS } from "./terminal";
 import { services, projects } from "./data";
+import { notes } from "./notes";
 
 const plain = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 
@@ -24,6 +25,14 @@ describe("terminal output", () => {
     expect(plain(out.homelab).split("\r\n").filter((l) => /^(CT|VM)\d+/.test(l))).toHaveLength(
       services.length,
     );
+  });
+
+  it("lists every note with its URL", () => {
+    const text = plain(out.notes);
+    for (const n of notes) {
+      expect(text).toContain(n.title);
+      expect(text).toContain(`/notes/${n.slug}/`);
+    }
   });
 
   it("lists every project", () => {

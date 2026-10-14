@@ -16,13 +16,19 @@ server runtime, no third-party requests at view time.
   comes from `src/lib/motion.ts`
 - **xterm.js** — the terminal section; mounted when it nears the viewport
 - **Tailwind CSS v4**
+- **MDX** (`@next/mdx`, remark-gfm) — the notes. Add a file under
+  `src/content/notes/` and an entry in `src/lib/notes.ts`; a test fails if
+  the two disagree.
 - **Vitest** — pure logic only (data integrity, terminal output, motion
-  tokens, SEO helpers, the hero phase machine, hero label layout)
+  tokens, SEO helpers, the hero phase machine, hero label layout, the notes
+  registry)
 
 ## Layout
 
 ```
 src/app/(site)/    home page + nav, footer, backdrop, cursor trail
+src/app/(site)/notes/  /notes index and /notes/[slug] pages, one OG card each
+src/content/notes/ the notes themselves, MDX; registered in lib/notes.ts
 src/app/resume/    /resume — print-optimised, rendered from lib/data
 src/app/og.png/    Open Graph card, rendered to a real .png at build
 src/lib/data.ts    single source for home, /resume and the terminal

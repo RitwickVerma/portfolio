@@ -1,0 +1,44 @@
+This page exists so that nothing here has to be taken on trust. If you are deciding whether to talk to me, you should know what on this site is mine, what is machine-made under my direction, what is measured and what is a snapshot.
+
+## What it is
+
+A static site. `next build` with `output: "export"` produces plain HTML, JavaScript and CSS, and nginx serves the folder. There is no server runtime, no database, no analytics, no cookies and no request to any third party when you view a page. Fonts are self-hosted at build. The source is public on [GitLab](https://gitlab.com/ritwick7/portfolio).
+
+It is served from my own rack. CT114 is a container on the Proxmox host described in the Homelab section, behind the same Traefik gateway as everything else I run. A push to `master` runs lint, typecheck and tests in CI; if those pass, CI connects to the container and it rebuilds itself from the repository.
+
+## The hero
+
+The datacenter is three.js through React Three Fiber, WebGL2. It is a lazy chunk that mounts after the browser goes idle, behind a static SVG poster that paints with the first HTML. If WebGL2 is unavailable, if you have asked your OS for reduced motion, or if the renderer throws, the poster simply stays and the page keeps working. A WebGPU build with a compute-shader airflow layer exists behind `?renderer=webgpu`; it is opt-in until I have verified it on more GPUs than mine, because the first time it shipped as the default it blanked the hero on a GPU-accelerated Chrome and I found out from the production site.
+
+The racks are a drawing of my homelab, not a live view of it. The labels are real guest names; the boot logs on the screens are abbreviated from the real services. The section below the fold says "static inventory, not a live status page" and means it. Making it live is on the list.
+
+## The terminal
+
+xterm.js, fetched only when the section nears the viewport, so it never ships in the first load. Every command's output is generated from the same data file that renders the cards and the resume, and a unit test checks that the terminal cannot drift from the page.
+
+## What is measured, what is a snapshot
+
+Numbers on this site fall into two kinds. Counts such as "15 guests" are read from the data file at build and change when I change the file. Figures such as the download count and rating for ShutUp are dated snapshots, written down with the date I checked them, and the Play Store listing they came from is no longer up; the number stands on my own records.
+
+The rule for the data file, written at its top, is that every claim in it must be one I can back in a conversation. Private addresses, ports and anything that would help someone find a machine are kept out, and a test fails the build if one slips in.
+
+## How it was made
+
+I built this site with an AI pair programmer. Specifically, most of the code on the current version was written by Claude, working from my direction, in sessions where I set the goals, reviewed the diffs, ran the site and pushed back. The commits say so: anything the model wrote carries a co-author line, and that is visible in the public history.
+
+What that means in practice:
+
+- The decisions are mine. What the site says, what it shows, what is on it and what is left off, which claims survive and which get cut.
+- The content is mine. The project descriptions, the experience, the notes, including this one, are my words or my edits of a draft I asked for.
+- The verification is real. Every change on the current version was linted, typechecked and unit-tested, then rendered in a headless browser at desktop and phone widths and screenshotted before it was committed. The resume page is printed to PDF on Letter and A4 and checked to hold one page.
+- The model is a tool with a known failure mode: it will claim a thing works when it has not looked. The fix is the same as with any contributor. Nothing merges on a claim; it merges on evidence.
+
+I say this plainly because I would rather you ask me about it than wonder. I made the same disclosure in the upstream issue I opened on [kwin-canvas](https://github.com/aaronsb/kwin-canvas/issues/13), and I would expect the same of anyone sending me a patch.
+
+## Motion and accessibility
+
+One easing system, one set of durations, in a single token file that both the animation library and the CSS read; a test fails if they drift apart. Everything moves less if your OS asks it to: the hero becomes a still, the backdrop grid is not mounted, the cursor trail is not drawn. Keyboard users get a skip link to the content, a focus ring on everything, and a terminal that gives focus back on Escape. The 3D room is marked decorative to screen readers; nothing it shows is information you cannot get from the text.
+
+## Stack, for the record
+
+Next.js 16, React 19, TypeScript, Tailwind 4, three.js and React Three Fiber, framer-motion, xterm.js, Vitest. Geist and Geist Mono. Built with Turbopack, served by nginx, hosted on a Debian container I maintain.

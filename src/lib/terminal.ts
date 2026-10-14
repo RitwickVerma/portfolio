@@ -2,6 +2,7 @@
 // can never drift from the rest of the site. No xterm import: unit-testable.
 
 import { projects, experiences, services, skills, socialLinks, SITE_URL } from "./data";
+import { notes, noteUrl } from "./notes";
 
 export const ANSI = {
   reset: "\x1b[0m",
@@ -41,6 +42,7 @@ export const COMMAND_NAMES = [
   "skills",
   "experience",
   "resume",
+  "notes",
   "contact",
   "stack",
   "neofetch",
@@ -94,6 +96,7 @@ export function commandOutputs(): Record<string, string> {
       "  skills      Skills by category\r\n" +
       "  experience  Career timeline\r\n" +
       "  resume      Printable resume page\r\n" +
+      "  notes       Engineering notes\r\n" +
       "  contact     Get in touch\r\n" +
       "  stack       How this site is built\r\n" +
       "  neofetch    Site info\r\n" +
@@ -125,6 +128,11 @@ export function commandOutputs(): Record<string, string> {
       .join(""),
 
     resume: `${g("Resume:")} ${SITE_URL}/resume  ${ANSI.dim}(Save as PDF from the page)${ANSI.reset}\r\n`,
+
+    notes:
+      notes
+        .map((n) => `${g(n.date)}  ${n.title}\r\n            ${ANSI.dim}${SITE_URL}${noteUrl(n)}${ANSI.reset}\r\n`)
+        .join("") || `${ANSI.dim}No notes yet.${ANSI.reset}\r\n`,
 
     contact:
       `${g("Email:")}    ${socialLinks.email}\r\n` +

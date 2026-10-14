@@ -3,7 +3,14 @@ import { ImageResponse } from "next/og";
 // Shared 1200×630 social card: dark house style, one accent, the same uneven
 // rack silhouettes as the hero. Rendered at build time (static export).
 
-export type OgText = { eyebrow: string; name: string; line: string; lineTwo: string };
+export type OgText = {
+  eyebrow: string;
+  name: string;
+  /** Name font size in px; the default suits a two-word name, notes pass a smaller one. */
+  nameSize?: number;
+  line: string;
+  lineTwo: string;
+};
 
 const ACCENT = "#64ffda";
 const WARN = "#ff4444";
@@ -18,7 +25,7 @@ const RACKS = [
 ];
 const FLOOR = 150; // px from the bottom
 
-export function renderOg({ eyebrow, name, line, lineTwo }: OgText) {
+export function renderOg({ eyebrow, name, nameSize = 92, line, lineTwo }: OgText) {
   return new ImageResponse(
     (
       <div
@@ -91,7 +98,14 @@ export function renderOg({ eyebrow, name, line, lineTwo }: OgText) {
         >
           <div style={{ display: "flex", fontSize: 28, color: ACCENT }}>{eyebrow}</div>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", fontSize: 92, lineHeight: 1.02, letterSpacing: -3 }}>
+            <div
+              style={{
+                display: "flex",
+                fontSize: nameSize,
+                lineHeight: 1.08,
+                letterSpacing: nameSize >= 80 ? -3 : -1.5,
+              }}
+            >
               {name}
             </div>
             <div style={{ display: "flex", fontSize: 36, color: ACCENT, marginTop: 28 }}>

@@ -1,6 +1,7 @@
 import { socialLinks } from "@/lib/data";
 
 const links = [
+  { label: "Notes", href: "/notes/", external: false },
   { label: "Resume", href: socialLinks.resume, external: false },
   { label: "GitHub", href: socialLinks.github, external: true },
   { label: "GitLab", href: socialLinks.gitlab, external: true },
