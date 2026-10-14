@@ -39,7 +39,7 @@ describe("data integrity", () => {
     expect(experiences[0].period).toMatch(/Present$/);
     expect(experiences[1]).toMatchObject({ company: "eBay", role: "Software Engineer 2" });
     expect(experiences.filter((e) => e.company === "eBay")).toHaveLength(2);
-    expect(experiences.find((e) => e.company === "Shoelace Wireless")?.period).toBe("Jun — Sep 2020");
+    expect(experiences.find((e) => e.company === "Shoelace Wireless")?.period).toBe("Jun – Sep 2020");
   });
 
   it("every experience has company, role, and period", () => {
@@ -90,7 +90,7 @@ describe("data integrity", () => {
   it("the resume lists every featured project and at most seven in all", () => {
     const listed = projects.filter((p) => p.onResume !== false);
     for (const p of projects.filter((p) => p.featured)) expect(listed).toContain(p);
-    expect(listed.length).toBeLessThanOrEqual(7);
+    expect(listed.length).toBeLessThanOrEqual(6);
   });
 
   it("Plutus describes the current trader, not the retired multi-signal pipeline", () => {

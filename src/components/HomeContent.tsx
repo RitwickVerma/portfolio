@@ -9,7 +9,7 @@ import HomelabSection from "@/components/HomelabSection";
 import SectionReveal from "@/components/SectionReveal";
 import HeroSceneWrapper from "@/components/HeroSceneWrapper";
 import TerminalWrapper from "@/components/TerminalWrapper";
-import Magnetic from "@/components/Magnetic";
+import NotesSection from "@/components/NotesSection";
 import { sceneState } from "@/lib/sceneState";
 import { EASE } from "@/lib/motion";
 import { hero, socialLinks } from "@/lib/data";
@@ -88,12 +88,12 @@ export default function HomeContent() {
             </p>
 
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-9 pointer-events-auto">
-              <Magnetic
+              <a
                 href="#projects"
-                className="px-6 py-2.5 rounded-lg bg-accent text-[#0a0a0f] text-sm font-medium hover:bg-accent/90 transition-colors"
+                className="px-6 py-2.5 rounded-lg bg-accent text-background text-sm font-medium hover:bg-accent/90 transition-colors"
               >
                 See the work
-              </Magnetic>
+              </a>
               <Link
                 href={socialLinks.resume}
                 className="px-6 py-2.5 rounded-lg border border-fg/60 text-fg text-sm hover:border-accent hover:text-accent transition-colors"
@@ -103,15 +103,15 @@ export default function HomeContent() {
             </div>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a0f] to-transparent pointer-events-none z-10" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
 
           <motion.div
             aria-hidden="true"
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 scroll-indicator motion-reduce:hidden"
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 scroll-indicator motion-reduce:hidden text-accent"
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: EASE.inOutCubic }}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64ffda" strokeWidth="1.5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M12 5v14M5 12l7 7 7-7" />
             </svg>
           </motion.div>
@@ -121,6 +121,7 @@ export default function HomeContent() {
       <div className="relative z-10">
         <SectionReveal><AboutSection /></SectionReveal>
         <SectionReveal><ProjectsSection /></SectionReveal>
+        <SectionReveal><NotesSection /></SectionReveal>
         <SectionReveal><HomelabSection /></SectionReveal>
         <SectionReveal><TerminalWrapper /></SectionReveal>
       </div>

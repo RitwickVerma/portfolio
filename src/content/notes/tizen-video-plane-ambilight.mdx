@@ -2,7 +2,7 @@ Every ambilight has to see the picture. The usual answer is hardware: an HDMI sp
 
 So I went the other way. The TV is a Samsung S84F on Tizen 9. Tizen apps are .NET. A .NET app running *on the TV* can read the TV's own memory, if you know where to look. [TizenAmbilight](https://gitlab.com/ritwick7/TizenAmbilight) is one headless service that does exactly that: it reads the decoded video frame, reduces it to perimeter colours, and drives a WLED strip over UDP. One process, one hop, 20 to 25 frames a second.
 
-This note is about the three parts that were actually hard: finding a frame that follows the film, getting HDR colour onto SDR LEDs without inventing saturation, and making the thing fail in ways you can see.
+Three parts were hard: finding a frame that follows the film, getting HDR colour onto SDR LEDs without inventing saturation, and making the thing fail in ways you can see.
 
 ## The frame that follows the film
 
@@ -64,7 +64,7 @@ On coloured test content, once each zone's sampling box sits inside the painted 
 
 WLED's realtime DRGB protocol over UDP, port 21324. One datagram per frame, so a frame is atomic. The timeout byte is raised to 4 s so a few lost packets leave the strip latched rather than reverting.
 
-Two things about DRGB that are not obvious until they bite. It is last-packet-wins, so exactly one sender may own the strip; two senders produce a visible flicker between them. And the blank-the-strip paths, no frame, standby, shutdown, all go through one shared hold that **re-sends** at most once per second, because a single blackout datagram expires, WLED reverts to its stored colour, and the ambilight ends up glowing orange at idle.
+Two DRGB details cost real time. It is last-packet-wins, so exactly one sender may own the strip; two senders produce a visible flicker between them. And the blank-the-strip paths, no frame, standby, shutdown, all go through one shared hold that **re-sends** at most once per second, because a single blackout datagram expires, WLED reverts to its stored colour, and the ambilight ends up glowing orange at idle.
 
 ## Failing where you can see it
 
@@ -87,7 +87,7 @@ Most of the code that exists today exists because a silent failure looked identi
 
 The decoders are first-party code; the app has zero NuGet dependencies, so the PNG decoder, the baseline JPEG decoder, the JSON writer and the capture P/Invoke are all mine. A host harness compiles the same decoders the app uses and byte-compares: the JPEG decoder against libjpeg-turbo on 4:4:4, 4:2:2, 4:2:0, grayscale, restart-marker and odd-dimension inputs, worst per-channel error 3/255, mean at most 0.13. Both decoders are checked to **reject** what they do not support, CMYK, progressive, 12-bit, truncated files, rather than decode them wrongly. The same PNG decoder self-checks on the device at startup against an embedded 8×8 image and reports PASS or FAIL in the first telemetry report.
 
-## Limits, stated
+## Limits
 
 The capture ABI is reverse-engineered against one firmware on one model. The struct offsets and plane layout are not versioned and not documented for third-party apps. The app clamps the returned dimensions and pitch, bounds-checks every read, and reports the capture API as `ok` or `UNAVAILABLE`, so a changed ABI shows up as a visible state rather than a sheared picture. A firmware update is still a real risk.
 

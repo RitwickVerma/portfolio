@@ -9,6 +9,7 @@
   --color-surface: var(--surface);
   --color-accent: var(--accent);
   --color-muted: var(--muted);
+  --color-warn: var(--warn);
   --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -26,12 +27,15 @@
   --dur-slow: 700ms;
   --stagger-line: 90ms;
 
-  --bg: #0a0a0f;
-  --fg: #e4e4e7;
-  --surface: rgba(255, 255, 255, 0.03);
-  --accent: #64ffda;
-  --muted: #8892b0;
-  --border: rgba(255, 255, 255, 0.06);
+  /* mirrors src/lib/theme.ts — theme.test.ts keeps them in sync */
+  --bg: #0c0b09;
+  --fg: #ebe7df;
+  --muted: #8f8a80;
+  --accent: #f0b35a;
+  --accent-rgb: 240 179 90;
+  --warn: #ff5a4e;
+  --surface: rgba(255, 250, 240, 0.03);
+  --border: rgba(255, 250, 240, 0.08);
 }
 
 @layer base {
@@ -64,28 +68,19 @@
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(100, 255, 218, 0.2) transparent;
+  scrollbar-color: rgb(var(--accent-rgb) / 0.25) transparent;
 }
 
 ::selection {
-  background: rgba(100, 255, 218, 0.15);
+  background: rgb(var(--accent-rgb) / 0.22);
   color: var(--fg);
 }
 
 /* Keyboard focus ring */
 *:focus-visible {
-  outline: 2px solid rgba(100, 255, 218, 0.5);
+  outline: 2px solid rgb(var(--accent-rgb) / 0.6);
   outline-offset: 2px;
   border-radius: 4px;
-}
-
-/* The cursor trail (CursorGlow) stands in for the native cursor — but only once
-   it is running. Before hydration, under reduced motion, on touch-only devices
-   and on /resume the class is absent and the native cursor stays. Links and
-   buttons included: the UA stylesheet would otherwise draw a second cursor. */
-.custom-cursor,
-.custom-cursor * {
-  cursor: none;
 }
 
 /* Hero line reveal — each line rises through its own mask. Tokens above. */
@@ -112,28 +107,15 @@ section[id] {
   scroll-margin-top: 4rem;
 }
 
-/* Glass surface */
+/* Surface: a flat tint and a hairline. No blur — nothing moves behind a card. */
 .glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 .glass-hover:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(100, 255, 218, 0.15);
-}
-
-/* Glow border on hover */
-.glow-border {
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.glow-border:hover {
-  border-color: rgba(100, 255, 218, 0.3);
-  box-shadow: 0 0 20px rgba(100, 255, 218, 0.05);
+  background: rgba(255, 250, 240, 0.05);
+  border-color: rgb(var(--accent-rgb) / 0.3);
 }
 
 /* Prevent canvas focus on mobile */
@@ -159,7 +141,7 @@ canvas {
   background: transparent;
 }
 .xterm-viewport::-webkit-scrollbar-thumb {
-  background: rgba(100, 255, 218, 0.2);
+  background: rgb(var(--accent-rgb) / 0.25);
   border-radius: 2px;
 }
 

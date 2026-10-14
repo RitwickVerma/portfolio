@@ -21,6 +21,7 @@ import {
 } from '@/components/HeroScene';
 import GPUParticleAirflow from '@/components/GPUParticleAirflow';
 import { capPixelRatio } from '@/lib/gpu';
+import { BG } from '@/lib/theme';
 
 // R3F v9 calls the gl factory with its default props ({ canvas, ... }), NOT the
 // bare canvas. Passing the props object as `canvas` gave the renderer a fake
@@ -65,7 +66,7 @@ export default function HeroSceneWebGPU({ onReady }: { onReady?: () => void }) {
       gl={createWebGPURenderer as unknown as NonNullable<ComponentProps<typeof Canvas>['gl']>}
       camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }}
       onCreated={({ gl }) => { gl.domElement.tabIndex = -1; gl.domElement.style.outline = 'none'; onReady?.(); }}
-      style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f', cursor: 'none' }}
+      style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: BG, cursor: 'none' }}
     >
       <Suspense fallback={null}>
         <GrabHandler />

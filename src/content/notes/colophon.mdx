@@ -24,21 +24,12 @@ The rule for the data file, written at its top, is that every claim in it must b
 
 ## How it was made
 
-I built this site with an AI pair programmer. Specifically, most of the code on the current version was written by Claude, working from my direction, in sessions where I set the goals, reviewed the diffs, ran the site and pushed back. The commits say so: anything the model wrote carries a co-author line, and that is visible in the public history.
-
-What that means in practice:
-
-- The decisions are mine. What the site says, what it shows, what is on it and what is left off, which claims survive and which get cut.
-- The content is mine. The project descriptions, the experience, the notes, including this one, are my words or my edits of a draft I asked for.
-- The verification is real. Every change on the current version was linted, typechecked and unit-tested, then rendered in a headless browser at desktop and phone widths and screenshotted before it was committed. The resume page is printed to PDF on Letter and A4 and checked to hold one page.
-- The model is a tool with a known failure mode: it will claim a thing works when it has not looked. The fix is the same as with any contributor. Nothing merges on a claim; it merges on evidence.
-
-I say this plainly because I would rather you ask me about it than wonder. I made the same disclosure in the upstream issue I opened on [kwin-canvas](https://github.com/aaronsb/kwin-canvas/issues/13), and I would expect the same of anyone sending me a patch.
+I build with an AI pair programmer, and most of the current version's code was written by Claude from my direction: I set the goals, reviewed the diffs, ran the site and pushed back. Commits it wrote carry a co-author line, visible in the public history. The decisions, the content and the verification are mine. Every change was linted, typechecked and unit-tested, then rendered in a headless browser at desktop and phone widths before it was committed, and the resume page is printed to PDF on Letter and A4 to check it holds one page. Nothing merges on a claim; it merges on evidence. I made the same disclosure in the upstream issue I opened on [kwin-canvas](https://github.com/aaronsb/kwin-canvas/issues/13).
 
 ## Motion and accessibility
 
 One easing system, one set of durations, in a single token file that both the animation library and the CSS read; a test fails if they drift apart. Everything moves less if your OS asks it to: the hero becomes a still, the backdrop grid is not mounted, the cursor trail is not drawn. Keyboard users get a skip link to the content, a focus ring on everything, and a terminal that gives focus back on Escape. The 3D room is marked decorative to screen readers; nothing it shows is information you cannot get from the text.
 
-## Stack, for the record
+## Stack
 
 Next.js 16, React 19, TypeScript, Tailwind 4, three.js and React Three Fiber, framer-motion, xterm.js, Vitest. Geist and Geist Mono. Built with Turbopack, served by nginx, hosted on a Debian container I maintain.

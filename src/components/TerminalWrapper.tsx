@@ -35,12 +35,12 @@ export default function TerminalWrapper() {
 
   return (
     <section id="terminal" className="max-w-3xl mx-auto px-6 py-24 sm:py-32">
-      <h2 className="font-mono text-accent text-sm mb-6 tracking-widest uppercase">
+      <h2 className="font-mono text-muted text-sm mb-6 tracking-widest uppercase">
         Terminal
       </h2>
 
-      <div className="rounded-lg overflow-hidden glass glow-border">
-        <div className="relative flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-white/[0.03]">
+      <div className="rounded-lg overflow-hidden glass">
+        <div className="relative flex items-center gap-2 px-4 py-3 border-b border-border bg-surface">
           <span className="w-3 h-3 rounded-full bg-white/15" aria-hidden="true" />
           <span className="w-3 h-3 rounded-full bg-white/15" aria-hidden="true" />
           <span className="w-3 h-3 rounded-full bg-white/15" aria-hidden="true" />
@@ -54,7 +54,7 @@ export default function TerminalWrapper() {
           ref={slotRef}
           role="region"
           aria-label="Interactive terminal"
-          className="h-[420px] w-full bg-[#0a0a0f]"
+          className="h-[420px] w-full bg-background"
         >
           {near ? (
             <TerminalBody />

@@ -11,18 +11,22 @@ const sections = [
   { id: "hero", label: "Home" },
   { id: "about", label: "About" },
   { id: "projects", label: "Projects" },
+  { id: "notes", label: "Notes" },
   { id: "homelab", label: "Homelab" },
   { id: "terminal", label: "Terminal" },
 ];
 const links = sections.slice(1);
 
 export default function Nav() {
-  // Section links are same-document hashes on the home page and "/#id" from
-  // any other route (notes), where the sections do not exist.
+  // On the home page every item is a same-document hash and the active one
+  // follows scroll. Elsewhere the items point back at "/#id", except Notes,
+  // which has its own pages and is active on them.
   const pathname = usePathname();
   const home = pathname === "/";
   const onNotes = pathname.startsWith("/notes");
-  const hash = (id: string) => (home ? `#${id}` : `/#${id}`);
+  const hrefFor = (id: string) => (id === "notes" && !home ? "/notes/" : home ? `#${id}` : `/#${id}`);
+  const isActive = (id: string) => (home ? active === id : id === "notes" && onNotes);
+
   const [active, setActive] = useState("hero");
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -94,7 +98,7 @@ export default function Nav() {
       aria-label="Primary"
       className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${
         scrolled || open
-          ? "bg-[#0a0a0f]/85 backdrop-blur-xl border-b border-white/[0.06]"
+          ? "bg-background/85 backdrop-blur-xl border-b border-border"
           : "bg-transparent"
       }`}
       onBlur={(e) => {
@@ -115,42 +119,24 @@ export default function Nav() {
         <ul className="hidden sm:flex items-center gap-1">
           {links.map((s) => (
             <li key={s.id}>
-              <a
-                href={hash(s.id)}
-                aria-current={home && active === s.id ? "location" : undefined}
+              <Link
+                href={hrefFor(s.id)}
+                aria-current={isActive(s.id) ? (home ? "location" : "page") : undefined}
                 className={`relative block px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  home && active === s.id ? "text-accent" : "text-muted hover:text-fg"
+                  isActive(s.id) ? "text-accent" : "text-muted hover:text-fg"
                 }`}
               >
                 {s.label}
-                {home && active === s.id && (
+                {isActive(s.id) && (
                   <motion.span
                     layoutId="nav-active"
                     transition={SPRING.snappy}
                     className="absolute left-3 right-3 -bottom-0.5 h-px bg-accent"
                   />
                 )}
-              </a>
+              </Link>
             </li>
           ))}
-          <li>
-            <Link
-              href="/notes/"
-              aria-current={onNotes ? "page" : undefined}
-              className={`relative block px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                onNotes ? "text-accent" : "text-muted hover:text-fg"
-              }`}
-            >
-              Notes
-              {onNotes && (
-                <motion.span
-                  layoutId="nav-active"
-                  transition={SPRING.snappy}
-                  className="absolute left-3 right-3 -bottom-0.5 h-px bg-accent"
-                />
-              )}
-            </Link>
-          </li>
           <li>
             <Link
               href={socialLinks.resume}
@@ -190,29 +176,21 @@ export default function Nav() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: DURATION.fast, ease: EASE.outQuart }}
-            className="sm:hidden border-b border-white/[0.06] px-6 py-3 flex flex-col"
+            className="sm:hidden border-b border-border px-6 py-3 flex flex-col"
           >
             {links.map((s) => (
-              <a
+              <Link
                 key={s.id}
-                href={hash(s.id)}
+                href={hrefFor(s.id)}
                 onClick={() => setOpen(false)}
-                aria-current={home && active === s.id ? "location" : undefined}
+                aria-current={isActive(s.id) ? (home ? "location" : "page") : undefined}
                 className={`px-3 py-3 rounded-lg text-base ${
-                  home && active === s.id ? "text-accent" : "text-fg/80 hover:text-fg"
+                  isActive(s.id) ? "text-accent" : "text-fg/80 hover:text-fg"
                 }`}
               >
                 {s.label}
-              </a>
+              </Link>
             ))}
-            <Link
-              href="/notes/"
-              onClick={() => setOpen(false)}
-              aria-current={onNotes ? "page" : undefined}
-              className={`px-3 py-3 rounded-lg text-base ${onNotes ? "text-accent" : "text-fg/80 hover:text-fg"}`}
-            >
-              Notes
-            </Link>
             <Link
               href={socialLinks.resume}
               onClick={() => setOpen(false)}

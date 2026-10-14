@@ -86,12 +86,12 @@ export default async function NotePage({ params }: Params) {
         <Body />
       </div>
 
-      <footer className="mt-16 pt-8 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-4 text-sm">
+      <footer className="mt-16 pt-8 border-t border-border flex flex-wrap items-center justify-between gap-4 text-sm">
         <ul className="flex flex-wrap gap-1.5">
           {note.tags.map((t) => (
             <li
               key={t}
-              className="text-xs font-mono text-fg/70 bg-white/[0.05] border border-white/[0.08] rounded px-2 py-0.5"
+              className="text-xs font-mono text-fg/70 bg-surface border border-border rounded px-2 py-0.5"
             >
               {t}
             </li>

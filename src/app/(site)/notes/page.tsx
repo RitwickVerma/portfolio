@@ -21,10 +21,9 @@ export const metadata: Metadata = {
 export default function NotesIndex() {
   return (
     <div className="max-w-3xl mx-auto px-6 pt-32 pb-24 sm:pb-32">
-      <h1 className="font-mono text-accent text-sm tracking-widest uppercase mb-3">Notes</h1>
+      <h1 className="font-mono text-muted text-sm tracking-widest uppercase mb-3">Notes</h1>
       <p className="text-fg/80 leading-relaxed max-w-2xl mb-14">
         How specific things were built, with the numbers and the failures left in.
-        Each one is something I own and can be asked about.
       </p>
 
       <ol className="space-y-12">
@@ -46,7 +45,7 @@ export default function NotesIndex() {
                 {n.tags.map((t) => (
                   <li
                     key={t}
-                    className="text-xs font-mono text-fg/70 bg-white/[0.05] border border-white/[0.08] rounded px-2 py-0.5"
+                    className="text-xs font-mono text-fg/70 bg-surface border border-border rounded px-2 py-0.5"
                   >
                     {t}
                   </li>

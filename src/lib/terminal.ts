@@ -129,7 +129,7 @@ export function commandOutputs(): Record<string, string> {
       "  clear       Clear the terminal\r\n",
 
     whoami:
-      `${g("Ritwick Verma")} — ${ebay.role} at eBay (${ebay.location?.split(",")[0]}),\r\n` +
+      `${g("Ritwick Verma")}, ${ebay.role} at eBay (${ebay.location?.split(",")[0]}),\r\n` +
       "on Cassini, eBay's C++ search engine. MCS from UC Irvine. Writes Android\r\n" +
       `apps, a trading bot and a C++ game engine; runs a ${guests}-guest homelab.\r\n`,
 

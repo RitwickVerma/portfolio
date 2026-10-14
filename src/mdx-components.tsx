@@ -39,13 +39,13 @@ const components: MDXComponents = {
   hr: () => <hr className="my-12 border-0 h-px bg-gradient-to-r from-accent/40 via-accent/10 to-transparent" />,
   code: (p) => (
     <code
-      className="font-mono text-[0.9em] text-accent/90 bg-white/[0.05] border border-white/[0.06] rounded px-1.5 py-0.5"
+      className="font-mono text-[0.9em] text-accent/90 bg-surface border border-border rounded px-1.5 py-0.5"
       {...p}
     />
   ),
   pre: (p) => (
     <pre
-      className="my-6 overflow-x-auto rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 font-mono text-[13px] leading-relaxed text-fg/85"
+      className="my-6 overflow-x-auto rounded-lg border border-border bg-surface p-4 font-mono text-[13px] leading-relaxed text-fg/85"
       {...p}
     />
   ),
@@ -55,8 +55,8 @@ const components: MDXComponents = {
     </div>
   ),
   thead: (p) => <thead className="text-left font-mono text-xs uppercase tracking-wider text-muted" {...p} />,
-  th: (p) => <th className="py-2 pr-4 border-b border-white/[0.1] font-medium" {...p} />,
-  td: (p) => <td className="py-2 pr-4 border-b border-white/[0.05] align-top text-fg/80" {...p} />,
+  th: (p) => <th className="py-2 pr-4 border-b border-border font-medium" {...p} />,
+  td: (p) => <td className="py-2 pr-4 border-b border-border align-top text-fg/80" {...p} />,
 };
 
 export function useMDXComponents(): MDXComponents {

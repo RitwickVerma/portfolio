@@ -26,7 +26,7 @@ server runtime, no third-party requests at view time.
 ## Layout
 
 ```
-src/app/(site)/    home page + nav, footer, backdrop, cursor trail
+src/app/(site)/    home page + nav, footer, backdrop shader
 src/app/(site)/notes/  /notes index and /notes/[slug] pages, one OG card each
 src/content/notes/ the notes themselves, MDX; registered in lib/notes.ts
 src/app/resume/    /resume — print-optimised, rendered from lib/data

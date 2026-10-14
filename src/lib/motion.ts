@@ -35,10 +35,6 @@ export const STAGGER = {
 export const SPRING = {
   /** Nav indicator, small UI that should settle fast */
   snappy: { type: "spring", stiffness: 420, damping: 32, mass: 0.6 },
-  /** Card tilt */
-  soft: { type: "spring", stiffness: 200, damping: 20 },
-  /** Magnetic CTA: loose enough to feel pulled, damped enough not to wobble */
-  magnet: { type: "spring", stiffness: 220, damping: 18, mass: 0.5 },
 } as const;
 
 const fadeUpDistance = 20;
@@ -67,32 +63,3 @@ export const MOTION = {
     transition: { duration: DURATION.base, delay, ease: EASE.outExpo },
   }),
 } as const;
-
-/** Magnetic CTA limits. `maxScale` is the hard ceiling (1.15); we sit well under it. */
-export const MAGNET = {
-  maxScale: 1.15,
-  scale: 1.04,
-  /** Fraction of the pointer's offset from centre the element follows. */
-  pull: 0.3,
-  /** Never move further than this, in px. */
-  maxPx: 8,
-} as const;
-
-/**
- * Where a magnetic element should sit for a pointer at (px, py) relative to
- * its box. Pure — the component only feeds it pointer events.
- */
-export function magnetTransform(
-  px: number,
-  py: number,
-  rect: { left: number; top: number; width: number; height: number },
-): { x: number; y: number; scale: number } {
-  const dx = px - (rect.left + rect.width / 2);
-  const dy = py - (rect.top + rect.height / 2);
-  const clamp = (v: number) => Math.max(-MAGNET.maxPx, Math.min(MAGNET.maxPx, v));
-  return {
-    x: clamp(dx * MAGNET.pull),
-    y: clamp(dy * MAGNET.pull),
-    scale: Math.min(MAGNET.scale, MAGNET.maxScale),
-  };
-}

@@ -39,7 +39,7 @@ const contact = [
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-8 print:mt-2">
-      <h2 className="font-mono text-accent text-sm tracking-widest uppercase pb-2 mb-4 border-b border-white/[0.08] print:mb-1 print:pb-0 print:text-[9pt] print:border-black">
+      <h2 className="font-mono text-muted text-sm tracking-widest uppercase pb-2 mb-4 border-b border-border print:mb-1 print:pb-0 print:text-[9pt] print:border-black">
         {title}
       </h2>
       {children}
@@ -59,7 +59,7 @@ function Row({ left, right }: { left: React.ReactNode; right?: string }) {
 export default function ResumePage() {
   return (
     <div className="resume min-h-screen">
-      <div className="print:hidden border-b border-white/[0.06]">
+      <div className="print:hidden border-b border-border">
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
           <Link href="/" className="font-mono text-sm text-accent hover:underline underline-offset-4">
             ← ritwickverma.dev

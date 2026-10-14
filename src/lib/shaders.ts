@@ -1,3 +1,7 @@
+import { ACCENT, rgbUnit } from "./theme";
+
+const [AR, AG, AB] = rgbUnit(ACCENT).map((v) => v.toFixed(3));
+
 const vertexShader = /* glsl */ `
 varying vec2 vUv;
 void main() {
@@ -67,8 +71,8 @@ void main() {
   // cursor glow remains below the fold.
   float a=(grid+ng+pt)*uHero+mg;
 
-  // One accent colour.
-  vec3 col=vec3(.392,1.,.855);
+  // The accent, from lib/theme.
+  vec3 col=vec3(${AR},${AG},${AB});
   
   float vig=1.-smoothstep(.3,1.4,length(uv-.5)*2.);
   a*=vig;

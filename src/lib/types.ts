@@ -22,11 +22,11 @@ export interface Project {
     | "quant"
     | "infra"
     | "tv"
+    | "firmware"
     | "games"
     | "desktop"
     | "security"
     | "foldable"
-    | "embedded"
     | "linux";
 }
 

@@ -1,4 +1,4 @@
-Plutus is a systematic US-equity trader. It runs on a timer in my homelab against a paper account, and its backtest over 2007 to 2026 shows a Sharpe of 1.04 against 0.63 for SPY. This note is less about that number than about the version before it, what the number cannot tell you, and the things I tested and threw away.
+Plutus is a systematic US-equity trader. It runs on a timer in my homelab against a paper account, and its backtest over 2007 to 2026 shows a Sharpe of 1.04 against 0.63 for SPY. The number matters less than the version before it, what the number cannot say, and the ideas I tested and threw away.
 
 ## The version that lost
 
@@ -8,7 +8,7 @@ One signal had predictive power. Price trend, with an information coefficient ar
 
 So the rewrite keeps the one thing that worked and adds two overlays from the literature: a trend filter and volatility targeting. That is the whole strategy.
 
-## The strategy, in one paragraph
+## The strategy
 
 Universe: S&P 500 and S&P 400 constituents, plus names that were removed but are still listed, which softens survivorship bias without removing it. A stock must be above five dollars and trade twenty million dollars a day by 20-day median. Rank by 6- and 12-month momentum, skipping the most recent ten trading days; the skip was swept over 0, 5, 10, 15 and 21 days and the curve is a smooth hump, not a spike, which is what you want from a parameter. Hold only names above their own 200-day average. If SPY is below its own 200-day average, the book goes risk-off into bonds, gold or bills by their own six-month momentum. Size the whole thing to a 30% ex-ante volatility from a 60-day window. Rebalance monthly. Orders fill at the next open with ten basis points of slippage assumed each way.
 

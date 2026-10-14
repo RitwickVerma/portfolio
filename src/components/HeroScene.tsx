@@ -9,9 +9,10 @@ import { createNoise2D } from 'simplex-noise';
 import { sceneState } from '@/lib/sceneState';
 import { advancePhase, phaseProgress, type PhaseState } from '@/lib/phaseMachine';
 import { mulberry32 } from '@/lib/random';
-import { layoutLabels, placeLabel } from '@/lib/labels';
+import { placeLabel } from '@/lib/labels';
 import { getStatusSnapshot, loadStatus } from '@/lib/statusStore';
 import { guestView } from '@/lib/status';
+import { ACCENT, GATEWAY as GATEWAY_ACCENT, WARN as WARN_ACCENT, BG, INK, RACK_BODY, RACK_BODY_GATEWAY, RACK_FLOOR } from '@/lib/theme';
 
 // ─── Shared pointer + drag state ──────────────────────────────────────────
 
@@ -77,9 +78,7 @@ export function GrabHandler() {
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
-export const ACCENT = '#64ffda';
-const GATEWAY_ACCENT = '#ffd166';
-const WARN_ACCENT = '#ff4444';
+export { ACCENT };
 
 // ─── Scene lighting ───────────────────────────────────────────────────────
 
@@ -145,7 +144,7 @@ export function SceneFog() {
   const size = useThree((s) => s.size);
   useEffect(() => {
     const isMobile = size.width < 768;
-    scene.fog = new THREE.Fog('#0a0a0f', isMobile ? 12 : 6, isMobile ? 32 : 18);
+    scene.fog = new THREE.Fog(BG, isMobile ? 12 : 6, isMobile ? 32 : 18);
     return () => { scene.fog = null; };
   }, [scene, size]);
   return null;
@@ -201,7 +200,7 @@ const RACK_STATS: Record<string, { role: string; stats: string[] }> = {
 function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[], progress: number, flicker: boolean) {
   const visible = Math.floor(progress * logs.length) + (flicker && Math.random() < 0.15 ? 0 : 1);
   ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
-  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
+  ctx.fillStyle = INK; ctx.globalAlpha = 1;
   ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
   ctx.fillText(logs[0].split(' ')[0].toUpperCase(), 10, 18);
   ctx.fillStyle = accent; ctx.globalAlpha = flicker ? 0.6 + Math.random() * 0.4 : 0.85;
@@ -224,7 +223,7 @@ function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[],
 // so the LEDs and labels still lead; the cursor blinks at 2 Hz.
 function drawIdle(ctx: CanvasRenderingContext2D, accent: string, logs: string[], cursorOn: boolean) {
   ctx.fillStyle = accent; ctx.globalAlpha = 0.22; ctx.fillRect(0, 0, 256, 36);
-  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 0.9;
+  ctx.fillStyle = INK; ctx.globalAlpha = 0.9;
   ctx.font = 'bold 13px monospace'; ctx.textBaseline = 'middle';
   ctx.fillText(logs[0].split(' ')[0].toUpperCase(), 10, 18);
   ctx.fillStyle = accent; ctx.globalAlpha = 0.38;
@@ -236,7 +235,7 @@ function drawIdle(ctx: CanvasRenderingContext2D, accent: string, logs: string[],
 
 function drawGlitch(ctx: CanvasRenderingContext2D, accent: string, logs: string[]) {
   ctx.fillStyle = accent; ctx.globalAlpha = 0.7; ctx.fillRect(0, 0, 256, 36);
-  ctx.fillStyle = '#04060a'; ctx.globalAlpha = 1;
+  ctx.fillStyle = INK; ctx.globalAlpha = 1;
   ctx.font = 'bold 13px monospace'; ctx.fillText(logs[0].split(' ')[0].toUpperCase(), 10, 18);
   ctx.fillStyle = accent; ctx.globalAlpha = 0.85; ctx.font = '12px monospace';
   for (let i = 1; i < logs.length; i++) ctx.fillText(logs[i], 10, 48 + (i - 1) * 36);
@@ -407,7 +406,6 @@ function RackLights({ accent, rackId }: { accent: string; rackId: string }) {
 // ─── Label placement — the rules live in lib/labels.ts (unit-tested) ──────
 
 type ScreenSize = { width: number; height: number };
-const LABEL_HALF_W = 78;
 const TOOLTIP_HALF_W = 96;
 
 function toScreen(v: THREE.Vector3, camera: THREE.Camera, size: ScreenSize): [number, number] {
@@ -422,101 +420,12 @@ function tooltipPosition(obj: THREE.Object3D, camera: THREE.Camera, size: Screen
   return placeLabel(x, y, TOOLTIP_HALF_W, size);
 }
 
-// drei anchors an <Html fullscreen> at its parent object's projection. Pin it
-// to the canvas centre so the overlay covers the canvas exactly instead of
-// bobbing with the datacenter group. drei only writes its z-index when that
-// position *changes*, so a pinned overlay must carry its own (wrapperClass);
-// without it the labels paint under the hero scrim.
-function canvasCentre(_obj: THREE.Object3D, _camera: THREE.Camera, size: ScreenSize): [number, number] {
-  return [size.width / 2, size.height / 2];
-}
-
-// One label style everywhere: near-opaque ground so the text never depends on
-// what the scene is doing behind it (≥ 9:1 even over a white pixel).
-function LabelPill({ name, color }: { name: string; color: string }) {
-  return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/25 bg-[#0a0a0f]/90 px-2.5 py-1"
-    >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }} />
-      <span className="text-xs font-medium tracking-wider text-zinc-100">{name}</span>
-    </div>
-  );
-}
-
-// Below 768px the labels don't chase the racks (they'd land on the text);
-// they sit as one centred, wrapping row inside the page gutters under the nav.
-function NarrowLegend() {
-  return (
-    <Html fullscreen calculatePosition={canvasCentre} wrapperClass="z-[7]" zIndexRange={[7, 7]} style={{ pointerEvents: 'none' }}>
-      <div className="pointer-events-none absolute left-6 right-6 top-[88px] flex flex-wrap items-center justify-center gap-2">
-        {RACKS.filter((r) => r.core).map((r) => (
-          <LabelPill key={r.id} name={r.name} color={rackDown(r.id) ? WARN_ACCENT : r.gateway ? GATEWAY_ACCENT : ACCENT} />
-        ))}
-      </div>
-    </Html>
-  );
-}
-
-// From 768px up every rack carries its label. One overlay, one projection pass
-// per frame, and lib/labels lays them out together — so no label ever sits on
-// another or on the hero text, whichever way the scene has turned.
-function RackLabels({ root }: { root: React.RefObject<THREE.Group | null> }) {
-  // Pills are React-rendered once; re-render when the live status arrives so a
-  // stopped guest's dot turns red.
-  const [, bump] = useState(0);
-  useEffect(() => {
-    const id = window.setInterval(() => bump((n) => n + 1), 2000);
-    return () => window.clearInterval(id);
-  }, []);
-  const refs = useRef<Array<HTMLDivElement | null>>([]);
-  const vec = useMemo(() => new THREE.Vector3(), []);
-  const anchors = useMemo(() => RACKS.map(() => ({ x: 0, y: 0, halfWidth: LABEL_HALF_W })), []);
-
-  useFrame(({ camera, size }) => {
-    const g = root.current;
-    if (!g) return;
-    // CameraRig moved the camera this frame; refresh its inverse before projecting.
-    camera.updateMatrixWorld();
-    for (let i = 0; i < RACKS.length; i++) {
-      const r = RACKS[i];
-      const [x, y] = toScreen(vec.set(r.x, r.height + 0.5, r.z).applyMatrix4(g.matrixWorld), camera, size);
-      const a = anchors[i];
-      a.x = x;
-      a.y = y;
-      // Real pill width: reading offsetWidth is free here, nothing has dirtied layout.
-      const width = refs.current[i]?.offsetWidth;
-      a.halfWidth = width ? width / 2 : LABEL_HALF_W;
-    }
-    const placed = layoutLabels(anchors, size);
-    for (let i = 0; i < placed.length; i++) {
-      const el = refs.current[i];
-      if (el) el.style.transform = `translate3d(${placed[i][0]}px, ${placed[i][1]}px, 0) translate(-50%, -50%)`;
-    }
-  });
-
-  return (
-    <Html fullscreen calculatePosition={canvasCentre} wrapperClass="z-[7]" zIndexRange={[7, 7]} style={{ pointerEvents: 'none' }}>
-      {RACKS.map((r, i) => (
-        <div
-          key={r.id}
-          ref={(el) => { refs.current[i] = el; }}
-          className="absolute left-0 top-0 will-change-transform"
-          style={{ transform: 'translate3d(-1000px, -1000px, 0)' }}
-        >
-          <LabelPill name={r.name} color={rackDown(r.id) ? WARN_ACCENT : r.gateway ? GATEWAY_ACCENT : ACCENT} />
-        </div>
-      ))}
-    </Html>
-  );
-}
 
 // ─── Rack (body + screen + indicator + lights + hover tooltip) ──────────────
 
 function Rack({ rack }: { rack: RackDef }) {
   const accent = rack.gateway ? GATEWAY_ACCENT : ACCENT;
-  const bodyColor = rack.gateway ? '#221f2e' : '#17171f';
+  const bodyColor = rack.gateway ? RACK_BODY_GATEWAY : RACK_BODY;
   const h = rack.height;
   const halfH = h / 2;
   const [hovered, setHovered] = useState(false);
@@ -540,13 +449,13 @@ function Rack({ rack }: { rack: RackDef }) {
       </group>
       {hovered && info && (
         <Html position={[0, h + 1.45, 0]} center calculatePosition={tooltipPosition} zIndexRange={[60, 0]} style={{ pointerEvents: 'none' }} className="hidden sm:block">
-          <div aria-hidden="true" className="pointer-events-none select-none whitespace-nowrap rounded-lg border border-accent/25 bg-[#0a0a0f]/90 px-3 py-2 backdrop-blur-md shadow-lg">
+          <div aria-hidden="true" className="pointer-events-none select-none whitespace-nowrap rounded-lg border border-border bg-background px-3 py-2">
             <div className="flex items-center gap-2 mb-1.5">
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 6px ${accent}` }} />
               <span className="text-[11px] font-mono tracking-wider text-accent uppercase">{info.role}</span>
             </div>
             {info.stats.map((s) => (
-              <div key={s} className="text-[11px] font-mono text-zinc-400 leading-relaxed">{s}</div>
+              <div key={s} className="text-[11px] font-mono text-fg/70 leading-relaxed">{s}</div>
             ))}
           </div>
         </Html>
@@ -764,26 +673,18 @@ function CablePulses() {
 export function Datacenter() {
   const group = useRef<THREE.Group>(null);
   const { gl } = useThree();
-  const narrowScreen = useThree((st) => st.size.width < 768);
   const flashState = useRef<PhaseState>({ phase: 0, timer: 0 });
-  const lastClick = useRef(0);
   useEffect(() => {
     const canvas = gl.domElement;
-    const handler = (e: PointerEvent) => {
+    // Native dblclick, bubble phase. A capture-phase pointerdown that called
+    // stopPropagation() here used to kill GrabHandler's pointerdown on the same
+    // element, so dragging never started.
+    const onDoubleClick = (e: MouseEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-      const now = performance.now();
-      if (now - lastClick.current < 400) {
-        if (flashState.current.phase === 0) {
-          flashState.current = { phase: 1, timer: 0 };
-        }
-        lastClick.current = 0;
-      } else {
-        lastClick.current = now;
-      }
+      if (flashState.current.phase === 0) flashState.current = { phase: 1, timer: 0 };
     };
-    canvas.addEventListener('pointerdown', handler, { capture: true });
-    return () => canvas.removeEventListener('pointerdown', handler, { capture: true });
+    canvas.addEventListener('dblclick', onDoubleClick);
+    return () => canvas.removeEventListener('dblclick', onDoubleClick);
   }, [gl]);
   useFrame((state, delta) => {
     const t = state.clock.getElapsedTime();
@@ -821,12 +722,11 @@ export function Datacenter() {
     <group ref={group}>
       <mesh position={[0, -0.05, 0]}>
         <boxGeometry args={[9.4, 0.08, 4.2]} />
-        <meshStandardMaterial color="#0d0d14" metalness={0.4} roughness={0.6} transparent opacity={0.55} emissive={ACCENT} emissiveIntensity={0.03} />
+        <meshStandardMaterial color={RACK_FLOOR} metalness={0.4} roughness={0.6} transparent opacity={0.55} emissive={ACCENT} emissiveIntensity={0.03} />
       </mesh>
       {RACKS.map(rack => <Rack key={rack.id} rack={rack} />)}
       <Cables />
       <CablePulses />
-      {narrowScreen ? <NarrowLegend /> : <RackLabels root={group} />}
     </group>
   );
 }
@@ -839,6 +739,12 @@ export function Datacenter() {
 export default function HeroScene({ onReady }: { onReady?: () => void }) {
   initPointer();
   useEffect(loadStatus, []);
+  // `?debug` exposes the scene state so a browser test can read rotation and phase.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('debug')) {
+      (window as unknown as { __sceneState?: typeof sceneState }).__sceneState = sceneState;
+    }
+  }, []);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
 
@@ -862,7 +768,7 @@ export default function HeroScene({ onReady }: { onReady?: () => void }) {
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
       camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }}
       onCreated={({ gl }) => { gl.domElement.tabIndex = -1; gl.domElement.style.outline = 'none'; onReady?.(); }}
-      style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: '#0a0a0f' }}
+      style={{ touchAction: 'pan-y', WebkitTapHighlightColor: 'transparent', width: '100%', height: '100%', background: BG }}
     >
       <Suspense fallback={null}>
         <GrabHandler />

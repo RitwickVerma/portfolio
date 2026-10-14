@@ -8,7 +8,7 @@ import { hasWebGL2, prefersReducedMotion } from "@/lib/gpu";
 import { useIdleReady } from "@/lib/idle";
 
 // The full-viewport shader grid pulls in three.js; mount it after idle so the
-// first paint is text + CSS. The page background is already #0a0a0f, so
+// first paint is text + CSS. The page background is already the page colour, so
 // there is no flash when it arrives — and none if it never does (no WebGL2,
 // reduced motion, a renderer error).
 const ShaderBackground = dynamic(() => import("@/components/ShaderBackground"), {

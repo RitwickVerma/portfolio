@@ -1,4 +1,4 @@
-Fifteen guests on one Proxmox host is small. The interesting part is not the size, it is the rule: **git is the source of truth, and CI tells me when reality disagrees.** This note is how that works, what it caught, and what it cost.
+Fifteen guests on one Proxmox host is a small lab. The rule that runs it is worth writing down: **git is the source of truth, and CI tells me when reality disagrees.** How that works, what it caught, and what it cost.
 
 ## The shape
 
@@ -24,7 +24,7 @@ The plan job still carries `allow_failure`, with a comment admitting why: the st
 
 ## What the sync caught
 
-Two things worth telling.
+Two catches worth recording.
 
 The sync job once committed a live credential. A compose stack's `.env` had real values in it, the job pulled it faithfully, and the repo had a database password in history. The fix was three commits: untrack the live files and keep placeholders, encrypt the secrets that do belong in the repo with SOPS and age so they can be tracked safely, and add a redaction pass that runs on every synced file before the commit. The sync is now allowed to be faithful because the redactor is in front of it.
 
