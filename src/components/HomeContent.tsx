@@ -10,6 +10,7 @@ import SectionReveal from "@/components/SectionReveal";
 import HeroSceneWrapper from "@/components/HeroSceneWrapper";
 import TerminalWrapper from "@/components/TerminalWrapper";
 import NotesSection from "@/components/NotesSection";
+import KeyboardSection from "@/components/KeyboardSection";
 import { sceneState } from "@/lib/sceneState";
 import { EASE } from "@/lib/motion";
 import { hero, socialLinks } from "@/lib/data";
@@ -121,6 +122,7 @@ export default function HomeContent() {
       <div className="relative z-10">
         <SectionReveal><AboutSection /></SectionReveal>
         <SectionReveal><ProjectsSection /></SectionReveal>
+        <SectionReveal><KeyboardSection /></SectionReveal>
         <SectionReveal><NotesSection /></SectionReveal>
         <SectionReveal><HomelabSection /></SectionReveal>
         <SectionReveal><TerminalWrapper /></SectionReveal>

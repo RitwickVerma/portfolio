@@ -21,9 +21,10 @@ const CATEGORY_LABEL: Record<ProjectData["category"], string> = {
 
 function Card({ project }: { project: ProjectData }) {
   const links = [
-    project.links.github && { href: project.links.github, label: "GitHub" },
-    project.links.gitlab && { href: project.links.gitlab, label: "GitLab" },
-  ].filter((l): l is { href: string; label: string } => Boolean(l));
+    project.links.github && { href: project.links.github, text: `${project.title} on GitHub →`, external: true },
+    project.links.gitlab && { href: project.links.gitlab, text: `${project.title} on GitLab →`, external: true },
+    project.links.page && { href: project.links.page, text: `${project.links.pageLabel ?? "See it"} →`, external: false },
+  ].filter((l): l is { href: string; text: string; external: boolean } => Boolean(l));
 
   return (
     <article className="glass glass-hover rounded-xl p-6 flex flex-col gap-3 h-full transition-colors">
@@ -60,13 +61,12 @@ function Card({ project }: { project: ProjectData }) {
         <div className="flex flex-wrap gap-x-5 gap-y-1 min-h-5">
           {links.map((l) => (
             <a
-              key={l.label}
+              key={l.href}
               href={l.href}
-              target="_blank"
-              rel="noopener noreferrer"
               className="text-accent text-sm leading-5 hover:underline underline-offset-4"
+              {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             >
-              {project.title} on {l.label} →
+              {l.text}
             </a>
           ))}
         </div>

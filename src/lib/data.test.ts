@@ -99,5 +99,6 @@ describe("data integrity", () => {
     expect(blob).not.toMatch(/russell|200\+ tests|conviction|hard stops/);
     expect(blob).toMatch(/momentum/);
     expect(plutus.links).toEqual({});
+    expect(projects.find((p) => p.slug === "crush80-firmware")?.links.page).toBe("/#keyboard");
   });
 });

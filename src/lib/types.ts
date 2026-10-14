@@ -13,6 +13,9 @@ export interface Project {
   links: {
     github?: string;
     gitlab?: string;
+    /** An on-site page or anchor, with the link text. */
+    page?: string;
+    pageLabel?: string;
   };
   featured: boolean;
   /** Listed on /resume. Default true; the printed page is curated to hold one sheet. */

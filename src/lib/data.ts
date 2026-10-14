@@ -86,7 +86,7 @@ export const projects: Project[] = [
     metric: { value: "154 LEDs", label: "lit from a ported WS2812 driver on the SoC's SPI DMA, GRB, one data line" },
     why: "My first identification was wrong: WB32 and a QMK port that could never run. The stock image's USB descriptor said TLSR9511, QMK has no port for it, and the findings document records the wrong turn next to the evidence. The matrix, LED line and power gate were traced from PCB photos and the stock binary's GPIO init.",
     tech: ["ZMK", "Zephyr", "RISC-V", "Ghidra", "C"],
-    links: {},
+    links: { page: "/#keyboard", pageLabel: "Type on it" },
     featured: false,
     onResume: true,
     category: "firmware",

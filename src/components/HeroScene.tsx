@@ -12,7 +12,7 @@ import { mulberry32 } from '@/lib/random';
 import { placeLabel } from '@/lib/labels';
 import { getStatusSnapshot, loadStatus } from '@/lib/statusStore';
 import { guestView } from '@/lib/status';
-import { ACCENT, GATEWAY as GATEWAY_ACCENT, WARN as WARN_ACCENT, BG, INK, RACK_BODY, RACK_BODY_GATEWAY, RACK_FLOOR } from '@/lib/theme';
+import { ACCENT, GATEWAY as GATEWAY_ACCENT, WARN as WARN_ACCENT, BG, INK, RACK_BODY, RACK_BODY_GATEWAY, RACK_FLOOR, ROOM_LIGHT } from '@/lib/theme';
 
 // ─── Shared pointer + drag state ──────────────────────────────────────────
 
@@ -87,10 +87,10 @@ export function SceneLighting() {
   useFrame(({ clock }) => {
     if (lightRef.current) {
       const pulse = Math.sin(clock.getElapsedTime() * 1.2) * 0.3 + 0.7;
-      lightRef.current.intensity = 10 + sceneState.spin * 5 + pulse * 2;
+      lightRef.current.intensity = 5 + sceneState.spin * 3 + pulse;
     }
   });
-  return <pointLight ref={lightRef} position={[0, 2.5, 0]} intensity={10} distance={18} color={ACCENT} />;
+  return <pointLight ref={lightRef} position={[0, 2.5, 0]} intensity={5} distance={18} color={ROOM_LIGHT} />;
 }
 
 // ─── Camera rig — asymmetric framing, not mathematically perfect ──────────
@@ -144,7 +144,10 @@ export function SceneFog() {
   const size = useThree((s) => s.size);
   useEffect(() => {
     const isMobile = size.width < 768;
-    scene.fog = new THREE.Fog(BG, isMobile ? 12 : 6, isMobile ? 32 : 18);
+    // The camera sits ~11 units out on desktop (~22 on phones); the nearest
+    // rack is ~8 away. Fog starts past the whole cluster so it only softens
+    // the far corner, not the room.
+    scene.fog = new THREE.Fog(BG, isMobile ? 28 : 15, isMobile ? 52 : 34);
     return () => { scene.fog = null; };
   }, [scene, size]);
   return null;
@@ -438,7 +441,7 @@ function Rack({ rack }: { rack: RackDef }) {
     >
       <mesh position={[0, halfH, 0]}>
         <boxGeometry args={[1, h, 0.9]} />
-        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.35} emissive={accent} emissiveIntensity={hovered ? 0.4 : 0.08} />
+        <meshStandardMaterial color={bodyColor} metalness={0.25} roughness={0.7} emissive={accent} emissiveIntensity={hovered ? 0.18 : 0.025} />
       </mesh>
       <group position={[0, halfH, 0]}>
         <RackScreen accent={accent} rackId={rack.id} height={h} />
@@ -489,7 +492,7 @@ function StaticCable({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
   }, [from, to]);
   return (
     <mesh geometry={geometry}>
-      <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.55} transparent opacity={0.7} roughness={0.35} metalness={0.2} />
+      <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.3} transparent opacity={0.5} roughness={0.5} metalness={0.1} />
     </mesh>
   );
 }
@@ -722,7 +725,7 @@ export function Datacenter() {
     <group ref={group}>
       <mesh position={[0, -0.05, 0]}>
         <boxGeometry args={[9.4, 0.08, 4.2]} />
-        <meshStandardMaterial color={RACK_FLOOR} metalness={0.4} roughness={0.6} transparent opacity={0.55} emissive={ACCENT} emissiveIntensity={0.03} />
+        <meshStandardMaterial color={RACK_FLOOR} metalness={0.2} roughness={0.8} transparent opacity={0.55} emissive={ACCENT} emissiveIntensity={0.012} />
       </mesh>
       {RACKS.map(rack => <Rack key={rack.id} rack={rack} />)}
       <Cables />
@@ -776,7 +779,7 @@ export default function HeroScene({ onReady }: { onReady?: () => void }) {
         <SceneFog />
         <ambientLight intensity={0.4} />
         <directionalLight position={[6, 9, 5]} intensity={1.2} />
-        <directionalLight position={[-6, 5, -4]} intensity={0.35} color={ACCENT} />
+        <directionalLight position={[-6, 5, -4]} intensity={0.3} color={ROOM_LIGHT} />
         <SceneLighting />
         <AirflowLayer />
         <Datacenter />

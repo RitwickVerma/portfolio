@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   alternates: { canonical: "/notes/" },
   openGraph: {
-    title: "Notes — Ritwick Verma",
+    title: "Notes · Ritwick Verma",
     description: DESCRIPTION,
     url: "/notes/",
     type: "website",

@@ -67,7 +67,7 @@ function HeroScrim() {
         className="absolute inset-0 pointer-events-none z-[5] print:hidden hidden sm:block"
         style={{
           background:
-            "radial-gradient(ellipse clamp(330px, 46vw, 760px) clamp(250px, 36vh, 400px) at 50% 50%, rgba(12,11,9,0.94) 0%, rgba(12,11,9,0.9) 58%, rgba(12,11,9,0.5) 80%, rgba(12,11,9,0) 100%)",
+            "radial-gradient(ellipse clamp(330px, 46vw, 760px) clamp(250px, 36vh, 400px) at 50% 50%, rgba(12,11,9,0.8) 0%, rgba(12,11,9,0.68) 55%, rgba(12,11,9,0.2) 82%, rgba(12,11,9,0) 100%)",
         }}
       />
       {/* Phones: the text block spans the full width, so a desktop-strength scrim
@@ -78,7 +78,7 @@ function HeroScrim() {
         className="absolute inset-0 pointer-events-none z-[5] print:hidden sm:hidden"
         style={{
           background:
-            "radial-gradient(ellipse 62% 26% at 50% 50%, rgba(12,11,9,0.72) 0%, rgba(12,11,9,0.55) 60%, rgba(12,11,9,0) 100%)",
+            "radial-gradient(ellipse 62% 26% at 50% 50%, rgba(12,11,9,0.6) 0%, rgba(12,11,9,0.4) 60%, rgba(12,11,9,0) 100%)",
         }}
       />
     </>

@@ -1,6 +1,6 @@
 import { SITE_URL, socialLinks } from "./data";
 
-export const SITE_TITLE = "Ritwick Verma — Software Engineer";
+export const SITE_TITLE = "Ritwick Verma, software engineer";
 export const SITE_DESCRIPTION =
   "Software engineer on eBay's C++ search engine. Android, firmware and reverse-engineering projects, a systematic trader, and engineering notes with the numbers left in.";
 

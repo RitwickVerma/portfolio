@@ -25,7 +25,7 @@ function ShaderPlane() {
   });
 
   useEffect(() => {
-    const sections = ["hero", "about", "projects", "homelab", "terminal"];
+    const sections = ["hero", "about", "projects", "keyboard", "notes", "homelab", "terminal"];
 
     const onScroll = () => {
       const h = document.documentElement.scrollHeight - window.innerHeight;

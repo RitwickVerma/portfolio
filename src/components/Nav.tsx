@@ -11,9 +11,9 @@ const sections = [
   { id: "hero", label: "Home" },
   { id: "about", label: "About" },
   { id: "projects", label: "Projects" },
+  { id: "keyboard", label: "Keyboard" },
   { id: "notes", label: "Notes" },
   { id: "homelab", label: "Homelab" },
-  { id: "terminal", label: "Terminal" },
 ];
 const links = sections.slice(1);
 
@@ -116,7 +116,7 @@ export default function Nav() {
         </Link>
 
         {/* Inline links from 640px up */}
-        <ul className="hidden sm:flex items-center gap-1">
+        <ul className="hidden md:flex items-center gap-1">
           {links.map((s) => (
             <li key={s.id}>
               <Link
@@ -155,7 +155,7 @@ export default function Nav() {
           aria-expanded={open}
           aria-controls="mobile-menu"
           aria-label={open ? "Close menu" : "Open menu"}
-          className="sm:hidden p-2 -mr-2 text-muted hover:text-fg"
+          className="md:hidden p-2 -mr-2 text-muted hover:text-fg"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             {open ? (
@@ -176,7 +176,7 @@ export default function Nav() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: DURATION.fast, ease: EASE.outQuart }}
-            className="sm:hidden border-b border-border px-6 py-3 flex flex-col"
+            className="md:hidden border-b border-border px-6 py-3 flex flex-col"
           >
             {links.map((s) => (
               <Link

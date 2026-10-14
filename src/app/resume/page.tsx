@@ -4,16 +4,16 @@ import PrintButton from "@/components/PrintButton";
 import { experiences, education, projects, skills, socialLinks, hero } from "@/lib/data";
 
 const DESCRIPTION =
-  "Résumé of Ritwick Verma — backend engineer at eBay. Experience, projects, education and skills.";
+  "Resume of Ritwick Verma, backend engineer at eBay. Experience, projects, education and skills.";
 
-const OG_ALT = "Resume — Ritwick Verma, backend engineer at eBay.";
+const OG_ALT = "Resume of Ritwick Verma, backend engineer at eBay.";
 
 export const metadata: Metadata = {
   title: "Resume",
   description: DESCRIPTION,
   alternates: { canonical: "/resume/" },
   openGraph: {
-    title: "Resume — Ritwick Verma",
+    title: "Resume · Ritwick Verma",
     description: DESCRIPTION,
     url: "/resume/",
     siteName: "ritwickverma.dev",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Resume — Ritwick Verma",
+    title: "Resume · Ritwick Verma",
     description: DESCRIPTION,
     images: [{ url: "/resume/og.png", alt: OG_ALT }],
   },
@@ -126,8 +126,7 @@ export default function ResumePage() {
                 <span className="text-fg font-medium">{p.title}</span>{" "}
                 <span className="font-mono text-xs text-fg/70 print:text-[9pt]">
                   ({p.tech.join(", ")})
-                </span>{" "}
-                — {p.description}{" "}
+                </span>: {p.description}{" "}
                 <span className="text-fg/80">
                   {p.metric.value} {p.metric.label}.
                 </span>
@@ -145,7 +144,7 @@ export default function ResumePage() {
                   left={
                     <>
                       {ed.school}
-                      <span className="hidden print:inline font-normal"> — {ed.degree}</span>
+                      <span className="hidden print:inline font-normal">, {ed.degree}</span>
                     </>
                   }
                   right={ed.period}

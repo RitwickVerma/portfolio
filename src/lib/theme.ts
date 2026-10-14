@@ -18,6 +18,8 @@ export const WARN = "#ff5a4e";
 export const RACK_BODY = "#1a1814";
 export const RACK_BODY_GATEWAY = "#24201a";
 export const RACK_FLOOR = "#12100d";
+/** Scene light: warm white, so painted steel reads as steel and only the LEDs are amber. */
+export const ROOM_LIGHT = "#fff0dc";
 /** Dark ink used on the accent button and on screen headers. */
 export const INK = "#0c0b09";
 
