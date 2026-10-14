@@ -17,7 +17,7 @@ export const notes: Note[] = [
     slug: "homelab-git-is-the-truth",
     title: "Git is the truth: a homelab that diffs itself nightly",
     summary:
-      "Fifteen guests declared in OpenTofu, a nightly pipeline that commits whatever changed on the box and reports what the plan disagrees with, paging that costs one message per fault. What it caught and where it falls short.",
+      "Sixteen guests, fifteen declared in OpenTofu, a nightly pipeline that commits whatever changed on the box and reports what the plan disagrees with, paging that costs one message per fault. What it caught and where it falls short.",
     date: "2026-10-13",
     tags: ["Proxmox", "OpenTofu", "GitOps", "on-call"],
   },

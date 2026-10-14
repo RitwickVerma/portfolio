@@ -28,9 +28,9 @@ describe("data integrity", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("lists the 15 Proxmox guests: 13 LXC + 2 VM", () => {
-    expect(services).toHaveLength(15);
-    expect(services.filter((s) => s.ct.startsWith("CT"))).toHaveLength(13);
+  it("lists the 16 Proxmox guests: 14 LXC + 2 VM", () => {
+    expect(services).toHaveLength(16);
+    expect(services.filter((s) => s.ct.startsWith("CT"))).toHaveLength(14);
     expect(services.filter((s) => s.ct.startsWith("VM"))).toHaveLength(2);
   });
 

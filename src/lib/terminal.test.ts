@@ -22,7 +22,7 @@ describe("terminal output", () => {
     const s = parseStatus(example)!;
     const now = Date.parse(s.generatedAt) + 3 * 60_000;
     const text = plain(statusOutput(s, "live", now));
-    expect(text).toMatch(/^Host  live · updated 3 min ago · 14\/15 running/);
+    expect(text).toMatch(/^Host  live · updated 3 min ago · 15\/16 running/);
     for (const svc of services) expect(text).toContain(svc.ct);
     expect(text).toMatch(/CT107 {3}Paperless-ngx {3}stopped/);
     expect(plain(statusOutput(s, "stale", now))).toMatch(/stale/);
