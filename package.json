@@ -13,11 +13,9 @@
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",
-    "@mdx-js/react": "^3.1.1",
     "@next/mdx": "^16.4.0",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
-    "@types/mdx": "^2.0.14",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/addon-web-links": "^0.12.0",
     "@xterm/xterm": "^6.0.0",
@@ -31,6 +29,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/mdx": "^2.0.14",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

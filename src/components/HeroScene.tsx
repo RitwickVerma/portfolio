@@ -51,6 +51,7 @@ function onDragUp() {
   drag.active = false;
   window.removeEventListener('pointermove', onDragMove);
   window.removeEventListener('pointerup', onDragUp);
+  window.removeEventListener('pointercancel', onDragUp);
 }
 
 export function GrabHandler() {
@@ -65,12 +66,14 @@ export function GrabHandler() {
       drag.velocityX = 0; drag.velocityY = 0;
       window.addEventListener('pointermove', onDragMove, { passive: true });
       window.addEventListener('pointerup', onDragUp, { once: true });
+      window.addEventListener('pointercancel', onDragUp, { once: true });
     };
     el.addEventListener('pointerdown', onDown);
     return () => {
       el.removeEventListener('pointerdown', onDown);
       window.removeEventListener('pointermove', onDragMove);
       window.removeEventListener('pointerup', onDragUp);
+      window.removeEventListener('pointercancel', onDragUp);
     };
   }, [gl]);
   return null;
@@ -709,8 +712,6 @@ export function Datacenter() {
     sceneState.dcRotY = g.rotation.y;
     sceneState.dcRotX = g.rotation.x;
     sceneState.spin = Math.hypot(drag.velocityX, drag.velocityY);
-    sceneState.mouseX = smoothedPointer.x;
-    sceneState.mouseY = smoothedPointer.y;
     // Phase machine
     const fs = flashState.current;
     const dt = Math.min(delta, 0.1);

@@ -63,7 +63,7 @@ function Card({ project }: { project: ProjectData }) {
             <a
               key={l.href}
               href={l.href}
-              className="text-accent text-sm leading-5 hover:underline underline-offset-4"
+              className="text-accent text-sm leading-5 py-3 -my-3 hover:underline underline-offset-4"
               {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             >
               {l.text}

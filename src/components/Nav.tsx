@@ -14,8 +14,10 @@ const sections = [
   { id: "keyboard", label: "Keyboard" },
   { id: "notes", label: "Notes" },
   { id: "homelab", label: "Homelab" },
+  { id: "terminal", label: "Terminal" },
 ];
-const links = sections.slice(1);
+// Terminal tracks scroll (so Homelab is not highlighted over it) but has no link.
+const links = sections.filter((s) => s.id !== "hero" && s.id !== "terminal");
 
 export default function Nav() {
   // On the home page every item is a same-document hash and the active one
@@ -110,7 +112,7 @@ export default function Nav() {
         <Link
           href={home ? "#hero" : "/"}
           aria-current={home && active === "hero" ? "location" : undefined}
-          className="font-mono text-accent text-sm tracking-wider hover:opacity-80 transition-opacity"
+          className="font-mono text-accent text-sm tracking-wider py-3 -my-3 hover:opacity-80 transition-opacity"
         >
           ritwickverma<span className="text-muted">.dev</span>
         </Link>
@@ -155,7 +157,7 @@ export default function Nav() {
           aria-expanded={open}
           aria-controls="mobile-menu"
           aria-label={open ? "Close menu" : "Open menu"}
-          className="md:hidden p-2 -mr-2 text-muted hover:text-fg"
+          className="md:hidden p-3 -mr-3 text-muted hover:text-fg"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             {open ? (

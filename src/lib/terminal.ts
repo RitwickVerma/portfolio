@@ -2,7 +2,7 @@
 // can never drift from the rest of the site. No xterm import: unit-testable.
 
 import { projects, experiences, services, skills, socialLinks, SITE_URL } from "./data";
-import { notes, noteUrl } from "./notes";
+import { notes, noteUrl, formatNoteDate } from "./notes";
 import { ageMs, formatAge, formatUptime, runningCount, type Status, type Freshness } from "./status";
 
 export const ANSI = {
@@ -15,24 +15,8 @@ export const ANSI = {
 
 export const PROMPT = `${ANSI.green}ritwick@portfolio${ANSI.reset}:${ANSI.yellow}~${ANSI.reset}$ `;
 
-// figlet "ANSI Shadow", 49 columns. Every line is the same width — the test
-// checks, because one dropped space skews every letter below it.
-const ASCII_ART = [
-  "██████╗ ██╗████████╗██╗    ██╗██╗ ██████╗██╗  ██╗",
-  "██╔══██╗██║╚══██╔══╝██║    ██║██║██╔════╝██║ ██╔╝",
-  "██████╔╝██║   ██║   ██║ █╗ ██║██║██║     █████╔╝ ",
-  "██╔══██╗██║   ██║   ██║███╗██║██║██║     ██╔═██╗ ",
-  "██║  ██║██║   ██║   ╚███╔███╔╝██║╚██████╗██║  ██╗",
-  "╚═╝  ╚═╝╚═╝   ╚═╝    ╚══╝╚══╝ ╚═╝ ╚═════╝╚═╝  ╚═╝",
-];
-export const BANNER_COLS = ASCII_ART[0].length;
-const BANNER = ASCII_ART.join("\r\n");
-
-/** Terminals narrower than the banner (phones) get a plain heading instead of wrapped block art. */
-export function welcome(cols: number): string {
-  const head =
-    cols > BANNER_COLS ? `${ANSI.green}${BANNER}${ANSI.reset}` : `${ANSI.green}RITWICK VERMA${ANSI.reset}`;
-  return `${head}\r\nType 'help' for available commands.\r\n`;
+export function welcome(): string {
+  return `${ANSI.green}Ritwick Verma${ANSI.reset}  ${ANSI.dim}portfolio terminal${ANSI.reset}\r\nType 'help' for available commands.\r\n`;
 }
 
 export const COMMAND_NAMES = [
@@ -116,7 +100,7 @@ export function commandOutputs(): Record<string, string> {
       `${g("Available commands:")}\r\n` +
       "  help        Show this help message\r\n" +
       "  whoami      About me\r\n" +
-      "  projects    Projects and what they prove\r\n" +
+      "  projects    Projects, one headline number each\r\n" +
       "  homelab     Every guest on the Proxmox host\r\n" +
       "  skills      Skills by category\r\n" +
       "  experience  Career timeline\r\n" +
@@ -157,7 +141,7 @@ export function commandOutputs(): Record<string, string> {
 
     notes:
       notes
-        .map((n) => `${g(n.date)}  ${n.title}\r\n            ${ANSI.dim}${SITE_URL}${noteUrl(n)}${ANSI.reset}\r\n`)
+        .map((n) => `${g(formatNoteDate(n.date))}  ${n.title}\r\n            ${ANSI.dim}${SITE_URL}${noteUrl(n)}${ANSI.reset}\r\n`)
         .join("") || `${ANSI.dim}No notes yet.${ANSI.reset}\r\n`,
 
     contact:
@@ -179,7 +163,7 @@ export function commandOutputs(): Record<string, string> {
 
     neofetch:
       `       ${g("▄▄▄▄▄▄▄")}        ${y("Host:")}     ritwickverma.dev\r\n` +
-      `    ${g("▄███████████▄")}     ${y("Role:")}     Software Engineer @ eBay\r\n` +
+      `    ${g("▄███████████▄")}     ${y("Role:")}     ${ebay.role} @ eBay\r\n` +
       `   ${g("███████████████")}    ${y("Homelab:")}  ${guests} guests on Proxmox\r\n` +
       `  ${g("█████████████████")}   ${y("Projects:")} ${projects.length} (${featured} featured)\r\n` +
       `  ${g("█████████████████")}   ${y("Site:")}     Next.js static export + nginx\r\n` +

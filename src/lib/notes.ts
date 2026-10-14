@@ -17,7 +17,7 @@ export const notes: Note[] = [
     slug: "homelab-git-is-the-truth",
     title: "Git is the truth: a homelab that diffs itself nightly",
     summary:
-      "Fifteen guests declared in OpenTofu, a nightly pipeline that commits whatever changed on the box and reports what the plan disagrees with, paging that costs one message per fault. What it caught, and what it is not.",
+      "Fifteen guests declared in OpenTofu, a nightly pipeline that commits whatever changed on the box and reports what the plan disagrees with, paging that costs one message per fault. What it caught and where it falls short.",
     date: "2026-10-13",
     tags: ["Proxmox", "OpenTofu", "GitOps", "on-call"],
   },
@@ -25,7 +25,7 @@ export const notes: Note[] = [
     slug: "plutus-what-the-backtest-cannot-tell-you",
     title: "Plutus: what the backtest cannot tell you",
     summary:
-      "The five-signal bot that lost to SPY, the one signal that survived attribution, a Sharpe of 1.04 with its confidence interval attached, and the ideas tested and rejected on the way.",
+      "The five-signal bot that lost to SPY, and a Sharpe of 1.04 with its confidence interval attached.",
     date: "2026-10-13",
     tags: ["Python", "quant", "backtesting"],
   },
@@ -41,7 +41,7 @@ export const notes: Note[] = [
     slug: "colophon",
     title: "How this site is built, and how it was made",
     summary:
-      "A static export served from my own rack, a 3D hero that fails toward a poster, and an AI pair programmer whose commits say so. What is mine, what is verified, what is a dated snapshot.",
+      "What on this site is mine, what is machine-made under my direction, and which numbers are dated snapshots.",
     date: "2026-10-13",
     tags: ["this site", "Next.js", "three.js"],
   },

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { commandOutputs, statusOutput, COMMAND_NAMES, welcome, wrapList, BANNER_COLS, TERMINAL_COLS } from "./terminal";
+import { commandOutputs, statusOutput, COMMAND_NAMES, welcome, wrapList, TERMINAL_COLS } from "./terminal";
 import { parseStatus } from "./status";
 import example from "../../tools/status.example.json";
 import { services, projects } from "./data";
@@ -91,18 +91,8 @@ describe("terminal output", () => {
     expect(plain(wrapList("X", [], 80))).toBe("");
   });
 
-  it("welcome banner drops the wide block art on narrow terminals", () => {
-    expect(plain(welcome(80))).toContain("██");
-    expect(plain(welcome(40))).not.toContain("██");
-    expect(plain(welcome(40))).toContain("RITWICK VERMA");
-    // Exactly as wide as the banner still wraps the trailing newline: needs one more column.
-    expect(plain(welcome(BANNER_COLS))).not.toContain("██");
-    expect(plain(welcome(BANNER_COLS + 1))).toContain("██");
-  });
-
-  it("every banner line is the same width, so the letters line up", () => {
-    const lines = plain(welcome(80)).split("\r\n").filter((l) => /[█╗╔╝║═╚]/.test(l));
-    expect(lines).toHaveLength(6);
-    for (const l of lines) expect(l.length, l).toBe(BANNER_COLS);
+  it("welcome greets by name and points at help", () => {
+    expect(plain(welcome())).toMatch(/^Ritwick Verma/);
+    expect(plain(welcome())).toContain("'help'");
   });
 });

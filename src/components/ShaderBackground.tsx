@@ -12,41 +12,27 @@ function ShaderPlane() {
   const { size, viewport } = useThree();
   const pointer = usePointer();
   const scrollRef = useRef(0);
-  const sectionRef = useRef(0);
   const heroRef = useRef(1);
 
   const uniformsRef = useRef({
     uTime: { value: 0 },
     uMouse: { value: new THREE.Vector2(0.5, 0.5) },
     uScroll: { value: 0 },
-    uSection: { value: 0 },
     uHero: { value: 1 },
     uResolution: { value: new THREE.Vector2(size.width, size.height) },
   });
 
+  // The canvas resizes with the window; the shader's aspect must follow.
   useEffect(() => {
-    const sections = ["hero", "about", "projects", "keyboard", "notes", "homelab", "terminal"];
+    uniformsRef.current.uResolution.value.set(size.width, size.height);
+  }, [size.width, size.height]);
 
+  useEffect(() => {
     const onScroll = () => {
       const h = document.documentElement.scrollHeight - window.innerHeight;
       scrollRef.current = h > 0 ? window.scrollY / h : 0;
       // 1 at the top → 0 after ~one viewport of scroll (the hero's pin window)
       heroRef.current = Math.min(Math.max(1 - window.scrollY / (window.innerHeight * 0.9), 0), 1);
-
-      // Determine which section is in view
-      const vh = window.innerHeight;
-      let currentSection = 0;
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const el = document.getElementById(sections[i]);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top < vh * 0.6) {
-            currentSection = i;
-            break;
-          }
-        }
-      }
-      sectionRef.current = currentSection / Math.max(sections.length - 1, 1);
     };
 
     onScroll();
@@ -60,7 +46,6 @@ function ShaderPlane() {
     mat.uniforms.uTime.value = clock.getElapsedTime();
     mat.uniforms.uMouse.value.set(pointer.current.x, pointer.current.y);
     mat.uniforms.uScroll.value = scrollRef.current;
-    mat.uniforms.uSection.value = sectionRef.current;
     mat.uniforms.uHero.value = heroRef.current;
   });
 

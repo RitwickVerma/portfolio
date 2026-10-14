@@ -11,7 +11,7 @@ export const projects: Project[] = [
     description:
       "Android app that answers, silences and ends calls from proximity-sensor wave gestures.",
     role: "Author & maintainer · GPLv3",
-    metric: { value: "26,000+", label: "lifetime downloads, 4.3★ rating" },
+    metric: { value: "26,000+", label: "lifetime downloads, 4.3★ when the Play listing was last up" },
     why: "Turns a binary proximity sensor and the accelerometer into gestures: a double-wave timing window, pick-up from a flat surface, face-down detection mid-call.",
     tech: ["Java", "Kotlin", "Android", "EventBus"],
     links: { github: "https://github.com/RitwickVerma/ShutUp" },
@@ -26,7 +26,7 @@ export const projects: Project[] = [
       "Systematic US-equity trader: trend-filtered cross-sectional momentum with volatility targeting, executed through Alpaca.",
     role: "Author, private repository, paper account",
     // 2007-01 → 2026-10 backtest from the repo's results/latest/report.md (2026-10-13); SPY 0.63 over the same path.
-    metric: { value: "Sharpe 1.04", label: "2007 to 2026 backtest, SPY 0.63 over the same path. Max drawdown 37% against 55%" },
+    metric: { value: "Sharpe 1.04", label: "2007–2026 backtest, one path (95% bootstrap interval 0.62–1.47). SPY 0.63, max drawdown 55% against 37%" },
     why: "Universe is S&P 500 + 400 plus still-listed removals to soften survivorship bias; block-bootstrap confidence intervals; stop-losses and daily regime exits were tested and rejected, not assumed. CI deploys to a timer on green master.",
     tech: ["Python", "pandas", "Alpaca", "uv", "GitLab CI"],
     links: {},
@@ -54,8 +54,8 @@ export const projects: Project[] = [
     description:
       "An infinite window canvas for KDE Plasma, built only on KWin's public scripting API: no patched compositor, no private headers.",
     role: "Fork maintainer, 40 commits ahead, proposed upstream in stages",
-    metric: { value: "374", label: "scenarios against a nested KWin, none failing. Lint and REUSE in CI" },
-    why: "Every window stays an ordinary KWin window at an ordinary position, so fullscreen apps keep direct scanout; the canvas is a camera, not a second compositor. Written by an agent under my direction, and the README says so.",
+    metric: { value: "374", label: "scenarios against a nested KWin, none failing; REUSE lint in CI" },
+    why: "Every window stays an ordinary KWin window at an ordinary position, so fullscreen apps keep direct scanout; the canvas is a camera, not a second compositor. Written by an agent under my direction; the README says so.",
     tech: ["KWin", "QML", "JavaScript", "Plasma 6"],
     links: { gitlab: "https://gitlab.com/ritwick7/kwin-canvas" },
     onResume: true,
@@ -66,9 +66,9 @@ export const projects: Project[] = [
     slug: "homelab",
     title: "Homelab",
     description:
-      "One Proxmox host, 15 guests, declared in OpenTofu behind a Debian + Docker gateway with SSO and a VPN.",
+      "One Proxmox host, 15 guests, declared in OpenTofu behind a Debian gateway: Docker, Traefik, Authelia SSO and a Headscale VPN.",
     role: "Architect & sole operator",
-    metric: { value: "15 of 15", label: "guests declared in OpenTofu. Nightly CI diffs the plan against the live host" },
+    metric: { value: "15 of 15", label: "guests declared in OpenTofu. Nightly CI reports plan drift against the live host" },
     why: "Git is the source of truth: a scheduled pipeline pulls live configs and commits the diff, secrets are SOPS-encrypted in the repo, and a 5-minute health check pages once per new fault, after it persists, with a cooldown.",
     tech: ["Proxmox", "OpenTofu", "Docker", "Traefik", "Authelia", "SOPS"],
     links: {},
@@ -86,7 +86,7 @@ export const projects: Project[] = [
     metric: { value: "154 LEDs", label: "lit from a ported WS2812 driver on the SoC's SPI DMA, GRB, one data line" },
     why: "My first identification was wrong: WB32 and a QMK port that could never run. The stock image's USB descriptor said TLSR9511, QMK has no port for it, and the findings document records the wrong turn next to the evidence. The matrix, LED line and power gate were traced from PCB photos and the stock binary's GPIO init.",
     tech: ["ZMK", "Zephyr", "RISC-V", "Ghidra", "C"],
-    links: { page: "/#keyboard", pageLabel: "Type on it" },
+    links: { page: "/#keyboard", pageLabel: "Try the keyboard demo" },
     featured: false,
     onResume: true,
     category: "firmware",
@@ -232,7 +232,7 @@ export const services: Service[] = [
   { name: "Syncthing", description: "Peer-to-peer file sync", ct: "CT113", tech: ["Go", "systemd"] },
   { name: "Portfolio", description: "This site: static export behind nginx", ct: "CT114", tech: ["Next.js", "nginx"] },
   { name: "CI Runner", description: "GitLab CI runners", ct: "CT115", tech: ["GitLab CI"] },
-  { name: "Plutus", description: "Trading bot, production deploy", ct: "CT116", tech: ["Python", "systemd"] },
+  { name: "Plutus", description: "Paper-trading bot", ct: "CT116", tech: ["Python", "systemd"] },
   { name: "Kavita", description: "E-book library with OIDC login", ct: "CT117", tech: ["Kavita", "OIDC"] },
 ];
 
@@ -276,6 +276,6 @@ export const SITE_URL = "https://www.ritwickverma.dev";
 export const hero = {
   name: "Ritwick Verma",
   /** One specific line, his voice, not a job-title list. */
-  line: "Backend engineer at eBay.",
+  line: "Software engineer at eBay.",
   lineTwo: "I build and self-host the systems I ship.",
 };

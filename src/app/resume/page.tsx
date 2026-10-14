@@ -4,9 +4,9 @@ import PrintButton from "@/components/PrintButton";
 import { experiences, education, projects, skills, socialLinks, hero } from "@/lib/data";
 
 const DESCRIPTION =
-  "Resume of Ritwick Verma, backend engineer at eBay. Experience, projects, education and skills.";
+  "Resume of Ritwick Verma, software engineer at eBay. Experience, projects, education and skills.";
 
-const OG_ALT = "Resume of Ritwick Verma, backend engineer at eBay.";
+const OG_ALT = "Resume of Ritwick Verma, software engineer at eBay.";
 
 export const metadata: Metadata = {
   title: "Resume",

@@ -12,8 +12,8 @@ const links = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-border py-8 px-6">
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
+    <footer className="border-t border-border py-8">
+      <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
         <p className="text-center sm:text-left">
           &copy; {new Date().getFullYear()} Ritwick Verma ·{" "}
           <Link href="/notes/colophon/" className="hover:text-accent transition-colors">
@@ -25,7 +25,7 @@ export default function Footer() {
             <li key={l.label}>
               <a
                 href={l.href}
-                className="hover:text-accent transition-colors"
+                className="inline-block py-3 -my-3 hover:text-accent transition-colors"
                 {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               >
                 {l.label}

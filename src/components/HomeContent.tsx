@@ -44,7 +44,7 @@ function Line({ i, className, children }: { i: number; className?: string; child
 }
 
 export default function HomeContent() {
-  // Pin the hero for one full viewport of scroll: 200vh wrapper, sticky hero.
+  // Pin the hero for half a viewport of scroll: 150vh wrapper, sticky hero.
   // Fade over that first 100vh by mapping scrollY (px) against viewport height.
   const { scrollY } = useScroll();
   const opacity = useTransform(scrollY, (y) => {
@@ -65,7 +65,7 @@ export default function HomeContent() {
 
   return (
     <div className="relative">
-      <div className="h-[200vh] print:h-auto">
+      <div className="h-[150vh] print:h-auto">
         <motion.section
           id="hero"
           style={{ opacity }}
@@ -91,13 +91,13 @@ export default function HomeContent() {
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-9 pointer-events-auto">
               <a
                 href="#projects"
-                className="px-6 py-2.5 rounded-lg bg-accent text-background text-sm font-medium hover:bg-accent/90 transition-colors"
+                className="px-6 py-3 rounded-lg bg-accent text-background text-sm font-medium hover:bg-accent/90 transition-colors"
               >
                 See the work
               </a>
               <Link
                 href={socialLinks.resume}
-                className="px-6 py-2.5 rounded-lg border border-fg/60 text-fg text-sm hover:border-accent hover:text-accent transition-colors"
+                className="px-6 py-3 rounded-lg border border-fg/60 text-fg text-sm hover:border-accent hover:text-accent transition-colors"
               >
                 Resume
               </Link>

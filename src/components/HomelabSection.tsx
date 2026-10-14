@@ -31,7 +31,7 @@ export default function HomelabSection() {
           Authelia and Headscale; secrets are SOPS-encrypted in the same repo; every guest
           is backed up nightly and copied off the host. It serves this site.{" "}
           <Link href="/notes/homelab-git-is-the-truth/" className="text-accent hover:underline underline-offset-4 whitespace-nowrap">
-            How it runs →
+            Git is the truth: how the lab runs →
           </Link>
         </p>
 

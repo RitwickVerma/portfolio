@@ -1,4 +1,4 @@
-Fifteen guests on one Proxmox host is a small lab. The rule that runs it is worth writing down: **git is the source of truth, and CI tells me when reality disagrees.** How that works, what it caught, and what it cost.
+Fifteen guests on one Proxmox host is a small lab. It runs on one rule: **git is the source of truth, and CI tells me when reality disagrees.**
 
 ## The shape
 
@@ -6,7 +6,7 @@ One Proxmox VE host. Thirteen LXC containers and two VMs: a Home Assistant VM wi
 
 ## Declared, then imported
 
-The hypervisor layer is OpenTofu, through the `bpg/proxmox` provider. Every container and VM is a resource. I did not build the lab from the declarations; the lab existed first, so the first job was importing fifteen live resources into state and converging on zero drift. The token the provider uses is a scoped Proxmox role, not root. One VM keeps its cloud-init and agent settings under `ignore_changes`, because they are baked into the running image and re-applying them would force a replacement.
+The hypervisor layer is OpenTofu, through the `bpg/proxmox` provider. Every container and VM is a resource. I did not build the lab from the declarations; the lab existed first, so the first job was importing fifteen live resources into state and converging on zero drift (not yet reached; see below). The token the provider uses is a scoped Proxmox role, not root. One VM keeps its cloud-init and agent settings under `ignore_changes`, because they are baked into the running image and re-applying them would force a replacement.
 
 A generator script rebuilt the first `containers.tf` from the host's own `/etc/pve/lxc/*.conf`. That was bootstrap only. The HCL is hand-maintained now, and the script's comment says so, because a generator you keep running is a second source of truth.
 
@@ -23,8 +23,6 @@ The runner is a container on the same host, Docker executor, so the pipeline nee
 The plan job still carries `allow_failure`, with a comment admitting why: the state has not fully absorbed resources created under an earlier provider, so until that one-time import is clean the job reports drift rather than blocking the pipeline. A drift alarm that fires on every run is not an alarm. Making it blocking is the next item, and this paragraph is here so I cannot forget.
 
 ## What the sync caught
-
-Two catches worth recording.
 
 The sync job once committed a live credential. A compose stack's `.env` had real values in it, the job pulled it faithfully, and the repo had a database password in history. The fix was three commits: untrack the live files and keep placeholders, encrypt the secrets that do belong in the repo with SOPS and age so they can be tracked safely, and add a redaction pass that runs on every synced file before the commit. The sync is now allowed to be faithful because the redactor is in front of it.
 
@@ -48,6 +46,6 @@ Proxmox Backup Server takes every guest nightly with a kept-copies schedule. The
 
 One container runs a self-hosted AI agent. It owns the cron entry points: the health check, the watchdogs, an inbox triage, a few upstream-release watchers for projects I patch. Its scripts directory is a symlink into this repo so there is one copy and nothing to sync, and its README has a rule I keep: domain logic lives in the product's own repository, never in the agent's. The agent is an operator, not a place code goes to hide.
 
-## What this is not
+## Limits
 
-It is not high availability. One host, one power supply, one disk for the photo library. A dead host is a restore from PBS onto new hardware, and that path has a written playbook. The declarations cover the hypervisor and the compose stacks; what is inside each container's filesystem is the backup's problem, not git's. The lab proves I can run production discipline on one box. It does not prove the box is production.
+It is not high availability. One host, one power supply, one disk for the photo library. A dead host is a restore from PBS onto new hardware, and that path has a written playbook. The declarations cover the hypervisor and the compose stacks; what is inside each container's filesystem is the backup's problem, not git's. One box is one failure domain; recovery is a PBS restore.

@@ -34,7 +34,8 @@ export default function TerminalWrapper() {
   }, []);
 
   return (
-    <section id="terminal" className="max-w-3xl mx-auto px-6 py-24 sm:py-32">
+    <section id="terminal" className="max-w-6xl mx-auto px-6 py-24 sm:py-32">
+      <div className="max-w-3xl">
       <h2 className="font-mono text-muted text-sm mb-6 tracking-widest uppercase">
         Terminal
       </h2>
@@ -70,6 +71,7 @@ export default function TerminalWrapper() {
         <span className="sm:hidden">Tap to type · Enter runs a command</span>
         <span className="hidden sm:inline">Click to type · Tab completes · Esc leaves the terminal</span>
       </p>
+      </div>
     </section>
   );
 }

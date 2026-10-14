@@ -1,4 +1,4 @@
-This page exists so that nothing here has to be taken on trust. If you are deciding whether to talk to me, you should know what on this site is mine, what is machine-made under my direction, what is measured and what is a snapshot.
+This page says what on the site is mine, what is machine-made under my direction, what is measured and what is a snapshot.
 
 ## What it is
 
@@ -8,9 +8,9 @@ It is served from my own rack. CT114 is a container on the Proxmox host describe
 
 ## The hero
 
-The datacenter is three.js through React Three Fiber, WebGL2. It is a lazy chunk that mounts after the browser goes idle, behind a static SVG poster that paints with the first HTML. If WebGL2 is unavailable, if you have asked your OS for reduced motion, or if the renderer throws, the poster simply stays and the page keeps working. A WebGPU build with a compute-shader airflow layer exists behind `?renderer=webgpu`; it is opt-in until I have verified it on more GPUs than mine, because the first time it shipped as the default it blanked the hero on a GPU-accelerated Chrome and I found out from the production site.
+The data centre is three.js through React Three Fiber, WebGL2. It is a lazy chunk that mounts after the browser goes idle, behind a static SVG poster that paints with the first HTML. If WebGL2 is unavailable, if you have asked your OS for reduced motion, or if the renderer throws, the poster simply stays and the page keeps working. A WebGPU build with a compute-shader airflow layer exists behind `?renderer=webgpu`; it is opt-in until I have verified it on more GPUs than mine, because the first time it shipped as the default it blanked the hero on a GPU-accelerated Chrome and I found out from the production site.
 
-The racks are a drawing of my homelab, not a live view of it. The labels are real guest names; the boot logs on the screens are abbreviated from the real services. The section below the fold says "static inventory, not a live status page" and means it. Making it live is on the list.
+The racks are a drawing of my homelab, not a live view of it. The labels are real guest names; the boot logs on the screens are abbreviated from the real services. The section below the fold says "static inventory, not a live status page" and means it. The Homelab section below shows live guest state when the host publishes a status file; the racks themselves stay a drawing.
 
 ## The terminal
 
@@ -24,7 +24,7 @@ The rule for the data file, written at its top, is that every claim in it must b
 
 ## How it was made
 
-I build with an AI pair programmer, and most of the current version's code was written by Claude from my direction: I set the goals, reviewed the diffs, ran the site and pushed back. Commits it wrote carry a co-author line, visible in the public history. The decisions, the content and the verification are mine. Every change was linted, typechecked and unit-tested, then rendered in a headless browser at desktop and phone widths before it was committed, and the resume page is printed to PDF on Letter and A4 to check it holds one page. Nothing merges on a claim; it merges on evidence. I made the same disclosure in the upstream issue I opened on [kwin-canvas](https://github.com/aaronsb/kwin-canvas/issues/13).
+I build with an AI pair programmer, and most of the current version's code was written by Claude from my direction: I set the goals, reviewed the diffs, ran the site and pushed back. Commits it wrote carry a co-author line, visible in the public history. The decisions, the content and the verification are mine. Every change was linted, typechecked and unit-tested, then rendered in a headless browser at desktop and phone widths before it was committed, and the resume page is printed to PDF on Letter and A4 to check it holds one page. I made the same disclosure in the upstream issue I opened on [kwin-canvas](https://github.com/aaronsb/kwin-canvas/issues/13).
 
 ## Motion and accessibility
 

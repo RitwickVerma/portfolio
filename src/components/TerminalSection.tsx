@@ -210,7 +210,7 @@ export default function TerminalSection() {
 
       // Welcome message + initial prompt. No auto-focus: it would steal focus
       // (and raise the keyboard on mobile) the moment the section scrolls in.
-      term.write(welcome(term.cols));
+      term.write(welcome());
       term.write(PROMPT);
 
       return () => {

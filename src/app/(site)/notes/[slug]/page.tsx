@@ -30,6 +30,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description: note.summary,
       url,
       type: "article",
+      siteName: "ritwickverma.dev",
+      locale: "en_US",
       publishedTime: note.date,
       authors: [hero.name],
       images: [{ url: og, width: 1200, height: 630, alt: note.title }],

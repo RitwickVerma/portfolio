@@ -30,6 +30,8 @@ export default function Crush80() {
   const [now, setNow] = useState(0);
   const [last, setLast] = useState<Key | null>(null);
   const [focused, setFocused] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const boardRef = useRef<HTMLDivElement>(null);
   const idleSince = useRef(0);
   const demoIndex = useRef(0);
   const reduce = useRef(false);
@@ -55,8 +57,18 @@ export default function Crush80() {
     return () => window.removeEventListener("keydown", onKey);
   }, [focused]);
 
+  // The loop only exists while the board is on screen.
+  useEffect(() => {
+    const el = boardRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") { setVisible(true); return; }
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { rootMargin: "80px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   // One frame loop: decay lit keys; when nobody has typed for a while, type the demo.
   useEffect(() => {
+    if (!visible) return;
     let raf = 0;
     let lastDemo = 0;
     const tick = () => {
@@ -84,7 +96,7 @@ export default function Crush80() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [focused]);
+  }, [focused, visible]);
 
   const litKeys = KEYS.filter((k) => lit.has(keyId(k))).map((k) => ({ k, a: Math.max(0, 1 - (now - (lit.get(keyId(k)) ?? now)) / DECAY_MS) }));
 
@@ -92,14 +104,15 @@ export default function Crush80() {
     <div className="w-full">
       <div className="relative">
         <div
+          ref={boardRef}
           tabIndex={0}
-          role="application"
+          role="group"
           aria-label="Crush 80 keyboard matrix. Focus and type to light the switches."
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           className="rounded-xl glass outline-none focus-visible:ring-2 focus-visible:ring-accent/60 overflow-x-auto"
         >
-          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto min-w-[640px] select-none" aria-hidden="true">
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto min-w-[600px] select-none" aria-hidden="true">
             {/* For each lit key: the column strobe through it and the row sense line through it. */}
             {litKeys.map(({ k, a }) => {
               const cx = PAD + (k.x + k.w / 2) * U;
@@ -120,9 +133,9 @@ export default function Crush80() {
               const w = k.w * U - GAP;
               const h = (k.h ?? 1) * U - GAP;
               return (
-                <g key={keyId(k)}>
+                <g key={keyId(k)} onPointerDown={() => { idleSince.current = performance.now(); light(k, idleSince.current); }} className="cursor-pointer">
                   <rect x={x} y={y} width={w} height={h} rx={5} fill="var(--accent)" fillOpacity={0.04 + a * 0.5} stroke="var(--accent)" strokeOpacity={0.12 + a * 0.6} strokeWidth={1} />
-                  <text x={x + 7} y={y + 15} fontSize={10.5} fontFamily="var(--font-mono)" fill="var(--fg)" fillOpacity={0.55 + a * 0.45}>
+                  <text x={x + 7} y={y + 15} fontSize={k.label.length > 4 ? 8.5 : 10.5} fontFamily="var(--font-mono)" fill="var(--fg)" fillOpacity={0.55 + a * 0.45}>
                     {k.label}
                   </text>
                 </g>
@@ -134,12 +147,12 @@ export default function Crush80() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-10 rounded-r-xl bg-gradient-to-l from-background to-transparent sm:hidden" />
       </div>
 
-      <p className="mt-3 font-mono text-xs text-muted" aria-live="polite">
+      <p className="mt-3 font-mono text-xs text-muted">
         {last
-          ? `${last.label || "Space"} · RC(${last.r},${last.c}) · column ${COL_GPIOS[last.c]} strobed, row ${ROW_GPIOS[last.r]} sensed`
+          ? `${last.codes[0] ?? last.label} · RC(${last.r},${last.c}) · column ${COL_GPIOS[last.c]} strobed, row ${ROW_GPIOS[last.r]} sensed`
           : focused
             ? "Type."
-            : "Click the board and type. Each key shows its matrix position and the two GPIO lines the firmware reads it through."}
+            : "Type on it or tap a key. Each press shows its matrix position and the two GPIO lines the firmware reads it through."}
       </p>
     </div>
   );

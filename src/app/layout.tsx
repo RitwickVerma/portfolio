@@ -6,7 +6,7 @@ import { BG } from "@/lib/theme";
 import "./globals.css";
 
 const OG_ALT =
-  "Ritwick Verma, backend engineer at eBay. I build and self-host the systems I ship.";
+  "Ritwick Verma, software engineer at eBay. I build and self-host the systems I ship.";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
