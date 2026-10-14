@@ -1,0 +1,53 @@
+Fifteen guests on one Proxmox host is small. The interesting part is not the size, it is the rule: **git is the source of truth, and CI tells me when reality disagrees.** This note is how that works, what it caught, and what it cost.
+
+## The shape
+
+One Proxmox VE host. Thirteen LXC containers and two VMs: a Home Assistant VM with a Zigbee radio passed through, and a Debian gateway VM running Traefik, Authelia for SSO, Headscale for the VPN and CrowdSec. Behind the gateway: DNS and DHCP, a password manager, photos, documents, a media server, file sync, an e-book library, a GitLab CI runner, the trading bot, a backup server, and the container that serves this site. Only two hostnames face the internet; everything else is reachable over the VPN, which answers the same names on private addresses so links work identically inside and out.
+
+## Declared, then imported
+
+The hypervisor layer is OpenTofu, through the `bpg/proxmox` provider. Every container and VM is a resource. I did not build the lab from the declarations; the lab existed first, so the first job was importing fifteen live resources into state and converging on zero drift. The token the provider uses is a scoped Proxmox role, not root. One VM keeps its cloud-init and agent settings under `ignore_changes`, because they are baked into the running image and re-applying them would force a replacement.
+
+A generator script rebuilt the first `containers.tf` from the host's own `/etc/pve/lxc/*.conf`. That was bootstrap only. The HCL is hand-maintained now, and the script's comment says so, because a generator you keep running is a second source of truth.
+
+## The nightly pipeline
+
+A scheduled pipeline runs every night, plus on every push to `master`:
+
+- **validate**: YAML, JSON and shell checks on everything in the repo.
+- **sync-live** (schedule only): SSH into the host and the gateway, pull the live compose files and configs, and commit whatever changed. The commit is the diff between what git said and what was running. Most nights it is empty. When it is not, it is something I changed on the box and did not write down.
+- **tofu-plan**: run `plan` against the live host and report any difference. State lives in GitLab's managed backend, authenticated with the job token.
+
+The runner is a container on the same host, Docker executor, so the pipeline needs nothing outside the lab to run.
+
+The plan job still carries `allow_failure`, with a comment admitting why: the state has not fully absorbed resources created under an earlier provider, so until that one-time import is clean the job reports drift rather than blocking the pipeline. A drift alarm that fires on every run is not an alarm. Making it blocking is the next item, and this paragraph is here so I cannot forget.
+
+## What the sync caught
+
+Two things worth telling.
+
+The sync job once committed a live credential. A compose stack's `.env` had real values in it, the job pulled it faithfully, and the repo had a database password in history. The fix was three commits: untrack the live files and keep placeholders, encrypt the secrets that do belong in the repo with SOPS and age so they can be tracked safely, and add a redaction pass that runs on every synced file before the commit. The sync is now allowed to be faithful because the redactor is in front of it.
+
+The second was quieter. A watchtower container on the gateway was configured to update only labelled services, and the sync showed zero services carried the label. It had been doing nothing. Removed.
+
+## Paging without noise
+
+A health check runs every five minutes. Silent means healthy; it never prints a "healthy" line, because that would page me every five minutes. Three rules shaped it, each dated in the script's header with the reason it was added:
+
+- **Confirmation gate.** A condition must fail two consecutive runs before it can page. A single failed probe is usually a VM mid-restart or DNS blinking, and five to ten minutes of patience removed most false pages.
+- **Change-gated alerts.** An alert is emitted only when it is new. While it persists, it re-notifies after a cooldown, six hours for service checks and twelve for the infrastructure watchdog. A flapping condition costs one message, not one per flap. When it clears, it clears silently.
+- **A check that cannot run is itself an alert.** The watchdog that reads TLS expiry, backup freshness and off-site copy freshness treats "could not reach the host to check" as a finding. An unverifiable result is a silent failure wearing a green badge.
+
+HTTP probes moved out of the script and into Gatus, with one rule: a new web check goes into Gatus first, and a script exists only for what Gatus cannot probe. One outage pages once.
+
+## Backups, both kinds
+
+Proxmox Backup Server takes every guest nightly with a kept-copies schedule. Then restic copies the datastore off the host, to a different machine, on its own nightly timer, with its own freshness check in the watchdog. There is a written recovery playbook next to the restic password. The point of the second copy is that the first lives on the thing that would fail.
+
+## The agent
+
+One container runs a self-hosted AI agent. It owns the cron entry points: the health check, the watchdogs, an inbox triage, a few upstream-release watchers for projects I patch. Its scripts directory is a symlink into this repo so there is one copy and nothing to sync, and its README has a rule I keep: domain logic lives in the product's own repository, never in the agent's. The agent is an operator, not a place code goes to hide.
+
+## What this is not
+
+It is not high availability. One host, one power supply, one disk for the photo library. A dead host is a restore from PBS onto new hardware, and that path has a written playbook. The declarations cover the hypervisor and the compose stacks; what is inside each container's filesystem is the backup's problem, not git's. The lab proves I can run production discipline on one box. It does not prove the box is production.

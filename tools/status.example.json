@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-10-13T19:55:02Z",
+  "host": { "uptimeSeconds": 2371842, "load1": 0.38 },
+  "guests": [
+    { "id": "VM100", "state": "running", "uptimeSeconds": 2371790 },
+    { "id": "CT101", "state": "running", "uptimeSeconds": 611204 },
+    { "id": "CT102", "state": "running", "uptimeSeconds": 2371760 },
+    { "id": "CT104", "state": "running", "uptimeSeconds": 2371758 },
+    { "id": "CT105", "state": "running", "uptimeSeconds": 2371755 },
+    { "id": "CT106", "state": "running", "uptimeSeconds": 1180022 },
+    { "id": "CT107", "state": "stopped" },
+    { "id": "CT108", "state": "running", "uptimeSeconds": 2371750 },
+    { "id": "VM110", "state": "running", "uptimeSeconds": 2371701 },
+    { "id": "CT111", "state": "running", "uptimeSeconds": 2371744 },
+    { "id": "CT113", "state": "running", "uptimeSeconds": 2371741 },
+    { "id": "CT114", "state": "running", "uptimeSeconds": 88212 },
+    { "id": "CT115", "state": "running", "uptimeSeconds": 2371733 },
+    { "id": "CT116", "state": "running", "uptimeSeconds": 2371730 },
+    { "id": "CT117", "state": "running", "uptimeSeconds": 2371727 }
+  ]
+}

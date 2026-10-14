@@ -14,6 +14,22 @@ export interface Note {
 
 export const notes: Note[] = [
   {
+    slug: "homelab-git-is-the-truth",
+    title: "Git is the truth: a homelab that diffs itself nightly",
+    summary:
+      "Fifteen guests declared in OpenTofu, a nightly pipeline that commits whatever changed on the box and reports what the plan disagrees with, paging that costs one message per fault. What it caught, and what it is not.",
+    date: "2026-10-13",
+    tags: ["Proxmox", "OpenTofu", "GitOps", "on-call"],
+  },
+  {
+    slug: "plutus-what-the-backtest-cannot-tell-you",
+    title: "Plutus: what the backtest cannot tell you",
+    summary:
+      "The five-signal bot that lost to SPY, the one signal that survived attribution, a Sharpe of 1.04 with its confidence interval attached, and the ideas tested and rejected on the way.",
+    date: "2026-10-13",
+    tags: ["Python", "quant", "backtesting"],
+  },
+  {
     slug: "tizen-video-plane-ambilight",
     title: "Reading a Samsung TV's video plane from inside the TV",
     summary:

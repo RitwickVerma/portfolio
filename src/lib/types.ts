@@ -15,7 +15,19 @@ export interface Project {
     gitlab?: string;
   };
   featured: boolean;
-  category: "android" | "quant" | "infra" | "tv" | "games" | "ai" | "embedded" | "linux";
+  /** Listed on /resume. Default true; the printed page is curated to hold one sheet. */
+  onResume?: boolean;
+  category:
+    | "android"
+    | "quant"
+    | "infra"
+    | "tv"
+    | "games"
+    | "desktop"
+    | "security"
+    | "foldable"
+    | "embedded"
+    | "linux";
 }
 
 export interface Experience {

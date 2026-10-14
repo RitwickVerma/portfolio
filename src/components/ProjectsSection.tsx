@@ -14,7 +14,9 @@ const CATEGORY_LABEL: Record<ProjectData["category"], string> = {
   infra: "Infra",
   tv: "Smart TV",
   games: "Games",
-  ai: "AI",
+  desktop: "KDE Plasma",
+  security: "Security",
+  foldable: "Galaxy Fold",
   embedded: "Embedded",
   linux: "Linux desktop",
 };
@@ -188,7 +190,7 @@ export default function ProjectsSection() {
 
       <div className="space-y-4">
         <Grid items={featured} className="md:grid-cols-2" />
-        <Grid items={rest} className="md:grid-cols-2" />
+        <Grid items={rest} className="md:grid-cols-2 lg:grid-cols-3" />
       </div>
     </section>
   );

@@ -5,7 +5,8 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
-import { ANSI, PROMPT, welcome, COMMAND_NAMES, commandOutputs } from "@/lib/terminal";
+import { ANSI, PROMPT, welcome, COMMAND_NAMES, commandOutputs, statusOutput } from "@/lib/terminal";
+import { getStatusSnapshot, loadStatus } from "@/lib/statusStore";
 
 // The xterm body only — TerminalWrapper owns the section chrome and mounts
 // this lazily, so xterm never ships in the first-load bundle.
@@ -29,6 +30,12 @@ export default function TerminalSection() {
     const term = terminalRef.current;
     if (!term) return;
 
+    if (cmd === "status") {
+      loadStatus();
+      const snap = getStatusSnapshot();
+      term.write(statusOutput(snap.status, snap.phase));
+      return;
+    }
     const output = commandOutputs()[cmd];
     if (output) {
       term.write(output);

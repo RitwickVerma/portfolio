@@ -81,4 +81,23 @@ describe("data integrity", () => {
     expect(new Set(cats).size).toBe(cats.length);
     expect(cats).not.toContain("systems");
   });
+
+  it("featured projects fill the 2×2 grid and the rest fill a 3-column grid", () => {
+    expect(projects.filter((p) => p.featured)).toHaveLength(4);
+    expect(projects.filter((p) => !p.featured).length % 3).toBe(0);
+  });
+
+  it("the resume lists every featured project and at most seven in all", () => {
+    const listed = projects.filter((p) => p.onResume !== false);
+    for (const p of projects.filter((p) => p.featured)) expect(listed).toContain(p);
+    expect(listed.length).toBeLessThanOrEqual(7);
+  });
+
+  it("Plutus describes the current trader, not the retired multi-signal pipeline", () => {
+    const plutus = projects.find((p) => p.slug === "plutus")!;
+    const blob = JSON.stringify(plutus).toLowerCase();
+    expect(blob).not.toMatch(/russell|200\+ tests|conviction|hard stops/);
+    expect(blob).toMatch(/momentum/);
+    expect(plutus.links).toEqual({});
+  });
 });

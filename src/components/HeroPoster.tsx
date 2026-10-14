@@ -12,7 +12,7 @@ const FRONT = [
   { x: 56, w: 96, h: 230 },
   { x: 268, w: 92, h: 190 },
   { x: 498, w: 88, h: 214 },
-  { x: 722, w: 100, h: 172, warn: true },
+  { x: 722, w: 100, h: 172 },
 ];
 
 function Rack({ x, w, h, base, warn }: { x: number; w: number; h: number; base: number; warn?: boolean }) {

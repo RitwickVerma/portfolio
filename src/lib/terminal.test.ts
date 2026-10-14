@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { commandOutputs, COMMAND_NAMES, welcome, wrapList, BANNER_COLS, TERMINAL_COLS } from "./terminal";
+import { commandOutputs, statusOutput, COMMAND_NAMES, welcome, wrapList, BANNER_COLS, TERMINAL_COLS } from "./terminal";
+import { parseStatus } from "./status";
+import example from "../../tools/status.example.json";
 import { services, projects } from "./data";
 import { notes } from "./notes";
 
@@ -8,10 +10,22 @@ const plain = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 describe("terminal output", () => {
   const out = commandOutputs();
 
-  it("defines output for every command except clear", () => {
-    for (const name of COMMAND_NAMES.filter((c) => c !== "clear")) {
+  it("defines output for every command except clear and the live status", () => {
+    for (const name of COMMAND_NAMES.filter((c) => c !== "clear" && c !== "status")) {
       expect(out[name], name).toBeTruthy();
     }
+  });
+
+  it("status explains itself without a feed and lists every guest with one", () => {
+    expect(plain(statusOutput(null, "none"))).toMatch(/No live status/);
+    expect(plain(statusOutput(null, "loading"))).toMatch(/Fetching/);
+    const s = parseStatus(example)!;
+    const now = Date.parse(s.generatedAt) + 3 * 60_000;
+    const text = plain(statusOutput(s, "live", now));
+    expect(text).toMatch(/^Host  live · updated 3 min ago · 14\/15 running/);
+    for (const svc of services) expect(text).toContain(svc.ct);
+    expect(text).toMatch(/CT107 {3}Paperless-ngx {3}stopped/);
+    expect(plain(statusOutput(s, "stale", now))).toMatch(/stale/);
   });
 
   it("has no easter-egg command", () => {

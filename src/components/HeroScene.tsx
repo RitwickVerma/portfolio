@@ -10,6 +10,8 @@ import { sceneState } from '@/lib/sceneState';
 import { advancePhase, phaseProgress, type PhaseState } from '@/lib/phaseMachine';
 import { mulberry32 } from '@/lib/random';
 import { layoutLabels, placeLabel } from '@/lib/labels';
+import { getStatusSnapshot, loadStatus } from '@/lib/statusStore';
+import { guestView } from '@/lib/status';
 
 // ─── Shared pointer + drag state ──────────────────────────────────────────
 
@@ -152,13 +154,19 @@ export function SceneFog() {
 // ─── Rack definitions — asymmetric positions, no perfect grid ─────────────
 
 // `core` racks form the mobile legend row (< 768px shows these two).
-type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean; warning?: boolean; core?: boolean };
+type RackDef = { id: string; name: string; x: number; z: number; height: number; gateway?: boolean; vents?: boolean; core?: boolean };
+
+// A rack's red indicator is live: it means the guest is stopped in the latest
+// /status.json. With no status file every rack reads as healthy.
+function rackDown(id: string): boolean {
+  return guestView(getStatusSnapshot().status, id) === 'down';
+}
 
 const RACKS: RackDef[] = [
   { id: 'VM110', name: 'VM110 Gateway',  x: -3.20, z: -1.30, height: 2.5, gateway: true, core: true },
   { id: 'CT101', name: 'CT101 Hermes',    x: -1.00, z: -1.20, height: 2.2 },
   { id: 'CT102', name: 'CT102 DNS',       x:  1.15, z: -1.28, height: 1.9 },
-  { id: 'CT104', name: 'CT104 Vaultwarden',x:  3.35, z: -1.15, height: 1.8, warning: true, core: true },
+  { id: 'CT104', name: 'CT104 Vaultwarden',x:  3.35, z: -1.15, height: 1.8, core: true },
   { id: 'CT106', name: 'CT106 Immich',    x: -3.15, z:  1.20, height: 2.3 },
   { id: 'CT107', name: 'CT107 Paperless',  x: -1.05, z:  1.30, height: 2.0 },
   { id: 'CT111', name: 'CT111 Remux',      x:  1.20, z:  1.18, height: 2.4 },
@@ -314,16 +322,23 @@ function RackScreen({ accent, rackId, height }: { accent: string; rackId: string
 
 // ─── Rack indicator (unique per-rack blink pattern) ────────────────────────
 
-function RackIndicator({ accent, rackId, warning }: { accent: string; rackId: string; warning?: boolean }) {
+function RackIndicator({ accent, rackId }: { accent: string; rackId: string }) {
   const ref = useRef<THREE.Mesh>(null);
   const blinkOffset = useRef(rackId.charCodeAt(2) * 0.3 % 2);
-  const color = warning ? WARN_ACCENT : accent;
+  const shown = useRef<string>('');
   useFrame(({ clock }) => {
     if (!ref.current) return;
     const t = clock.getElapsedTime();
+    const warning = rackDown(rackId);
+    const color = warning ? WARN_ACCENT : accent;
+    const mat = ref.current.material as THREE.MeshStandardMaterial;
+    if (shown.current !== color) {
+      shown.current = color;
+      mat.color.set(color);
+      mat.emissive.set(color);
+    }
     const baseRate = warning ? 3.5 : 1.2 + (rackId.charCodeAt(1) % 7) * 0.25;
     const rate = baseRate + sceneState.spin * 8;
-    const mat = ref.current.material as THREE.MeshStandardMaterial;
     // Flash boost
     let flashEmit = 0;
     const phase = sceneState._flashPhase;
@@ -336,7 +351,7 @@ function RackIndicator({ accent, rackId, warning }: { accent: string; rackId: st
   return (
     <mesh ref={ref} position={[0, 0.68, 0]}>
       <sphereGeometry args={[0.055, 12, 12]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.3} />
+      <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.3} />
     </mesh>
   );
 }
@@ -437,7 +452,7 @@ function NarrowLegend() {
     <Html fullscreen calculatePosition={canvasCentre} wrapperClass="z-[7]" zIndexRange={[7, 7]} style={{ pointerEvents: 'none' }}>
       <div className="pointer-events-none absolute left-6 right-6 top-[88px] flex flex-wrap items-center justify-center gap-2">
         {RACKS.filter((r) => r.core).map((r) => (
-          <LabelPill key={r.id} name={r.name} color={r.warning ? WARN_ACCENT : r.gateway ? GATEWAY_ACCENT : ACCENT} />
+          <LabelPill key={r.id} name={r.name} color={rackDown(r.id) ? WARN_ACCENT : r.gateway ? GATEWAY_ACCENT : ACCENT} />
         ))}
       </div>
     </Html>
@@ -448,6 +463,13 @@ function NarrowLegend() {
 // per frame, and lib/labels lays them out together — so no label ever sits on
 // another or on the hero text, whichever way the scene has turned.
 function RackLabels({ root }: { root: React.RefObject<THREE.Group | null> }) {
+  // Pills are React-rendered once; re-render when the live status arrives so a
+  // stopped guest's dot turns red.
+  const [, bump] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => bump((n) => n + 1), 2000);
+    return () => window.clearInterval(id);
+  }, []);
   const refs = useRef<Array<HTMLDivElement | null>>([]);
   const vec = useMemo(() => new THREE.Vector3(), []);
   const anchors = useMemo(() => RACKS.map(() => ({ x: 0, y: 0, halfWidth: LABEL_HALF_W })), []);
@@ -483,7 +505,7 @@ function RackLabels({ root }: { root: React.RefObject<THREE.Group | null> }) {
           className="absolute left-0 top-0 will-change-transform"
           style={{ transform: 'translate3d(-1000px, -1000px, 0)' }}
         >
-          <LabelPill name={r.name} color={r.warning ? WARN_ACCENT : r.gateway ? GATEWAY_ACCENT : ACCENT} />
+          <LabelPill name={r.name} color={rackDown(r.id) ? WARN_ACCENT : r.gateway ? GATEWAY_ACCENT : ACCENT} />
         </div>
       ))}
     </Html>
@@ -511,7 +533,7 @@ function Rack({ rack }: { rack: RackDef }) {
       </mesh>
       <group position={[0, halfH, 0]}>
         <RackScreen accent={accent} rackId={rack.id} height={h} />
-        <RackIndicator accent={accent} rackId={rack.id} warning={rack.warning} />
+        <RackIndicator accent={accent} rackId={rack.id} />
         <group position={[0, -(h * 0.31) - 0.06, 0.46]}>
           <RackLights accent={accent} rackId={rack.id} />
         </group>
@@ -816,6 +838,7 @@ export function Datacenter() {
 
 export default function HeroScene({ onReady }: { onReady?: () => void }) {
   initPointer();
+  useEffect(loadStatus, []);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
 

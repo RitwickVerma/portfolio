@@ -3,6 +3,7 @@
 
 import { projects, experiences, services, skills, socialLinks, SITE_URL } from "./data";
 import { notes, noteUrl } from "./notes";
+import { ageMs, formatAge, formatUptime, runningCount, type Status, type Freshness } from "./status";
 
 export const ANSI = {
   reset: "\x1b[0m",
@@ -43,6 +44,7 @@ export const COMMAND_NAMES = [
   "experience",
   "resume",
   "notes",
+  "status",
   "contact",
   "stack",
   "neofetch",
@@ -79,6 +81,29 @@ export function wrapList(label: string, items: readonly string[], cols = TERMINA
     .join("\r\n") + "\r\n";
 }
 
+/** `status`: one line per guest from /status.json, or why there is none. Pure; the component passes the snapshot in. */
+export function statusOutput(status: Status | null, phase: Freshness | "none" | "loading" | "idle", now = Date.now()): string {
+  if (!status) {
+    if (phase === "loading") return `${ANSI.dim}Fetching /status.json…${ANSI.reset}\r\n`;
+    return `${ANSI.dim}No live status on this build. The host writes /status.json every five minutes in production.${ANSI.reset}\r\n`;
+  }
+  const head =
+    `${y("Host")}  ${phase === "live" ? g("live") : `${ANSI.red}stale${ANSI.reset}`}` +
+    ` · updated ${formatAge(ageMs(status, now))} · ${runningCount(status)}/${status.guests.length} running` +
+    (status.host.load1 !== undefined ? ` · load ${status.host.load1.toFixed(2)}` : "") +
+    (status.host.uptimeSeconds !== undefined ? ` · up ${formatUptime(status.host.uptimeSeconds)}` : "") +
+    "\r\n";
+  const rows = services
+    .map((s) => {
+      const gst = status.guests.find((x) => x.id === s.ct);
+      const state = !gst ? `${ANSI.dim}unknown${ANSI.reset}` : gst.state === "running" ? g("running") : `${ANSI.red}stopped${ANSI.reset}`;
+      const up = gst?.state === "running" && gst.uptimeSeconds !== undefined ? `  up ${formatUptime(gst.uptimeSeconds)}` : "";
+      return `${s.ct.padEnd(8)}${s.name.padEnd(16)}${state}${up}\r\n`;
+    })
+    .join("");
+  return head + rows;
+}
+
 export function commandOutputs(): Record<string, string> {
   const guests = services.length;
   const featured = projects.filter((p) => p.featured).length;
@@ -97,6 +122,7 @@ export function commandOutputs(): Record<string, string> {
       "  experience  Career timeline\r\n" +
       "  resume      Printable resume page\r\n" +
       "  notes       Engineering notes\r\n" +
+      "  status      Live guest state from the host\r\n" +
       "  contact     Get in touch\r\n" +
       "  stack       How this site is built\r\n" +
       "  neofetch    Site info\r\n" +

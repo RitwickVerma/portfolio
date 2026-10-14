@@ -30,6 +30,8 @@ src/app/(site)/    home page + nav, footer, backdrop, cursor trail
 src/app/(site)/notes/  /notes index and /notes/[slug] pages, one OG card each
 src/content/notes/ the notes themselves, MDX; registered in lib/notes.ts
 src/app/resume/    /resume — print-optimised, rendered from lib/data
+src/lib/status.ts  /status.json contract (schema 1) + pure helpers; statusStore.ts fetches it once
+tools/             status-producer.sh (runs on the Proxmox host, cron */5) + status.example.json
 src/app/og.png/    Open Graph card, rendered to a real .png at build
 src/lib/data.ts    single source for home, /resume and the terminal
 src/lib/motion.ts  easing, duration, stagger, spring tokens
@@ -48,6 +50,16 @@ npm run typecheck
 npm test         # Vitest
 npm run build    # static export → out/
 ```
+
+## Live status
+
+The Homelab section, the hero's rack LEDs and the terminal's `status` command
+read `/status.json` if the host publishes one: guest ids, running/stopped,
+uptime, host load. Nothing that identifies a machine. `tools/status-producer.sh`
+writes it from `pct`/`qm` and pushes it into the web container; nginx serves it
+from outside the deploy root with `Cache-Control: no-store`. Without the file
+(any local build) every reader shows the static inventory. `parseStatus`
+rejects anything off-schema so a bad file can never render as a half-truth.
 
 ## Deploy
 

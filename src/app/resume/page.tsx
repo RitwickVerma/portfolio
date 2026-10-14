@@ -121,7 +121,7 @@ export default function ResumePage() {
 
         <Section title="Projects">
           <ul className="space-y-3 print:space-y-1">
-            {projects.map((p) => (
+            {projects.filter((p) => p.onResume !== false).map((p) => (
               <li key={p.slug} className="text-sm print:text-[10pt]">
                 <span className="text-fg font-medium">{p.title}</span>{" "}
                 <span className="font-mono text-xs text-fg/70 print:text-[9pt]">
