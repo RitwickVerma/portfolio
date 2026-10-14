@@ -97,7 +97,7 @@ export const projects: Project[] = [
     description:
       "Approve a sudo prompt on my workstation with a fingerprint on my phone. LAN only, key in the phone's hardware keystore.",
     role: "Author, private repository",
-    metric: { value: "0 lines", label: "of custom code on the privileged path: pam_rssh verifies, the app only signs" },
+    metric: { value: "18 of 18", label: "checks pass in a replay of pam_rssh's real sequence, negative controls included" },
     why: "The phone speaks two ssh-agent messages; the ECDSA key never leaves the TEE and BiometricPrompt gates every signature. A replay of pam_rssh's real sequence, with negative controls, is the gate before touching /etc/pam.d/sudo.",
     tech: ["Kotlin", "Android Keystore", "ssh-agent", "PAM"],
     links: {},
