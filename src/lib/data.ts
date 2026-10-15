@@ -80,13 +80,13 @@ export const projects: Project[] = [
     slug: "crush80-firmware",
     title: "Crush 80 firmware",
     description:
-      "Open firmware for a Wobkey Crush 80 Pro keyboard whose vendor never released source: ZMK on the Telink TLSR9511, a RISC-V SoC.",
-    role: "Author of the findings and the LED bring-up. Builds on two community ZMK ports. Unpublished",
-    // REVERSE_ENGINEERING_FINDINGS.md: LEDs confirmed working 2026-09-15 on the ported driver.
+      "Open firmware for a Wobkey Crush 80 Pro keyboard whose vendor never released source: ZMK on the Telink TLSR9511, a RISC-V SoC. USB, Bluetooth, 154 per-key LEDs and OpenRGB, installed over the stock updater with one cable.",
+    role: "Maintainer: per-key RGB, OpenRGB, the update and recovery tooling, the hardware findings. Fork of a community ZMK port, Apache-2.0",
+    // LEDs confirmed working 2026-09-15 on the ported driver; OpenRGB Direct verified 2026-10-14 (gitlab.com/ritwick7/crush80-zmk).
     metric: { value: "154 LEDs", label: "lit from a ported WS2812 driver on the SoC's SPI DMA, GRB, one data line" },
     why: "My first identification was wrong: WB32 and a QMK port that could never run. The stock image's USB descriptor said TLSR9511, QMK has no port for it, and the findings document records the wrong turn next to the evidence. The matrix, LED line and power gate were traced from PCB photos and the stock binary's GPIO init.",
     tech: ["ZMK", "Zephyr", "RISC-V", "Ghidra", "C"],
-    links: { page: "/#keyboard", pageLabel: "Try the keyboard demo" },
+    links: { gitlab: "https://gitlab.com/ritwick7/crush80-zmk", page: "/#keyboard", pageLabel: "Try the keyboard demo" },
     featured: false,
     onResume: true,
     category: "firmware",
