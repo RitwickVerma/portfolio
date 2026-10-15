@@ -8,6 +8,7 @@ const links = [
   { label: "GitLab", href: socialLinks.gitlab, external: true },
   { label: "LinkedIn", href: socialLinks.linkedin, external: true },
   { label: "Email", href: `mailto:${socialLinks.email}`, external: false },
+  { label: "Buy me a covfefe", href: socialLinks.support, external: true },
 ];
 
 export default function Footer() {
