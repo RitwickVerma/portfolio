@@ -21,23 +21,22 @@ check:
   script:
     - npm ci --prefer-offline
     - npm run lint
-    - npm run typecheck
+    - npx tsc --noEmit
     - npm run test
 
-# Orchestrates only: SSH to CT114 and run /root/rebuild.sh. The build happens
-# on CT114 (2GB), not here. CT114 pulls, builds standalone, and restarts itself.
+# Builds the static export here in CI and deploys it to Cloudflare Pages.
+# Replaced the old SSH-to-CT114/rebuild.sh path on 2026-10-16 (migration to
+# Cloudflare Pages) -- CT114 nginx is no longer the serving origin for
+# www.ritwickverma.dev. CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are
+# masked+protected CI/CD variables.
 deploy:
   stage: deploy
-  image: alpine:latest
+  image: node:${NODE_VERSION}
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
   needs:
     - check
-  before_script:
-    - apk add --no-cache openssh-client
-    - mkdir -p ~/.ssh
-    - cp "$SSH_PRIVATE_KEY" ~/.ssh/id_ed25519
-    - chmod 600 ~/.ssh/id_ed25519
-    - ssh-keyscan -H 69.69.69.114 >> ~/.ssh/known_hosts 2>/dev/null || true
   script:
-    - ssh -o StrictHostKeyChecking=no root@69.69.69.114 "/root/rebuild.sh"
+    - npm ci --prefer-offline
+    - npm run build
+    - npx wrangler pages deploy out --project-name=portfolio --branch=master --commit-dirty=true
