@@ -23,10 +23,11 @@ export const projects: Project[] = [
     slug: "plutus",
     title: "Plutus",
     description:
-      "Systematic US-equity trader: trend-filtered cross-sectional momentum with volatility targeting, executed through Alpaca.",
+      "Research harness for systematic US-equity strategies. The one that survived testing, trend-filtered cross-sectional momentum with volatility targeting, paper-trades through Alpaca.",
     role: "Author, private repository, paper account",
-    // 2007-01 → 2026-10 backtest from the repo's results/latest/report.md (2026-10-13); SPY 0.63 over the same path.
-    metric: { value: "Sharpe 1.04", label: "2007–2026 backtest, one path (95% bootstrap interval 0.62–1.47). SPY 0.63; max drawdown 37%, against 55% for SPY" },
+    // Lead with the method, not a backtest number: the research ledger (30+ experiments, Aug-Sep 2026) found no
+    // demonstrated edge, and the surviving backtest's universe is only partly survivorship-corrected.
+    metric: { value: "30+ experiments", label: "most ideas falsified on point-in-time data with block-bootstrap intervals; the survivor runs on a paper account, not real money" },
     why: "Universe is S&P 500 + 400 plus still-listed removals to soften survivorship bias; block-bootstrap confidence intervals; stop-losses and daily regime exits were tested and rejected, not assumed. CI deploys to a timer on green master.",
     tech: ["Python", "pandas", "Alpaca", "uv", "GitLab CI"],
     links: {},

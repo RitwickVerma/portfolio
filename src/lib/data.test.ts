@@ -99,6 +99,8 @@ describe("data integrity", () => {
     expect(blob).not.toMatch(/russell|200\+ tests|conviction|hard stops/);
     expect(blob).toMatch(/momentum/);
     expect(plutus.links).toEqual({});
+    // no headline backtest Sharpe on the card: the ledger found no demonstrated edge
+    expect(plutus.metric.value).not.toMatch(/sharpe/i);
     expect(projects.find((p) => p.slug === "crush80-firmware")?.links.page).toBe("/#keyboard");
   });
 });
