@@ -2,7 +2,7 @@
 // change base.json, rebuild the PDF, and regenerate this file so the page and the PDF match.
 
 export const resume = {
-  "title": "Search and Retrieval Infrastructure · C++ · Systems",
+  "title": "Backend Engineer · C++ · Search Systems",
   "summary": "Backend engineer with 5.5 years on Cassini, the distributed C++ search engine behind every ebay.com search (1B+ listings). Owned vehicle-parts fitment and built retrieval, caching and query-transform features, shipped through A/B tests. 215 merged PRs, in the top 10% of 121 contributors to the engine.",
   "roles": [
     {
@@ -11,7 +11,7 @@ export const resume = {
       "period": "Jun 2023 to Present",
       "bullets": [
         "Owned eBay Motors fitment, the C++ subsystem that decides which parts fit a buyer's vehicle, across 16 sites and 19 catalogs. Designed the query operator clients use to ask for fit constraints or a per-item \"fits\" signal.",
-        "Built a request-scoped result cache that removed repeat backend calls across recall-recovery passes. Requests that already carry embeddings now skip the embedding service, large requests are batched under its limits Also fixed an embedding cache that had stopped hitting.",
+        "Built a request-scoped result cache that removed repeat backend calls across recall-recovery passes. Requests that already carry embeddings now skip the embedding service, large requests are batched under its limits. Also fixed an embedding cache that had stopped hitting.",
         "Designed three C++ query transforms for the product-grouped carousels on the results page, checked against replayed production traffic. Folded three ranking expressions into one native C++ macro that matched production exactly.",
         "Made the tokenizer stack allocator-aware (C++ PMR) in 7 PRs and shipped it as an HTTP API for other teams.",
         "Replayed 50,000 production-sampled queries and caught an initialization-order bug before release, and the fix cut new errors by about 96%. Also hotfixed a production parser crash and capped a combinatorial blow-up in query rewriting.",
@@ -32,10 +32,6 @@ export const resume = {
   "projectsNote": "Side projects are written with AI coding agents. I made the design calls and checked the results. Also ShutUp, an Android app with 26,000+ downloads (v1 written by hand in 2016).",
   "projects": [
     {
-      "name": "Self-hosted agent",
-      "description": "An LLM agent on my homelab with tools for code, mail, documents and infrastructure. It runs the homelab and does most of the typing on the projects below."
-    },
-    {
       "name": "TizenAmbilight",
       "description": "Ambilight from inside a Samsung TV. The public capture API only returns the UI layer, so it reads the undocumented video plane instead, tone-maps HDR and drives an LED strip at 20 to 25 fps. The image decoders were checked byte for byte against libjpeg-turbo."
     },
@@ -44,12 +40,16 @@ export const resume = {
       "description": "Open ZMK firmware for a keyboard whose vendor never released source: a Telink RISC-V chip, 154 per-key LEDs on a ported SPI-DMA driver, and a pinout recovered from PCB photos and the stock binary."
     },
     {
-      "name": "Homelab as code",
-      "description": "16 Proxmox guests behind Traefik, Authelia SSO and a Headscale VPN. 14 are declared in OpenTofu, a nightly CI job commits config drift, and alerts fire once per real fault."
-    },
-    {
       "name": "Plutus",
       "description": "Python research setup for trading strategies with point-in-time backtests and block-bootstrap confidence intervals. Five popular strategies failed the tests and were dropped."
+    },
+    {
+      "name": "Self-hosted agent",
+      "description": "An LLM agent I self-host, with tools for code, mail, documents and infrastructure. It does most of the typing on the projects above."
+    },
+    {
+      "name": "Homelab as code",
+      "description": "A hobby: 16 self-hosted services declared in OpenTofu, with a nightly CI job that flags config drift."
     }
   ],
   "skills": [
@@ -70,8 +70,8 @@ export const resume = {
       "value": "Claude Code, agent tooling and MCP servers"
     },
     {
-      "label": "Systems",
-      "value": "Linux, Docker, Proxmox, OpenTofu, GitLab CI, Traefik and OIDC"
+      "label": "Tools",
+      "value": "Linux, Docker, Git, GitLab CI"
     }
   ],
   "education": [
