@@ -4,7 +4,7 @@ This page says what on the site is mine, what is machine-made under my direction
 
 A static site. `next build` with `output: "export"` produces plain HTML, JavaScript and CSS, served as static files. There is no server runtime, no database, no analytics, no cookies and no request to any third party when you view a page. Fonts are self-hosted at build. The source is public on [GitLab](https://gitlab.com/ritwick7/portfolio).
 
-It is served by Cloudflare Pages. It used to be served from my own rack (CT114, behind the same Traefik gateway as everything else I run), and moved in October 2026 so a static site would stop holding 2 GB of homelab RAM just to build itself; CT114 is kept for rollback. A push to `master` runs lint, typecheck and tests in GitLab CI on my own runner; if those pass, the same job builds the export and deploys it.
+It is served by Cloudflare Pages. It used to be served from my own rack (CT114, behind the same Traefik gateway as everything else I run), and moved in October 2026 so a static site would stop holding 2 GB of homelab RAM just to build itself. That container is gone now. A push to `master` runs lint, typecheck and tests in GitLab CI on my own runner; if those pass, the same job builds the export and deploys it.
 
 ## The hero
 

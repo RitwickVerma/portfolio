@@ -175,7 +175,7 @@ const RACKS: RackDef[] = [
   { id: 'CT106', name: 'CT106 Immich',    x: -3.15, z:  1.20, height: 2.3 },
   { id: 'CT107', name: 'CT107 Paperless',  x: -1.05, z:  1.30, height: 2.0 },
   { id: 'CT111', name: 'CT111 Remux',      x:  1.20, z:  1.18, height: 2.4 },
-  { id: 'CT114', name: 'CT114 Portfolio',  x:  3.28, z:  1.35, height: 1.8 },
+  { id: 'CT119', name: 'CT119 Observability', x:  3.28, z:  1.35, height: 1.8 },
 ];
 
 // ─── Rack screen (canvas texture — dynamic boot/log/glitch during flash) ───
@@ -188,7 +188,7 @@ const BOOT_LOGS: Record<string, string[]> = {
   CT106: ['CT106 login:', '[  OK  ] Immich ▸ running', '[  OK  ] PostgreSQL ▸ ok', '[  OK  ] Redis ▸ ok', '[  OK  ] ML ▸ ready', 'CT106:~# _'],
   CT107: ['CT107 login:', '[  OK  ] Paperless-ngx ▸ up', '[  OK  ] Redis ▸ ok', '[  OK  ] Gotenberg ▸ ok', '[  OK  ] Wake ▸ on demand', 'CT107:~# _'],
   CT111: ['CT111 login:', '[  OK  ] Remux ▸ running', '[  OK  ] Media server ▸ up', '[  OK  ] Docker ▸ ok', '[  OK  ] Backup ▸ nightly', 'CT111:~# _'],
-  CT114: ['CT114 login:', '[  OK  ] nginx ▸ active', '[  OK  ] Role ▸ retired', '[  OK  ] Kept ▸ for rollback', '[  OK  ] Site ▸ Cloudflare Pages', 'CT114:~# _'],
+  CT119: ['CT119 login:', '[  OK  ] Gatus ▸ probing', '[  OK  ] Dozzle ▸ log hub', '[  OK  ] Diun ▸ watching tags', '[  OK  ] Alerts ▸ on fault only', 'CT119:~# _'],
 };
 
 // Hover-inspection stats — real service data, concise (pairs with BOOT_LOGS).
@@ -200,7 +200,7 @@ const RACK_STATS: Record<string, { role: string; stats: string[] }> = {
   CT106: { role: 'Immich', stats: ['Photo + video backup', 'ML search', 'PostgreSQL + Redis'] },
   CT107: { role: 'Paperless-ngx', stats: ['Document management', 'OCR', 'Woken on demand'] },
   CT111: { role: 'Remux', stats: ['Media server', 'Docker', 'Nightly backup'] },
-  CT114: { role: 'Portfolio (retired)', stats: ['Former host of this site', 'nginx, kept for rollback', 'Site now on Cloudflare Pages'] },
+  CT119: { role: 'Observability', stats: ['Gatus status checks', 'Dozzle log hub', 'Pages once per real fault'] },
 };
 
 function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[], progress: number, flicker: boolean) {
@@ -371,7 +371,7 @@ const RACK_LED_PATTERNS: Record<string, number[]> = {
   CT106: [0.4, 0.5, 0.3],
   CT107: [0.2, 0.6, 0.1],
   CT111: [0.35, 0.15, 0.5],
-  CT114: [0.3, 0.4, 0.2],
+  CT119: [0.3, 0.4, 0.2],
 };
 
 function RackLights({ accent, rackId }: { accent: string; rackId: string }) {

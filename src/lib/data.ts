@@ -66,9 +66,9 @@ export const projects: Project[] = [
     slug: "homelab",
     title: "Homelab",
     description:
-      "One Proxmox host, 17 guests, 15 declared in OpenTofu, behind a Debian gateway: Docker, Traefik, Authelia SSO and a Headscale VPN.",
+      "One Proxmox host, 16 guests, 14 declared in OpenTofu, behind a Debian gateway: Docker, Traefik, Authelia SSO and a Headscale VPN.",
     role: "Architect & sole operator",
-    metric: { value: "15 of 17", label: "guests declared in OpenTofu (the dev and observability boxes are not yet). Nightly CI reports plan drift against the live host" },
+    metric: { value: "14 of 16", label: "guests declared in OpenTofu (the dev and observability boxes are not yet). Nightly CI reports plan drift against the live host" },
     why: "Git is the source of truth: a scheduled pipeline pulls live configs and commits the diff, secrets are SOPS-encrypted in the repo, and a 5-minute health check pages once per new fault, after it persists, with a cooldown.",
     tech: ["Proxmox", "OpenTofu", "Docker", "Traefik", "Authelia", "SOPS"],
     links: {},
@@ -216,7 +216,7 @@ export const education: Education[] = [
   },
 ];
 
-// All 17 Proxmox guests (15 LXC + 2 VM), ordered by ID. No addresses or ports:
+// All 16 Proxmox guests (14 LXC + 2 VM), ordered by ID. No addresses or ports:
 // this ships to the browser.
 export const services: Service[] = [
   { name: "Home Assistant", description: "Home automation", ct: "VM100", tech: ["Home Assistant OS"] },
@@ -230,7 +230,6 @@ export const services: Service[] = [
   { name: "Gateway", description: "Traefik, Authelia SSO, Headscale VPN, CrowdSec", ct: "VM110", tech: ["Debian", "Docker"] },
   { name: "Remux", description: "Media server", ct: "CT111", tech: ["Remux", "Docker"] },
   { name: "Syncthing", description: "Peer-to-peer file sync", ct: "CT113", tech: ["Go", "systemd"] },
-  { name: "Portfolio (retired)", description: "Former host of this site, kept for rollback; the site now runs on Cloudflare Pages", ct: "CT114", tech: ["nginx"] },
   { name: "CI Runner", description: "GitLab CI runners", ct: "CT115", tech: ["GitLab CI"] },
   { name: "Plutus", description: "Paper-trading bot", ct: "CT116", tech: ["Python", "systemd"] },
   { name: "Kavita", description: "E-book library with OIDC login", ct: "CT117", tech: ["Kavita", "OIDC"] },
