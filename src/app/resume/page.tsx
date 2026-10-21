@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import PrintButton from "@/components/PrintButton";
-import { experiences, education, projects, skills, socialLinks, hero } from "@/lib/data";
+import { socialLinks, hero } from "@/lib/data";
+import { resume } from "@/lib/resume";
 
 const DESCRIPTION =
-  "Resume of Ritwick Verma, software engineer at eBay. Experience, projects, education and skills.";
+  "Resume of Ritwick Verma, backend engineer on eBay's Cassini search engine. Experience, projects, skills and education.";
 
-const OG_ALT = "Resume of Ritwick Verma, software engineer at eBay.";
+const OG_ALT = "Resume of Ritwick Verma, search and retrieval infrastructure engineer.";
 
 export const metadata: Metadata = {
   title: "Resume",
@@ -85,9 +86,7 @@ export default function ResumePage() {
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-fg print:text-[20pt]">
             {hero.name}
           </h1>
-          <p className="mt-1 text-fg/80 print:mt-0">
-            {hero.line} {hero.lineTwo}
-          </p>
+          <p className="mt-1 text-fg/80 print:mt-0">{resume.title}</p>
           <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 w-fit font-mono text-sm print:mt-1 print:grid-cols-2 print:text-[9pt]">
             {contact.map((c) => (
               <li key={c.href}>
@@ -99,74 +98,73 @@ export default function ResumePage() {
           </ul>
         </header>
 
+        <Section title="Summary">
+          <p className="text-sm print:text-[10pt]">{resume.summary}</p>
+        </Section>
+
         <Section title="Experience">
-          <ul className="space-y-5 print:space-y-1.5">
-            {experiences.map((e) => (
-              <li key={`${e.company} ${e.period}`}>
+          <p className="text-fg font-medium">eBay</p>
+          <ul className="mt-2 space-y-5 print:space-y-1.5">
+            {resume.roles.map((r) => (
+              <li key={r.period}>
                 <Row
                   left={
                     <>
-                      {e.role}, <span className="text-accent print:text-black">{e.company}</span>
-                      {e.location && <span className="text-muted font-normal"> · {e.location}</span>}
+                      {r.role}
+                      <span className="text-muted font-normal"> · {r.location}</span>
                     </>
                   }
-                  right={e.period}
+                  right={r.period}
                 />
                 <ul className="mt-1 space-y-1 list-disc pl-5 text-fg/80 text-sm print:mt-0 print:space-y-0 print:text-[10pt]">
-                  {e.description.map((d) => (
-                    <li key={d}>{d}</li>
+                  {r.bullets.map((b) => (
+                    <li key={b}>{b}</li>
                   ))}
                 </ul>
               </li>
             ))}
           </ul>
+          <p className="mt-3 text-sm text-fg/80 print:mt-1 print:text-[10pt]">{resume.earlier}</p>
         </Section>
 
-        <Section title="Projects">
-          <ul className="space-y-3 print:space-y-1">
-            {projects.filter((p) => p.onResume !== false).map((p) => (
-              <li key={p.slug} className="text-sm print:text-[10pt]">
-                <span className="text-fg font-medium">{p.title}</span>{" "}
-                <span className="font-mono text-xs text-fg/70 print:text-[9pt]">
-                  ({p.tech.join(", ")})
-                </span>: {p.description}{" "}
-                <span className="text-fg/80">
-                  {p.metric.value} {p.metric.label}.
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        <Section title="Education">
-          <ul className="space-y-3 print:space-y-1">
-            {education.map((ed) => (
-              <li key={ed.school}>
-                {/* Screen: degree on its own line. Print: inline, to hold one page. */}
-                <Row
-                  left={
-                    <>
-                      {ed.school}
-                      <span className="hidden print:inline font-normal">, {ed.degree}</span>
-                    </>
-                  }
-                  right={ed.period}
-                />
-                <p className="text-sm text-fg/70 print:hidden">{ed.degree}</p>
+        <Section title="Selected Projects">
+          <p className="text-sm italic text-fg/70 mb-2 print:text-[10pt] print:mb-0.5">{resume.projectsNote}</p>
+          <ul className="space-y-2 list-disc pl-5 print:space-y-0.5">
+            {resume.projects.map((p) => (
+              <li key={p.name} className="text-sm text-fg/80 print:text-[10pt]">
+                <span className="text-fg font-medium">{p.name}:</span> {p.description}
               </li>
             ))}
           </ul>
         </Section>
 
         <Section title="Skills">
-          <dl className="grid grid-cols-[7rem_1fr] gap-x-4 gap-y-1 text-sm print:text-[10pt] print:gap-y-0">
-            <dt className="text-muted">Languages</dt>
-            <dd>{skills.languages.join(", ")}</dd>
-            <dt className="text-muted">Domains</dt>
-            <dd>{skills.domains.join(", ")}</dd>
-            <dt className="text-muted">Tools</dt>
-            <dd>{skills.tools.join(", ")}</dd>
+          <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-1 text-sm print:text-[10pt] print:gap-y-0">
+            {resume.skills.map((s) => (
+              <div key={s.label} className="contents">
+                <dt className="text-muted">{s.label}</dt>
+                <dd>{s.value}</dd>
+              </div>
+            ))}
           </dl>
+        </Section>
+
+        <Section title="Education">
+          <ul className="space-y-3 print:space-y-1">
+            {resume.education.map((ed) => (
+              <li key={ed.school}>
+                <Row
+                  left={
+                    <>
+                      {ed.degree}
+                      <span className="text-muted font-normal">, {ed.school}</span>
+                    </>
+                  }
+                  right={ed.period}
+                />
+              </li>
+            ))}
+          </ul>
         </Section>
       </main>
     </div>
