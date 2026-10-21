@@ -188,7 +188,7 @@ const BOOT_LOGS: Record<string, string[]> = {
   CT106: ['CT106 login:', '[  OK  ] Immich ▸ running', '[  OK  ] PostgreSQL ▸ ok', '[  OK  ] Redis ▸ ok', '[  OK  ] ML ▸ ready', 'CT106:~# _'],
   CT107: ['CT107 login:', '[  OK  ] Paperless-ngx ▸ up', '[  OK  ] Redis ▸ ok', '[  OK  ] Gotenberg ▸ ok', '[  OK  ] Wake ▸ on demand', 'CT107:~# _'],
   CT111: ['CT111 login:', '[  OK  ] Remux ▸ running', '[  OK  ] Media server ▸ up', '[  OK  ] Docker ▸ ok', '[  OK  ] Backup ▸ nightly', 'CT111:~# _'],
-  CT114: ['CT114 login:', '[  OK  ] nginx ▸ active', '[  OK  ] Site ▸ static export', '[  OK  ] Deploy ▸ CI on master', '[  OK  ] Serving ▸ this page', 'CT114:~# _'],
+  CT114: ['CT114 login:', '[  OK  ] nginx ▸ active', '[  OK  ] Role ▸ retired', '[  OK  ] Kept ▸ for rollback', '[  OK  ] Site ▸ Cloudflare Pages', 'CT114:~# _'],
 };
 
 // Hover-inspection stats — real service data, concise (pairs with BOOT_LOGS).
@@ -196,11 +196,11 @@ const RACK_STATS: Record<string, { role: string; stats: string[] }> = {
   VM110: { role: 'Gateway', stats: ['Traefik v3 · Authelia SSO', 'Headscale VPN', 'CrowdSec'] },
   CT101: { role: 'Hermes Agent', stats: ['Self-hosted AI agent', 'SearXNG search', 'SQLite state'] },
   CT102: { role: 'DNS / DHCP', stats: ['Technitium', 'DoH upstreams', 'Hagezi blocklists'] },
-  CT104: { role: 'Vaultwarden', stats: ['Password manager', 'Docker + Watchtower', 'Nightly backup'] },
+  CT104: { role: 'Vaultwarden', stats: ['Password manager', 'Docker, pinned image', 'Nightly backup'] },
   CT106: { role: 'Immich', stats: ['Photo + video backup', 'ML search', 'PostgreSQL + Redis'] },
   CT107: { role: 'Paperless-ngx', stats: ['Document management', 'OCR', 'Woken on demand'] },
   CT111: { role: 'Remux', stats: ['Media server', 'Docker', 'Nightly backup'] },
-  CT114: { role: 'Portfolio', stats: ['Serving this page', 'nginx, static export', 'Rebuilt by CI on master'] },
+  CT114: { role: 'Portfolio (retired)', stats: ['Former host of this site', 'nginx, kept for rollback', 'Site now on Cloudflare Pages'] },
 };
 
 function drawBoot(ctx: CanvasRenderingContext2D, accent: string, logs: string[], progress: number, flicker: boolean) {

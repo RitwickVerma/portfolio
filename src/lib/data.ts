@@ -14,7 +14,7 @@ export const projects: Project[] = [
     metric: { value: "26,000+", label: "lifetime downloads, 4.3★ when the Play listing was last up" },
     why: "Turns a binary proximity sensor and the accelerometer into gestures: a double-wave timing window, pick-up from a flat surface, face-down detection mid-call.",
     tech: ["Java", "Kotlin", "Android", "EventBus"],
-    links: { github: "https://github.com/RitwickVerma/ShutUp" },
+    links: { gitlab: "https://gitlab.com/ritwick7/shutup" },
     onResume: true,
     featured: true,
     category: "android",
@@ -26,7 +26,7 @@ export const projects: Project[] = [
       "Systematic US-equity trader: trend-filtered cross-sectional momentum with volatility targeting, executed through Alpaca.",
     role: "Author, private repository, paper account",
     // 2007-01 → 2026-10 backtest from the repo's results/latest/report.md (2026-10-13); SPY 0.63 over the same path.
-    metric: { value: "Sharpe 1.04", label: "2007–2026 backtest, one path (95% bootstrap interval 0.62–1.47). SPY 0.63, max drawdown 55% against 37%" },
+    metric: { value: "Sharpe 1.04", label: "2007–2026 backtest, one path (95% bootstrap interval 0.62–1.47). SPY 0.63; max drawdown 37%, against 55% for SPY" },
     why: "Universe is S&P 500 + 400 plus still-listed removals to soften survivorship bias; block-bootstrap confidence intervals; stop-losses and daily regime exits were tested and rejected, not assumed. CI deploys to a timer on green master.",
     tech: ["Python", "pandas", "Alpaca", "uv", "GitLab CI"],
     links: {},
@@ -66,9 +66,9 @@ export const projects: Project[] = [
     slug: "homelab",
     title: "Homelab",
     description:
-      "One Proxmox host, 16 guests, 15 declared in OpenTofu, behind a Debian gateway: Docker, Traefik, Authelia SSO and a Headscale VPN.",
+      "One Proxmox host, 17 guests, 15 declared in OpenTofu, behind a Debian gateway: Docker, Traefik, Authelia SSO and a Headscale VPN.",
     role: "Architect & sole operator",
-    metric: { value: "15 of 16", label: "guests declared in OpenTofu (the dev box is not yet). Nightly CI reports plan drift against the live host" },
+    metric: { value: "15 of 17", label: "guests declared in OpenTofu (the dev and observability boxes are not yet). Nightly CI reports plan drift against the live host" },
     why: "Git is the source of truth: a scheduled pipeline pulls live configs and commits the diff, secrets are SOPS-encrypted in the repo, and a 5-minute health check pages once per new fault, after it persists, with a cooldown.",
     tech: ["Proxmox", "OpenTofu", "Docker", "Traefik", "Authelia", "SOPS"],
     links: {},
@@ -216,11 +216,11 @@ export const education: Education[] = [
   },
 ];
 
-// All 16 Proxmox guests (14 LXC + 2 VM), ordered by ID. No addresses or ports:
+// All 17 Proxmox guests (15 LXC + 2 VM), ordered by ID. No addresses or ports:
 // this ships to the browser.
 export const services: Service[] = [
   { name: "Home Assistant", description: "Home automation", ct: "VM100", tech: ["Home Assistant OS"] },
-  { name: "Hermes Agent", description: "Self-hosted AI agent: health checks, watchdogs, Gatus probes", ct: "CT101", tech: ["Python", "Gatus"] },
+  { name: "Hermes Agent", description: "Self-hosted AI agent that builds, operates and monitors this lab", ct: "CT101", tech: ["Python", "Claude"] },
   { name: "Technitium", description: "DNS and DHCP with blocklists", ct: "CT102", tech: ["Technitium", "DoH"] },
   { name: "Vaultwarden", description: "Password manager", ct: "CT104", tech: ["Rust", "Docker"] },
   { name: "Glance", description: "Start-page dashboard", ct: "CT105", tech: ["Glance"] },
@@ -230,11 +230,12 @@ export const services: Service[] = [
   { name: "Gateway", description: "Traefik, Authelia SSO, Headscale VPN, CrowdSec", ct: "VM110", tech: ["Debian", "Docker"] },
   { name: "Remux", description: "Media server", ct: "CT111", tech: ["Remux", "Docker"] },
   { name: "Syncthing", description: "Peer-to-peer file sync", ct: "CT113", tech: ["Go", "systemd"] },
-  { name: "Portfolio", description: "This site: static export behind nginx", ct: "CT114", tech: ["Next.js", "nginx"] },
+  { name: "Portfolio (retired)", description: "Former host of this site, kept for rollback; the site now runs on Cloudflare Pages", ct: "CT114", tech: ["nginx"] },
   { name: "CI Runner", description: "GitLab CI runners", ct: "CT115", tech: ["GitLab CI"] },
   { name: "Plutus", description: "Paper-trading bot", ct: "CT116", tech: ["Python", "systemd"] },
   { name: "Kavita", description: "E-book library with OIDC login", ct: "CT117", tech: ["Kavita", "OIDC"] },
   { name: "Devbox", description: "Development box, file-synced from my workstation", ct: "CT118", tech: ["Debian"] },
+  { name: "Observability", description: "Status checks, log hub and image-update notices", ct: "CT119", tech: ["Gatus", "Dozzle", "Diun"] },
 ];
 
 export const skills = {

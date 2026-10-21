@@ -153,7 +153,7 @@ export function commandOutputs(): Record<string, string> {
     stack:
       `${g("How this site is built")}\r\n` +
       `${y("Build")}    Next.js 16 static export: plain HTML/JS/CSS, no server runtime\r\n` +
-      `${y("Host")}     nginx on CT114, a container on the Proxmox host listed above\r\n` +
+      `${y("Host")}     Cloudflare Pages, deployed by GitLab CI on green master\r\n` +
       `${y("Hero")}     three.js + React Three Fiber, loaded after idle behind an SVG poster\r\n` +
       "         WebGPU + a TSL compute airflow layer is opt-in: ?renderer=webgpu\r\n" +
       `${y("Terminal")} xterm.js, fetched only when this section nears the viewport\r\n` +

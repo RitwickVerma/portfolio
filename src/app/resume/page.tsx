@@ -68,6 +68,9 @@ export default function ResumePage() {
             <span className="hidden sm:inline text-xs text-muted">
               Prints as one black-on-white page
             </span>
+            <a href="/Ritwick_Verma_Resume.pdf" download className="font-mono text-sm text-accent hover:underline underline-offset-4">
+              Download PDF
+            </a>
             <PrintButton />
           </div>
         </div>
