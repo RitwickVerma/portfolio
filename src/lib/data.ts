@@ -96,11 +96,11 @@ export const projects: Project[] = [
     title: "SudoStamp",
     description:
       "Approve a sudo prompt on my workstation with a fingerprint on my phone. LAN only, key in the phone's hardware keystore.",
-    role: "Author, private repository",
+    role: "Author · Apache-2.0 · signed release APKs",
     metric: { value: "18 of 18", label: "checks pass in a replay of pam_rssh's real sequence, negative controls included" },
     why: "The phone speaks two ssh-agent messages; the ECDSA key never leaves the TEE and BiometricPrompt gates every signature. A replay of pam_rssh's real sequence, with negative controls, is the gate before touching /etc/pam.d/sudo.",
     tech: ["Kotlin", "Android Keystore", "ssh-agent", "PAM"],
-    links: {},
+    links: { gitlab: "https://gitlab.com/ritwick7/sudostamp" },
     onResume: false,
     featured: false,
     category: "security",
