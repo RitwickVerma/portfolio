@@ -30,7 +30,7 @@ export default function HomelabSection() {
           against the live host nightly by CI. A Debian gateway fronts it with Traefik,
           Authelia and Headscale; secrets are SOPS-encrypted in the same repo; every guest
           is backed up nightly and copied off the host.{" "}
-          <Link href="/notes/homelab-git-is-the-truth/" className="text-accent hover:underline underline-offset-4 whitespace-nowrap">
+          <Link href="/notes/homelab-git-is-the-truth/" className="text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent whitespace-nowrap">
             Git is the truth: how the lab runs →
           </Link>
         </p>

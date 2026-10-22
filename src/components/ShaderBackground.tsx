@@ -66,7 +66,7 @@ function ShaderPlane() {
 
 export default function ShaderBackground() {
   return (
-    <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+    <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} aria-hidden="true">
       <Canvas
         orthographic
         // A soft full-viewport field: 1x is indistinguishable from 2x and costs

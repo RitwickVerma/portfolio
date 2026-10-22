@@ -15,9 +15,13 @@ const sections = [
   { id: "notes", label: "Notes" },
   { id: "homelab", label: "Homelab" },
   { id: "terminal", label: "Terminal" },
+  { id: "contact", label: "Contact" },
 ];
-// Terminal tracks scroll (so Homelab is not highlighted over it) but has no link.
-const links = sections.filter((s) => s.id !== "hero" && s.id !== "terminal");
+// Homelab and Terminal track scroll (so nothing else is highlighted over them)
+// but have no link: six items is what fits beside the brand at 768 px, and a
+// visitor reaches both by scrolling.
+const HIDDEN = new Set(["hero", "homelab", "terminal"]);
+const links = sections.filter((s) => !HIDDEN.has(s.id));
 
 export default function Nav() {
   // On the home page every item is a same-document hash and the active one

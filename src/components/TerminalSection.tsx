@@ -7,7 +7,7 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
 import { ANSI, PROMPT, welcome, COMMAND_NAMES, commandOutputs, statusOutput } from "@/lib/terminal";
 import { getStatusSnapshot, loadStatus } from "@/lib/statusStore";
-import { ACCENT, BG, FG, WARN } from "@/lib/theme";
+import { ACCENT, BG, FG, MUTED, WARN } from "@/lib/theme";
 
 // The xterm body only — TerminalWrapper owns the section chrome and mounts
 // this lazily, so xterm never ships in the first-load bundle.
@@ -66,6 +66,8 @@ export default function TerminalSection() {
           foreground: FG,
           cursor: ACCENT,
           selectionBackground: "rgba(240,179,90,0.22)",
+          // ANSI "dim" (\x1b[90m) is bright black; xterm's default fails contrast on this background.
+          brightBlack: MUTED,
           green: ACCENT,
           brightGreen: ACCENT,
           yellow: FG,

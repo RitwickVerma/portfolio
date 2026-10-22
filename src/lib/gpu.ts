@@ -35,7 +35,9 @@ export async function isWebGPUAvailable(): Promise<boolean> {
     if (!gpu?.requestAdapter) return false;
     const adapter = (await gpu.requestAdapter()) as AdapterLike | null;
     if (!adapter) return false;
-    const device = await adapter.requestDevice?.();
+    const device = (await adapter.requestDevice?.()) as { destroy?: () => void } | undefined;
+    // The probe's device is not the renderer's; release it or it lives for the page.
+    device?.destroy?.();
     return !!device;
   } catch {
     return false;

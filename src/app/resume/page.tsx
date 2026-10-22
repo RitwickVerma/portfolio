@@ -61,7 +61,7 @@ function Row({ left, right }: { left: React.ReactNode; right?: string }) {
 export default function ResumePage() {
   return (
     <div className="resume min-h-screen">
-      <div className="print:hidden border-b border-border">
+      <nav aria-label="Resume actions" className="print:hidden border-b border-border">
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
           <Link href="/" className="font-mono text-sm text-accent hover:underline underline-offset-4">
             ← ritwickverma.dev
@@ -76,7 +76,7 @@ export default function ResumePage() {
             <PrintButton />
           </div>
         </div>
-      </div>
+      </nav>
 
       <main
         id="main"

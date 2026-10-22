@@ -1,0 +1,42 @@
+The Wobkey Crush 80 is a good keyboard with closed firmware. It ships an Evision Semiconductor image that imitates VIA well enough to fool the configurator, and nothing else: no source, no way to change a combo, no lighting you did not buy. [crush80-zmk](https://gitlab.com/ritwick7/crush80-zmk) replaces that image with ZMK: USB and Bluetooth, all 154 LEDs, OpenRGB, VIA and ZMK Studio, installed over the keyboard's own USB cable. This note is about the part that took longest, which was finding out what the board actually is.
+
+## The wrong chip
+
+The main chip is marked with a batch code and a logo and nothing else. My first identification, from the photos and the fact that Wobkey sells other boards on it, was a WestberryTech WB32 and a QMK port along their tri-mode branch. I wrote a board definition for that. It could never have flashed.
+
+The stock firmware settled it. Its USB string descriptor says `TLSR9511`, the code disassembles as RISC-V, and the peripheral accesses match the Telink B91 register map. QMK has no port for that family and cannot get one cheaply: the core is RISC-V and the USB and radio blocks are Telink's own. ZMK runs on Zephyr, and Zephyr runs on the B91. That decided the firmware before a line was written.
+
+The LEDs went the same way. Reading the binary, I saw SPI traffic and concluded the lighting was two AW20216S matrix controllers on the high-speed SPI pins. Then I opened the case. Every LED footprint has four pads marked DI, DO, V and G: data in, data out, supply, ground. That is a WS2812-class daisy chain, not a matrix driver, and the pins I had assigned to it are matrix columns. The chain hangs off PB7, the PSPI data pin, with timing encoded into the SPI stream and clocked out by DMA. PC2 gates the LED supply through a MOSFET. The firmware had been telling the truth; I had read it wrong. The board does not lie, and I now look at the board first.
+
+## What is inside
+
+| | |
+|---|---|
+| MCU | Telink TLSR9511 (B91): RISC-V RV32IMAC with Andes V5 extensions, 48 MHz, 1 MB flash, 128 KB + 128 KB SRAM |
+| Matrix | 6 rows by 16 columns, column to row, 88 keys with F13 |
+| LEDs | 154 SK6812-style addressable LEDs on one chain: 92 under keys, 62 in the side bar and logo |
+| Battery | Li-ion, voltage on PD1 through a 1/2 divider |
+| Radios | USB-C full speed, Bluetooth LE 5, a proprietary 2.4 GHz dongle |
+
+Caps Lock and Enter carry two LEDs each and Space three, which is how 88 keys use 92 LEDs. The key-to-LED order came from the stock firmware's own switch-to-LED table. The vendor's VIA definition declares an 8 by 16 matrix; only six rows are wired.
+
+The flash layout is MCUboot at the bottom, two image slots, a settings area, and a factory block at the top that holds the RF and ADC calibration and the Bluetooth MAC. Nothing in the repository writes there. The flashing tools refuse to.
+
+## Installing over the cable
+
+The stock updater is a Windows program that speaks a 64-byte USB HID protocol with a CRC at each end and no signature check. That gap is the whole install path. Stage one sends a small bridge image through the stock updater's protocol. Stage two has the bridge write MCUboot and the ZMK application into place: it stages the image in the second slot, and a routine in RAM copies it down and resets. If stage two is interrupted, the bridge is still there and the command can be run again.
+
+Updating a keyboard that already runs ZMK takes about eleven seconds and starts from recovery mode. Fn+Esc erases the first sector of the running image, so MCUboot finds nothing to boot and waits on USB as `ZEPHYR MCUBOOT`. The earlier design set a flag in the last bytes of RAM to ask for recovery; it never worked, because the flag does not survive the chip's reset. Erasing a sector does.
+
+## What it does now
+
+- A plain 80% layout on the base layer, with everything else behind Fn: arrows on HJKL, Home and End, page keys, Bluetooth profiles, output switching, a numpad under Fn+Space, Mac mode.
+- Twelve lighting effects, reactive ripples, a typing heatmap, Caps Lock and battery indicators, and layer lighting: holding Fn lights every bound key white, the active Bluetooth profile blue, the USB key green.
+- OpenRGB over a raw HID interface, speaking the QMK OpenRGB protocol, so the keyboard joins the desktop's lighting with per-LED control.
+- VIA over USB and ZMK Studio over Bluetooth edit the same stored keymap. Combos and hold-tap timings still need the keymap file and a reflash.
+
+## Limits
+
+The 2.4 GHz dongle protocol is proprietary and not supported. The battery reading is wired like the sibling Rainy 75 but not yet calibrated on this board. One keyboard has run this firmware, and it is the one on my desk, every day.
+
+The port stands on two other people's work: Adam Yung's Crush80_ZMK, which got USB and Bluetooth up on this exact board first, and scholzri's rainy75-zmk, whose reverse engineering of the shared Telink platform goes far deeper than mine. Most of this repository's own code was written by an agent under my direction, and its README says so.
