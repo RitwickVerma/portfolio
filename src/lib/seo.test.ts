@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { personJsonLd, jsonLdString } from "./seo";
+import { EBAY_ENDED } from "./data";
 
 describe("personJsonLd", () => {
   const p = personJsonLd();
@@ -10,7 +11,9 @@ describe("personJsonLd", () => {
     expect(p.name).toBe("Ritwick Verma");
     expect(p.url).toBe("https://www.ritwickverma.dev");
     expect(p.jobTitle).toBeTruthy();
-    expect(p.worksFor.name).toBe("eBay");
+    // The employer is claimed only while the role is current (EBAY_SEPARATION in lib/data).
+    if (EBAY_ENDED) expect(p.worksFor).toBeUndefined();
+    else expect(p.worksFor?.name).toBe("eBay");
   });
 
   it("lists both alma maters and the three profiles", () => {
