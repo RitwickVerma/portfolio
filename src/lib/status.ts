@@ -1,10 +1,13 @@
 // Live homelab status: the shape of /status.json, its validation, and the
 // pure helpers the Homelab section, the hero LEDs and the terminal share.
-// The file is written on the web container by tools/status-from-api.sh every
-// five minutes and served same-origin by nginx. Nothing in it identifies a
-// machine beyond the CT/VM id already printed on the page.
+// tools/status-from-api.sh produces the file on a host that can run a cron
+// and serve a path; Cloudflare Pages cannot, so on the current deploy
+// NEXT_PUBLIC_STATUS_URL is unset, nothing is fetched and every reader shows
+// the static inventory. Nothing in the file identifies a machine beyond the
+// CT/VM id already printed on the page.
 
-export const STATUS_URL = "/status.json";
+/** Where to fetch the feed from; empty means "no feed on this build". */
+export const STATUS_URL = process.env.NEXT_PUBLIC_STATUS_URL ?? "";
 export const STATUS_SCHEMA = 1;
 /** Producer runs every 5 min; after this long without a new file the page says "stale". */
 export const STALE_AFTER_MS = 15 * 60 * 1000;

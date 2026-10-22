@@ -1,4 +1,5 @@
 import type { Project, Experience, Education, Service } from "./types";
+import { resume } from "./resume";
 
 // Single source of truth for the home page, the /resume page and the terminal.
 // Every claim here must be one the owner can back. Star counts and download
@@ -159,9 +160,8 @@ export const experiences: Experience[] = [
     role: "Software Engineer 3",
     location: "San Francisco, CA",
     period: "Jun 2023 – Present",
-    description: [
-      "Own and maintain fitment, the Cassini subsystem that decides whether a sellable item is compatible with the product a buyer's query names.",
-    ],
+    // The home-page timeline shows the resume's three strongest bullets; /resume has all of them.
+    description: [...resume.roles[0].bullets.slice(0, 3)],
     tech: ["C++", "Cassini", "Search"],
   },
   {
@@ -169,9 +169,7 @@ export const experiences: Experience[] = [
     role: "Software Engineer 2",
     location: "San Jose, CA",
     period: "Mar 2021 – Jun 2023",
-    description: [
-      "Query Search Stack (QSS) team in the Search Backend org: Cassini, eBay's distributed, highly available C++ search engine.",
-    ],
+    description: [...resume.roles[1].bullets],
     tech: ["C++", "Cassini", "Search"],
   },
   {
@@ -277,7 +275,7 @@ export const SITE_URL = "https://www.ritwickverma.dev";
 
 export const hero = {
   name: "Ritwick Verma",
-  /** One specific line, his voice, not a job-title list. */
-  line: "Software engineer at eBay.",
+  /** One specific line, his voice, not a job-title list. True in any tense. */
+  line: "Backend engineer. Five years inside eBay's C++ search engine.",
   lineTwo: "I build and self-host the systems I ship.",
 };

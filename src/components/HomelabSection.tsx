@@ -29,7 +29,7 @@ export default function HomelabSection() {
           One Proxmox host, {cts} containers and {vms} VMs, declared in OpenTofu and diffed
           against the live host nightly by CI. A Debian gateway fronts it with Traefik,
           Authelia and Headscale; secrets are SOPS-encrypted in the same repo; every guest
-          is backed up nightly and copied off the host. It serves this site.{" "}
+          is backed up nightly and copied off the host.{" "}
           <Link href="/notes/homelab-git-is-the-truth/" className="text-accent hover:underline underline-offset-4 whitespace-nowrap">
             Git is the truth: how the lab runs →
           </Link>
@@ -76,7 +76,7 @@ export default function HomelabSection() {
 
       <p className="text-muted text-xs mt-5 font-mono">
         {live
-          ? "Live: the host writes /status.json every five minutes. Guest state and uptime only."
+          ? "Live: refreshed every five minutes. Guest state and uptime only."
           : "Static inventory, not a live status page."}
       </p>
     </section>

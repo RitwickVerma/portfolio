@@ -34,10 +34,10 @@ export default function AboutSection() {
           className="space-y-4"
         >
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
-            I&apos;m a software engineer at{" "}
-            <span className="text-accent">eBay</span> in San Francisco, on the
-            Search Backend org&apos;s Query Search Stack team: Cassini, eBay&apos;s
-            distributed C++ search engine. Since 2023 I own{" "}
+            I&apos;m a backend engineer in San Francisco. I&apos;ve spent five years
+            on Cassini, <span className="text-accent">eBay</span>&apos;s
+            distributed C++ search engine, in the Search Backend org&apos;s Query
+            Search Stack team, and from 2023 owned{" "}
             <span className="text-accent">fitment</span>, the subsystem that
             decides whether a listing fits the product a query names. MCS from{" "}
             <span className="text-accent">UC Irvine</span>, BTech in CS from SRM
@@ -51,8 +51,8 @@ export default function AboutSection() {
             {shutup?.metric.value ?? "26,000+"} downloads.
           </motion.p>
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
-            I also run a small Proxmox lab, {services.length} guests declared in
-            OpenTofu and diffed nightly by CI. It serves this site.
+            I also run a small Proxmox lab: {services.length} guests, 14 of them
+            declared in OpenTofu and diffed nightly by CI.
           </motion.p>
         </motion.div>
 

@@ -69,7 +69,7 @@ export function wrapList(label: string, items: readonly string[], cols = TERMINA
 export function statusOutput(status: Status | null, phase: Freshness | "none" | "loading" | "idle", now = Date.now()): string {
   if (!status) {
     if (phase === "loading") return `${ANSI.dim}Fetching /status.json…${ANSI.reset}\r\n`;
-    return `${ANSI.dim}No live status on this build. The host writes /status.json every five minutes in production.${ANSI.reset}\r\n`;
+    return `${ANSI.dim}No live status feed on this host.${ANSI.reset}\r\n`;
   }
   const head =
     `${y("Host")}  ${phase === "live" ? g("live") : `${ANSI.red}stale${ANSI.reset}`}` +
@@ -113,9 +113,9 @@ export function commandOutputs(): Record<string, string> {
       "  clear       Clear the terminal\r\n",
 
     whoami:
-      `${g("Ritwick Verma")}, ${ebay.role} at eBay (${ebay.location?.split(",")[0]}),\r\n` +
-      "on Cassini, eBay's C++ search engine. MCS from UC Irvine. Writes Android\r\n" +
-      `apps, a trading bot and a C++ game engine; runs a ${guests}-guest homelab.\r\n`,
+      `${g("Ritwick Verma")}, backend engineer (${ebay.location?.split(",")[0]}). Five years on\r\n` +
+      "Cassini, eBay's C++ search engine. MCS from UC Irvine. Writes Android\r\n" +
+      `apps, keyboard firmware and a C++ game engine; runs a ${guests}-guest homelab.\r\n`,
 
     projects: projects
       .map((p) => `${g(p.title.padEnd(24))}${p.metric.value} ${p.metric.label}\r\n`)
@@ -158,7 +158,7 @@ export function commandOutputs(): Record<string, string> {
       "         WebGPU + a TSL compute airflow layer is opt-in: ?renderer=webgpu\r\n" +
       `${y("Terminal")} xterm.js, fetched only when this section nears the viewport\r\n` +
       `${y("Motion")}   framer-motion, one token file; reduced-motion gets a static site\r\n` +
-      `${y("Privacy")}  no third-party requests, no analytics, no cookies\r\n` +
+      `${y("Privacy")}  no cookies, no analytics of my own; Cloudflare may add its beacon\r\n` +
       `${y("CI")}       lint + typecheck + test on every push; master rebuilds on the host\r\n`,
 
     neofetch:
