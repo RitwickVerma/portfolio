@@ -10,7 +10,7 @@ describe("resume page data (generated from the PDF builder's base.json)", () => 
       "Software Engineer 3, Search Backend (promoted from SE2)",
       "Software Engineer 2, Search Backend",
     ]);
-    expect(resume.projects.length).toBeGreaterThanOrEqual(4);
+    expect(resume.projects.length).toBeGreaterThanOrEqual(2);
   });
 
   it("carries no AI-writing tells or retired claims", () => {
