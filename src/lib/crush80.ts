@@ -114,3 +114,25 @@ export function codesForChar(ch: string): string[] {
   if (ch === " ") return ["Space"];
   return [];
 }
+
+/** The readout holds one line; older characters scroll off the left. */
+export const LINE_MAX = 40;
+
+/**
+ * What a key does to the readout line. Printable keys append (the browser's
+ * `key` already carries Shift and layout), Backspace deletes, Enter clears,
+ * everything else leaves the line alone. Pure.
+ */
+export function applyKey(line: string, key: string, code: string): string {
+  if (code === "Backspace") return line.slice(0, -1);
+  if (code === "Enter" || code === "NumpadEnter") return "";
+  if (key.length === 1) return (line + key).slice(-LINE_MAX);
+  return line;
+}
+
+/** The character a tap on a cap inserts: letters lowercase, symbols as printed, Space a space. */
+export function charForTap(k: Key): string | null {
+  if (k.codes[0] === "Space") return " ";
+  if (k.label.length === 1) return k.label.toLowerCase();
+  return null;
+}

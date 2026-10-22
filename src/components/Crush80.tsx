@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { KEYS, BOARD_W, BOARD_H, COL_GPIOS, ROW_GPIOS, keyForCode, keyId, codesForChar, DEMO_TEXT, type Key } from "@/lib/crush80";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  KEYS, BOARD_W, BOARD_H, COL_GPIOS, ROW_GPIOS,
+  keyForCode, keyId, codesForChar, applyKey, charForTap, DEMO_TEXT, type Key,
+} from "@/lib/crush80";
 
 // The keyboard, drawn from the matrix the firmware scans. Focus it and type:
-// the switch your key lands on lights, and the column strobe and row sense
-// line that read it light with it. Idle, it types the site's name to itself.
+// the switch your key lands on lights, the column strobe and row sense line
+// that read it light with it, and the readout above the caption shows the
+// line you are typing. Idle, it types the site's name to itself.
 //
 // SVG in key units; one unit = one letter cap. No images.
 
@@ -18,6 +22,8 @@ const H = BOARD_H * U + PAD * 2;
 const DECAY_MS = 420;
 const DEMO_INTERVAL_MS = 170;
 const DEMO_IDLE_MS = 2400;
+/** The finished demo line sits on screen this long before it clears and starts over. */
+const DEMO_HOLD_MS = 2200;
 
 /** Keys the browser would act on while the board has focus. Tab is not here: it must keep moving focus. */
 const SWALLOW = new Set(["Space", "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Backquote", "Backspace", "Enter"]);
@@ -29,6 +35,7 @@ export default function Crush80() {
   // Render-time clock advanced by the frame loop; render never reads the real clock.
   const [now, setNow] = useState(0);
   const [last, setLast] = useState<Key | null>(null);
+  const [line, setLine] = useState("");
   const [focused, setFocused] = useState(false);
   const [visible, setVisible] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -36,10 +43,18 @@ export default function Crush80() {
   const demoIndex = useRef(0);
   const reduce = useRef(false);
 
-  const light = (k: Key, t: number) => {
+  // Both are stable (state setters and refs only), so effects can depend on them.
+  const light = useCallback((k: Key, t: number) => {
     setLast(k);
     setLit((m) => new Map(m).set(keyId(k), t));
-  };
+  }, []);
+
+  /** A real press: light the switch and edit the line. */
+  const press = useCallback((k: Key, key: string, code: string) => {
+    idleSince.current = performance.now();
+    light(k, idleSince.current);
+    setLine((l) => applyKey(l, key, code));
+  }, [light]);
 
   useEffect(() => {
     reduce.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -49,13 +64,13 @@ export default function Crush80() {
       if (!k) return;
       // Plain keys only. Shortcuts with a modifier (Ctrl+F, Cmd+L) stay the browser's.
       const plain = !e.ctrlKey && !e.metaKey && !e.altKey;
-      if (plain && (SWALLOW.has(e.code) || e.key.length === 1)) e.preventDefault();
-      idleSince.current = performance.now();
-      light(k, idleSince.current);
+      if (!plain) return;
+      if (SWALLOW.has(e.code) || e.key.length === 1) e.preventDefault();
+      press(k, e.key, e.code);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [focused]);
+  }, [focused, press]);
 
   // The loop only exists while the board is on screen.
   useEffect(() => {
@@ -82,34 +97,65 @@ export default function Crush80() {
         return changed ? next : m;
       });
       if (anyLit) setNow(t);
-      const demoDue = !reduce.current && !focused && t - idleSince.current > DEMO_IDLE_MS && t - lastDemo > DEMO_INTERVAL_MS;
-      if (demoDue) {
-        lastDemo = t;
-        const ch = DEMO_TEXT[demoIndex.current % DEMO_TEXT.length];
-        demoIndex.current++;
-        for (const code of codesForChar(ch)) {
-          const k = keyForCode(code);
-          if (k) light(k, t);
+      if (!reduce.current && !focused && t - idleSince.current > DEMO_IDLE_MS) {
+        const i = demoIndex.current;
+        const atEnd = i >= DEMO_TEXT.length;
+        // Hold the finished line, then clear and start over.
+        const gap = atEnd ? DEMO_HOLD_MS : DEMO_INTERVAL_MS;
+        if (t - lastDemo > gap) {
+          lastDemo = t;
+          if (atEnd) {
+            demoIndex.current = 0;
+            setLine("");
+          } else {
+            const ch = DEMO_TEXT[i];
+            demoIndex.current = i + 1;
+            const code = codesForChar(ch)[0];
+            const k = code ? keyForCode(code) : undefined;
+            if (k) light(k, t);
+            // A new cycle starts from an empty line, never from what a visitor left behind.
+            setLine((l) => applyKey(i === 0 ? "" : l, ch, code ?? ""));
+          }
         }
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [focused, visible]);
+  }, [focused, visible, light]);
 
   const litKeys = KEYS.filter((k) => lit.has(keyId(k))).map((k) => ({ k, a: Math.max(0, 1 - (now - (lit.get(keyId(k)) ?? now)) / DECAY_MS) }));
 
   return (
     <div className="w-full">
+      {/* Readout: the line being typed. Demo output lands here too, so the ghost typing is legible. */}
+      <div
+        className="mb-3 flex items-baseline gap-3 font-mono text-sm"
+        aria-label="Typed line"
+      >
+        <span aria-hidden="true" className="text-muted select-none">&gt;</span>
+        <span className="min-h-[1.5em] whitespace-pre text-fg" data-testid="readout">
+          {line}
+          <span aria-hidden="true" className={`inline-block w-[0.55em] h-[1.1em] align-[-0.2em] ml-px ${focused ? "bg-accent" : "bg-fg/40"} motion-safe:animate-pulse`} />
+        </span>
+      </div>
+
       <div className="relative">
         <div
           ref={boardRef}
           tabIndex={0}
           role="group"
-          aria-label="Crush 80 keyboard matrix. Focus and type to light the switches."
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          aria-label="Crush 80 keyboard matrix. Focus and type: the switch lights and the typed line shows above."
+          onFocus={() => {
+            setFocused(true);
+            demoIndex.current = 0;
+            setLine("");
+          }}
+          onBlur={() => {
+            setFocused(false);
+            idleSince.current = performance.now();
+            demoIndex.current = 0;
+          }}
           className="rounded-xl glass outline-none focus-visible:ring-2 focus-visible:ring-accent/60 overflow-x-auto"
         >
           <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto min-w-[600px] select-none" aria-hidden="true">
@@ -133,7 +179,17 @@ export default function Crush80() {
               const w = k.w * U - GAP;
               const h = (k.h ?? 1) * U - GAP;
               return (
-                <g key={keyId(k)} onPointerDown={() => { idleSince.current = performance.now(); light(k, idleSince.current); }} className="cursor-pointer">
+                <g
+                  key={keyId(k)}
+                  className="cursor-pointer"
+                  onPointerDown={(e) => {
+                    // A tap is a press: Backspace and Enter edit, caps insert their character.
+                    e.preventDefault();
+                    boardRef.current?.focus();
+                    const code = k.codes[0] ?? "";
+                    press(k, charForTap(k) ?? code, code);
+                  }}
+                >
                   <rect x={x} y={y} width={w} height={h} rx={5} fill="var(--accent)" fillOpacity={0.04 + a * 0.5} stroke="var(--accent)" strokeOpacity={0.12 + a * 0.6} strokeWidth={1} />
                   <text x={x + 7} y={y + 15} fontSize={k.label.length > 4 ? 8.5 : 10.5} fontFamily="var(--font-mono)" fill="var(--fg)" fillOpacity={0.55 + a * 0.45}>
                     {k.label}
@@ -151,7 +207,7 @@ export default function Crush80() {
         {last
           ? `${last.codes[0] ?? last.label} · RC(${last.r},${last.c}) · column ${COL_GPIOS[last.c]} strobed, row ${ROW_GPIOS[last.r]} sensed`
           : focused
-            ? "Type."
+            ? "Type. Backspace deletes, Enter clears the line."
             : "Type on it or tap a key. Each press shows its matrix position and the two GPIO lines the firmware reads it through."}
       </p>
     </div>

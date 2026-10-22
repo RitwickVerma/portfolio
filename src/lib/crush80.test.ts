@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { KEYS, ROWS, COLS, COL_GPIOS, ROW_GPIOS, BOARD_W, BOARD_H, keyForCode, keyId, codesForChar, DEMO_TEXT } from "./crush80";
+import { KEYS, ROWS, COLS, COL_GPIOS, ROW_GPIOS, BOARD_W, BOARD_H, LINE_MAX, keyForCode, keyId, codesForChar, applyKey, charForTap, DEMO_TEXT } from "./crush80";
 
 // `default_transform` from crush80.dts, verbatim. The data file must use
 // exactly these matrix positions and no others.
@@ -82,5 +82,32 @@ describe("Crush 80 matrix", () => {
       expect(codes.length, ch).toBeGreaterThan(0);
       for (const c of codes) expect(keyForCode(c), c).toBeDefined();
     }
+  });
+
+  it("the readout line appends printable keys, deletes on Backspace, clears on Enter, scrolls at the cap", () => {
+    let line = "";
+    for (const ch of "Hi, there") line = applyKey(line, ch, ch === " " ? "Space" : `Key${ch.toUpperCase()}`);
+    expect(line).toBe("Hi, there");
+    expect(applyKey(line, "Backspace", "Backspace")).toBe("Hi, ther");
+    expect(applyKey(line, "Enter", "Enter")).toBe("");
+    expect(applyKey(line, "Shift", "ShiftLeft")).toBe(line);
+    expect(applyKey(line, "ArrowUp", "ArrowUp")).toBe(line);
+    const long = applyKey("x".repeat(LINE_MAX), "y", "KeyY");
+    expect(long).toHaveLength(LINE_MAX);
+    expect(long.endsWith("y")).toBe(true);
+  });
+
+  it("a tap inserts the cap's character: lowercase letters, symbols as printed, no text for modifiers", () => {
+    expect(charForTap(keyForCode("KeyQ")!)).toBe("q");
+    expect(charForTap(keyForCode("Semicolon")!)).toBe(";");
+    expect(charForTap(keyForCode("Space")!)).toBe(" ");
+    expect(charForTap(keyForCode("ShiftLeft")!)).toBeNull();
+    expect(charForTap(keyForCode("F1")!)).toBeNull();
+  });
+
+  it("typing the demo string through applyKey reproduces it", () => {
+    let line = "";
+    for (const ch of DEMO_TEXT) line = applyKey(line, ch, codesForChar(ch)[0]);
+    expect(line).toBe(DEMO_TEXT);
   });
 });
