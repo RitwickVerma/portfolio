@@ -37,13 +37,13 @@ npm run test:watch
 | `src/app/(site)/` | Home page, shared layout (nav, footer, backdrop) and `/notes` index + `/notes/[slug]` pages with per-note OG card. |
 | `src/app/resume/` | Print-optimised `/resume` rendered from `lib/data`, with its own OG card. |
 | `src/app/{og.png,sitemap.ts,robots.ts,manifest.ts}` | Build-time OG image, sitemap, robots and web manifest. |
-| `src/components/` | UI sections plus the three.js/R3F hero (`HeroScene*`, `GPUParticleAirflow`), xterm terminal (`Terminal*`), `Crush80`, `SectionReveal`. |
+| `src/components/` | UI sections plus the three.js/R3F hero (`HeroScene`, `HeroSceneWrapper`, `HeroPoster`), xterm terminal (`Terminal*`), `Crush80`, `SectionReveal`. |
 | `src/content/notes/*.mdx` | The engineering notes; each needs an entry in `src/lib/notes.ts` (newest first). |
 | `src/lib/data.ts` | Single source for home, `/resume` and the terminal: projects, experience, education, services, skills, links. |
 | `src/lib/terminal.ts` | Pure terminal command output built from `lib/data`. |
 | `src/lib/status.ts`, `statusStore.ts` | `/status.json` schema 1, `parseStatus` validation, freshness helpers; the store fetches it once. |
 | `src/lib/motion.ts` | Easing, duration, stagger and spring tokens; framer-motion is the only animation library. |
-| `src/lib/{phaseMachine,labels,gpu,sceneState,shaders}.ts` | Hero phase machine, rack-label layout, WebGL2/WebGPU selection, scene state, shaders. |
+| `src/lib/{phaseMachine,labels,gpu,sceneState,shaders}.ts` | Hero phase machine, tooltip placement, WebGL2 and reduced-motion probes, scene state, shaders. |
 | `src/lib/{seo,og,theme,notes,notes.server}.ts*` | SEO helpers, OG rendering, theme tokens, notes registry and its server-side reader. |
 | `tools/status-from-api.sh` | Produces a `/status.json` feed from the Proxmox API for a host that can run cron. Not wired on Cloudflare Pages (`NEXT_PUBLIC_STATUS_URL` unset). Fixtures in `tools/fixtures/`. |
 
@@ -66,7 +66,7 @@ npm run test:watch
 ## Pitfalls
 1. Pushing to `master` deploys to production; CI `check` must pass first (`needs: check`).
 2. Never leak private addresses or unverifiable facts in the client bundle or copy (`6bbbe8b`); the private Plutus link was dropped (`ce863eb`).
-3. R3F v9 passes the `gl` factory its default props `{ canvas }`, not the canvas; WebGPU therefore blanked the hero. WebGL2 is the default, WebGPU is opt-in via `?renderer=webgpu` (`eb6023d`).
+3. The hero has one renderer, WebGL2. A WebGPU build once shipped as the default and blanked the hero on GPU Chrome (`eb6023d`); it was removed rather than kept as an unverified opt-in. If one returns, R3F v9 passes the `gl` factory its default props `{ canvas }`, not the bare canvas.
 4. R3F canvases default to `pointer-events: auto` and blocked footer clicks (`18fb280`).
 5. Tailwind utilities `text-fg/NN` generated nothing until `--color-fg` was defined in the theme (`37ae49e`).
 6. `SectionReveal` with a 30% intersection threshold never fired for sections taller than a phone viewport; reveal on any intersection (`6753eee`).

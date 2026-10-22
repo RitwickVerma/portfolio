@@ -4,48 +4,30 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import HeroPoster from "@/components/HeroPoster";
 import SceneBoundary from "@/components/SceneBoundary";
-import { hasWebGL2, isWebGPUAvailable, prefersReducedMotion, webgpuOptIn } from "@/lib/gpu";
+import { hasWebGL2, prefersReducedMotion } from "@/lib/gpu";
 import { useIdleReady } from "@/lib/idle";
 import { EASE, DURATION } from "@/lib/motion";
 
-type RendererKind = "pending" | "webgpu" | "webgl2" | "none";
+type RendererKind = "pending" | "webgl2" | "none";
 type SceneProps = { onReady?: () => void };
 
-const HeroSceneWebGL2 = dynamic<SceneProps>(() => import("@/components/HeroScene"), {
+const HeroScene = dynamic<SceneProps>(() => import("@/components/HeroScene"), {
   ssr: false,
 });
-
-const HeroSceneWebGPU = dynamic<SceneProps>(
-  () => import("@/components/HeroSceneWebGPU"),
-  { ssr: false },
-);
 
 function RendererPicker({ onReady }: SceneProps) {
   const [kind, setKind] = useState<RendererKind>("pending");
 
   useEffect(() => {
-    let alive = true;
-    const pick = async (): Promise<RendererKind> => {
-      // No WebGL2, or the visitor asked for less motion: the poster is the hero.
-      if (!hasWebGL2() || prefersReducedMotion()) return "none";
-      const webgpu = webgpuOptIn(window.location.search) && (await isWebGPUAvailable());
-      return webgpu ? "webgpu" : "webgl2";
-    };
-    pick()
-      // Any probe error → safe WebGL2 path.
-      .catch((): RendererKind => "webgl2")
-      .then((kind) => {
-        if (!alive) return;
-        if (kind !== "none") console.info(`[renderer] ${kind}`);
-        setKind(kind);
-      });
-    return () => {
-      alive = false;
-    };
+    // Probe from a frame callback, not the effect body. No WebGL2, or the
+    // visitor asked for less motion: the poster is the hero.
+    const id = requestAnimationFrame(() =>
+      setKind(hasWebGL2() && !prefersReducedMotion() ? "webgl2" : "none"),
+    );
+    return () => cancelAnimationFrame(id);
   }, []);
 
-  if (kind === "webgpu") return <HeroSceneWebGPU onReady={onReady} />;
-  if (kind === "webgl2") return <HeroSceneWebGL2 onReady={onReady} />;
+  if (kind === "webgl2") return <HeroScene onReady={onReady} />;
   return null;
 }
 
@@ -86,7 +68,7 @@ function HeroScrim() {
 }
 
 /**
- * The live scene (three.js, R3F, WebGPU) is a lazy chunk mounted after idle.
+ * The live scene (three.js, R3F, WebGL2) is a lazy chunk mounted after idle.
  * Until its first frame the static poster fills the same box, so first paint
  * is text + CSS and nothing moves when the canvas arrives. If the scene never
  * arrives — no WebGL, reduced motion, a renderer error — the poster simply
