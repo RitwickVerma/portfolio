@@ -52,7 +52,7 @@ export const resume = {
     },
     {
       "label": "Systems",
-      "value": "Query rewriting, tokenization, ranking factors, embedding retrieval, caching, A/B testing, production traffic replay"
+      "value": "Query rewriting, tokenization, ranking factors, embedding retrieval, caching, A/B testing, traffic replay"
     },
     {
       "label": "Tooling",
