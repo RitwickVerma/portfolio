@@ -1,0 +1,3 @@
+# Cloudflare Pages redirects (https://developers.cloudflare.com/pages/configuration/redirects/)
+# A stable, memorable address for the PDF; the file keeps its descriptive name for downloads.
+/resume.pdf /Ritwick_Verma_Resume.pdf 302
