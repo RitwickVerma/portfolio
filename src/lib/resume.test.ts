@@ -7,7 +7,7 @@ describe("resume page data (generated from the PDF builder's base.json)", () => 
   it("has the summary, both eBay roles and projects", () => {
     expect(resume.summary).toContain("Cassini");
     expect(resume.roles.map((r) => r.role)).toEqual([
-      "Software Engineer 3, Search Backend (promoted)",
+      "Software Engineer 3, Search Backend (promoted from SE2)",
       "Software Engineer 2, Search Backend",
     ]);
     expect(resume.projects.length).toBeGreaterThanOrEqual(4);
