@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { SITE_URL } from "@/lib/data";
+import { SITE_URL, hero } from "@/lib/data";
 import { SITE_TITLE, SITE_DESCRIPTION, personJsonLd, jsonLdString } from "@/lib/seo";
 import { BG } from "@/lib/theme";
 import "./globals.css";
 
-const OG_ALT =
-  "Ritwick Verma, software engineer at eBay. I build and self-host the systems I ship.";
+const OG_ALT = `${hero.name}. ${hero.line} ${hero.lineTwo}`;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

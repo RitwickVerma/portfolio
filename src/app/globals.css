@@ -211,6 +211,6 @@ canvas {
 
   @page {
     size: letter;
-    margin: 1.2cm;
+    margin: 0.9cm 1.1cm;
   }
 }

@@ -2,8 +2,9 @@
 
 Personal portfolio — [www.ritwickverma.dev](https://www.ritwickverma.dev)
 
-A static site (`output: "export"`): pure HTML/JS/CSS, served by nginx. No
-server runtime, no third-party requests at view time.
+A static site (`output: "export"`): pure HTML/JS/CSS on Cloudflare Pages. No
+server runtime; the only third-party request at view time is Cloudflare's
+own analytics beacon.
 
 ## Stack
 
@@ -54,22 +55,22 @@ npm run build    # static export → out/
 ## Live status
 
 The Homelab section, the hero's rack LEDs and the terminal's `status` command
-read `/status.json` if one exists: guest ids, running/stopped, uptime, host
-load. Nothing that identifies a machine.
+can read a `/status.json` feed: guest ids, running/stopped, uptime, host load,
+nothing that identifies a machine. `tools/status-from-api.sh` produces it
+from the Proxmox API with a read-only token; `parseStatus` rejects anything
+off-schema, and a test runs the script against recorded API fixtures.
 
-The site is served from a container on the lab it describes, so that
-container produces the file itself: `tools/status-from-api.sh` calls the
-Proxmox API with a read-only token (role PVEAuditor, no shell access) every
-five minutes and writes the JSON atomically outside the deploy root. The
-script header has the three `pveum` commands, the env file and the cron line.
-Nothing is pushed from the host and nothing is installed on it. Without the
-file (any local build) every reader shows the static inventory.
-`parseStatus` rejects anything off-schema, so a bad file never renders as a
-half-truth; a test runs the script against recorded API fixtures and feeds
-the result through that parser.
+The feed needs a host that can run a cron and serve a path. Cloudflare Pages
+cannot, so the current deploy leaves `NEXT_PUBLIC_STATUS_URL` unset, nothing
+is fetched, and every reader shows the static inventory. To bring it back,
+serve the file from somewhere with CORS for this origin and set that URL as a
+CI variable.
 
 ## Deploy
 
-CI runs `lint + typecheck + test` on every push; a push to `master` then has CI SSH
-to the build host and run its `rebuild.sh` (pull, `npm ci`, `npm run build`,
-copy `out/` into the nginx web root). Nothing is built on the runner.
+CI runs `lint + typecheck + test` on every push (the `check` job). A push to
+`master` then runs `deploy`: `npm run build` on the runner and
+`wrangler pages deploy out` to the Cloudflare Pages project. Response headers
+(immutable hashed assets, frame and content-type protections) come from
+`public/_headers`. Open a merge request for changes; merging to `master` is
+the production deploy.

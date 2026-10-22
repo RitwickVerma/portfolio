@@ -18,7 +18,7 @@ npm ci
 npm run dev        # local dev server
 npm run build      # static export -> out/
 ```
-**A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job SSHes to the build host and runs its `rebuild.sh`; nothing is built on the runner. Do not run it or reproduce it locally.
+**A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
 Vitest 4 + jsdom, pure logic only (no component or browser tests). Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified: 12 files / 79 tests pass.
@@ -45,13 +45,13 @@ npm run test:watch
 | `src/lib/motion.ts` | Easing, duration, stagger and spring tokens; framer-motion is the only animation library. |
 | `src/lib/{phaseMachine,labels,gpu,sceneState,shaders}.ts` | Hero phase machine, rack-label layout, WebGL2/WebGPU selection, scene state, shaders. |
 | `src/lib/{seo,og,theme,notes,notes.server}.ts*` | SEO helpers, OG rendering, theme tokens, notes registry and its server-side reader. |
-| `tools/status-from-api.sh` | Produces `/status.json` from the Proxmox API; runs on the web host via cron, not in the build. Fixtures in `tools/fixtures/`. |
+| `tools/status-from-api.sh` | Produces a `/status.json` feed from the Proxmox API for a host that can run cron. Not wired on Cloudflare Pages (`NEXT_PUBLIC_STATUS_URL` unset). Fixtures in `tools/fixtures/`. |
 
 ## Data flow
 - In-repo: all site content (`src/lib/data.ts`, `src/content/notes/`). Output is a static export in `out/` (`next.config.ts`: `output: "export"`, `trailingSlash: true`); no server runtime, no API routes, no third-party requests at view time.
-- Runtime, not in repo: `/status.json`, written on the web host by `tools/status-from-api.sh` every 5 min and served same-origin. If absent (any local build) readers fall back to the static inventory. `parseStatus` rejects anything off-schema; stale after 15 min (`STALE_AFTER_MS`). The script reads env `PVE_URL`, `PVE_NODE`, `PVE_TOKEN`, `PVE_CACERT`, `OUT` from a root-only env file on that host (see the script header; do not put values in the repo).
-- CI variable `SSH_PRIVATE_KEY` (GitLab CI/CD settings) is used by the deploy job. Never print it.
-- Deploy: `master` -> CI `deploy` -> SSH to the build host -> `rebuild.sh` (pull, `npm ci`, `npm run build`, copy `out/` into the nginx web root, per README). The script itself lives on the host, not in this repo (unverified contents).
+- Runtime, not in repo: an optional status feed at `NEXT_PUBLIC_STATUS_URL` (build-time). Unset on the current Cloudflare Pages deploy, so nothing is fetched and readers show the static inventory. `parseStatus` rejects anything off-schema; stale after 15 min (`STALE_AFTER_MS`). The script reads env `PVE_URL`, `PVE_NODE`, `PVE_TOKEN`, `PVE_CACERT`, `OUT` from a root-only env file on that host (see the script header; do not put values in the repo).
+- CI variables `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are used by the deploy job. Never print them.
+- Deploy: `master` -> CI `deploy` -> `npm run build` on the runner -> `wrangler pages deploy out` (Cloudflare Pages). Headers come from `public/_headers`.
 - Next.js is v16: read `node_modules/next/dist/docs/` before using Next APIs (block above).
 
 ## Code conventions
@@ -74,4 +74,3 @@ npm run test:watch
 8. `status.json` written with `mktemp` default mode made nginx return 403; the script sets 0644 before the atomic rename. A privilege-separated Proxmox token needs the role on both user and token (`5c853e8`).
 9. Turbopack cannot take JS functions as MDX plugins; name them as strings in `next.config.ts`.
 10. A banner or terminal output wider than 80 columns wraps on phones (`edfb255`, `e76b5eb`).
-11. The comment above the `deploy` job in `.gitlab-ci.yml` still mentions a "standalone" build; the site has been a static export since `14bfa7b`.

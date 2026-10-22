@@ -37,6 +37,10 @@ function subscribe(l: () => void) {
 export function loadStatus(): void {
   if (started || typeof window === "undefined") return;
   started = true;
+  if (!STATUS_URL) {
+    set({ phase: "none", status: null });
+    return;
+  }
   set({ phase: "loading", status: null });
   fetch(STATUS_URL, { cache: "no-store", headers: { Accept: "application/json" } })
     .then((r) => (r.ok ? r.json() : null))
