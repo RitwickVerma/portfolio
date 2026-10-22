@@ -1,4 +1,4 @@
-import { SITE_URL, socialLinks } from "./data";
+import { SITE_URL, socialLinks, EBAY_ENDED } from "./data";
 
 export const SITE_TITLE = "Ritwick Verma, backend engineer";
 export const SITE_DESCRIPTION =
@@ -12,7 +12,7 @@ export function personJsonLd() {
     name: "Ritwick Verma",
     url: SITE_URL,
     jobTitle: "Backend Engineer",
-    worksFor: { "@type": "Organization", name: "eBay", url: "https://www.ebay.com" },
+    ...(EBAY_ENDED ? {} : { worksFor: { "@type": "Organization", name: "eBay", url: "https://www.ebay.com" } }),
     alumniOf: [
       { "@type": "CollegeOrUniversity", name: "University of California, Irvine" },
       { "@type": "CollegeOrUniversity", name: "SRM Institute of Science and Technology" },

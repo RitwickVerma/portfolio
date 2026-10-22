@@ -154,12 +154,19 @@ export const projects: Project[] = [
 // Roles, dates and the Cassini/QSS/fitment wording follow the owner's public
 // LinkedIn profile (read 2026-10-13). Newest first; the terminal's `whoami`
 // reads experiences[0] as the current role.
+/** Last day at eBay. "Present" is true until then; a build on or after it shows the month. */
+export const EBAY_SEPARATION = "2026-12-08";
+/** The day the export was built (next.config.ts). Falls back to today for tests and dev. */
+export const BUILD_DATE = process.env.NEXT_PUBLIC_BUILD_DATE ?? new Date().toISOString().slice(0, 10);
+/** True once the role has ended as of the build. Every "Present" and the Person.worksFor entry key off this. */
+export const EBAY_ENDED = BUILD_DATE >= EBAY_SEPARATION;
+
 export const experiences: Experience[] = [
   {
     company: "eBay",
     role: "Software Engineer 3",
     location: "San Francisco, CA",
-    period: "Jun 2023 – Present",
+    period: `Jun 2023 – ${EBAY_ENDED ? "Dec 2026" : "Present"}`,
     // The home-page timeline shows the resume's three strongest bullets; /resume has all of them.
     description: [...resume.roles[0].bullets.slice(0, 3)],
     tech: ["C++", "Cassini", "Search"],
