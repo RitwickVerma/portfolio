@@ -2,7 +2,8 @@
 // generated from the published ZMK board definition
 // (gitlab.com/ritwick7/crush80-zmk, zmk/boards/crush80/crush80.dts: the
 // `default_transform` RC map, the kscan GPIO lists and the physical layout,
-// positions in key units). 88 keys, F13 included. Pure data and pure
+// positions in key units). 88 keys, F13 included; the right Win cap is a
+// layer key on the real board but lights for a visitor's own Win key here. Pure data and pure
 // functions; crush80.test.ts cross-checks every matrix position against the
 // transform copied from that file.
 //
@@ -122,8 +123,8 @@ export const KEYS: readonly Key[] = [
   K(5, 5, "", "Space", 3.75, 5.1, 6.25),
   K(5, 9, "Alt", "AltRight", 10, 5.1, 1.25),
   K(5, 10, "Fn", [], 11.25, 5.1, 1.25),
-  K(5, 11, "Ctrl", "ControlRight", 12.5, 5.1, 1.25),
-  K(5, 12, "Win", "MetaRight", 13.75, 5.1, 1.25),
+  K(5, 11, "Win", "MetaRight", 12.5, 5.1, 1.25),
+  K(5, 12, "Ctrl", "ControlRight", 13.75, 5.1, 1.25),
   K(5, 13, "←", "ArrowLeft", 15, 5.1),
   K(5, 14, "↓", "ArrowDown", 16, 5.1),
   K(5, 15, "→", "ArrowRight", 17, 5.1),

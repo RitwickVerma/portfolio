@@ -75,7 +75,8 @@ describe("Crush 80 matrix", () => {
     expect(keyForCode("PageUp")).toMatchObject({ r: 3, c: 14 });
     expect(keyForCode("PageDown")).toMatchObject({ r: 3, c: 15 });
     expect(keyForCode("F13")).toMatchObject({ r: 4, c: 12 });
-    expect(keyForCode("MetaRight")).toMatchObject({ r: 5, c: 12 });
+    expect(keyForCode("MetaRight")).toMatchObject({ r: 5, c: 11 });
+    expect(keyForCode("ControlRight")).toMatchObject({ r: 5, c: 12 });
     expect(keyForCode("NumpadEnter")).toBeUndefined();
     expect(keyForCode("Fn")).toBeUndefined();
   });
