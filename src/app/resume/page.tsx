@@ -81,7 +81,7 @@ export default function ResumePage() {
       <main
         id="main"
         tabIndex={-1}
-        className="focus:outline-none max-w-3xl mx-auto px-6 py-12 text-fg/90 print:max-w-none print:p-0 print:text-[9.5pt] print:leading-[1.25]"
+        className="focus:outline-none max-w-3xl mx-auto px-6 py-12 text-fg/90 print:max-w-none print:p-0 print:text-[9pt] print:leading-[1.2]"
       >
         <header>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-fg print:text-[18pt]">
@@ -104,7 +104,7 @@ export default function ResumePage() {
         </header>
 
         <Section title="Summary">
-          <p className="text-sm print:text-[9.5pt]">{resume.summary}</p>
+          <p className="text-sm print:text-[9pt]">{resume.summary}</p>
         </Section>
 
         <Section title="Experience">
@@ -121,7 +121,7 @@ export default function ResumePage() {
                   }
                   right={r.period}
                 />
-                <ul className="mt-1 space-y-1 list-disc pl-5 text-fg/80 text-sm print:mt-0 print:space-y-0 print:text-[9.5pt]">
+                <ul className="mt-1 space-y-1 list-disc pl-5 text-fg/80 text-sm print:mt-0 print:space-y-0 print:text-[9pt]">
                   {r.bullets.map((b) => (
                     <li key={b}>{b}</li>
                   ))}
@@ -129,14 +129,14 @@ export default function ResumePage() {
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-sm text-fg/80 print:mt-1 print:text-[9.5pt]">{resume.earlier}</p>
+          <p className="mt-3 text-sm text-fg/80 print:mt-1 print:text-[9pt]">{resume.earlier}</p>
         </Section>
 
         <Section title="Selected Projects">
-          <p className="text-sm italic text-fg/70 mb-2 print:text-[9.5pt] print:mb-0.5">{resume.projectsNote}</p>
+          <p className="text-sm italic text-fg/70 mb-2 print:text-[9pt] print:mb-0.5">{resume.projectsNote}</p>
           <ul className="space-y-2 list-disc pl-5 print:space-y-0.5">
             {resume.projects.map((p) => (
-              <li key={p.name} className="text-sm text-fg/80 print:text-[9.5pt]">
+              <li key={p.name} className="text-sm text-fg/80 print:text-[9pt]">
                 <span className="text-fg font-medium">{p.name}:</span> {p.description}
               </li>
             ))}
@@ -144,7 +144,7 @@ export default function ResumePage() {
         </Section>
 
         <Section title="Skills">
-          <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-1 text-sm print:text-[9.5pt] print:gap-y-0">
+          <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-1 text-sm print:text-[9pt] print:gap-y-0">
             {resume.skills.map((s) => (
               <div key={s.label} className="contents">
                 <dt className="text-muted">{s.label}</dt>
