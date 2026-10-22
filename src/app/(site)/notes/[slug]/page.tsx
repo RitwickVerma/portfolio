@@ -70,7 +70,7 @@ export default async function NotePage({ params }: Params) {
       />
       <header className="mb-12">
         <p className="font-mono text-xs text-muted mb-4">
-          <Link href="/notes/" className="text-accent hover:underline underline-offset-4">
+          <Link href="/notes/" className="text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent">
             Notes
           </Link>
           <span aria-hidden="true"> · </span>

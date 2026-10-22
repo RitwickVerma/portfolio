@@ -102,6 +102,12 @@
   }
 }
 
+/* No JavaScript: nothing below the hero may stay at its hidden initial state */
+html:not(.js) .reveal-root [style*="opacity"] {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
 /* Anchor targets sit below the fixed nav */
 section[id] {
   scroll-margin-top: 4rem;

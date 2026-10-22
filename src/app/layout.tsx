@@ -50,6 +50,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Reveal animations start hidden; without JavaScript they would stay hidden.
+            globals.css shows everything when this class is absent. */}
+        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+      </head>
       <body className="min-h-full bg-background text-fg flex flex-col">
         <a
           href="#main"
