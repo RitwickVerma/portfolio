@@ -10,9 +10,8 @@ own analytics beacon.
 
 - **Next.js 16** (App Router, static export) + React 19 + TypeScript
 - **three.js / React Three Fiber** — the 3D datacenter hero (WebGL2), loaded
-  lazily after idle behind a static SVG poster. A WebGPU build with a TSL
-  compute airflow layer exists behind `?renderer=webgpu`; it stays opt-in
-  until it has been verified on real GPUs.
+  lazily after idle behind a static SVG poster; the poster stays if WebGL2
+  is unavailable, reduced motion is set, or the renderer throws.
 - **framer-motion** — the only animation library; every curve and duration
   comes from `src/lib/motion.ts`
 - **xterm.js** — the terminal section; mounted when it nears the viewport

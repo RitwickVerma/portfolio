@@ -20,7 +20,7 @@ const pointer = { x: 0.5, y: 0.5 };
 const smoothedPointer = { x: 0.5, y: 0.5 };
 const LERP = 0.08;
 let pointerInit = false;
-export function initPointer() {
+function initPointer() {
   if (pointerInit) return;
   pointerInit = true;
   window.addEventListener('pointermove', (e: PointerEvent) => {
@@ -54,7 +54,7 @@ function onDragUp() {
   window.removeEventListener('pointercancel', onDragUp);
 }
 
-export function GrabHandler() {
+function GrabHandler() {
   const { gl } = useThree();
   useEffect(() => {
     const el = gl.domElement;
@@ -81,11 +81,10 @@ export function GrabHandler() {
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
-export { ACCENT };
 
 // ─── Scene lighting ───────────────────────────────────────────────────────
 
-export function SceneLighting() {
+function SceneLighting() {
   const lightRef = useRef<THREE.PointLight>(null);
   useFrame(({ clock }) => {
     if (lightRef.current) {
@@ -101,7 +100,7 @@ export function SceneLighting() {
 const FIT_WIDTH = 9.6;
 const FIT_HEIGHT = 7.2;
 
-export function CameraRig() {
+function CameraRig() {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
   const baseFov = useRef(35);
@@ -142,7 +141,7 @@ export function CameraRig() {
 
 // ─── Depth fog — near crisp, far soft. Real room atmosphere ────────────────
 
-export function SceneFog() {
+function SceneFog() {
   const scene = useThree((s) => s.scene);
   const size = useThree((s) => s.size);
   useEffect(() => {
@@ -539,7 +538,7 @@ function noise2d() {
   return _noise2d;
 }
 
-export function AirflowLayer() {
+function AirflowLayer() {
   const geometry = useMemo(() => {
     const rand = mulberry32(0x64ffda);
     const pos = new Float32Array(FLOW_COUNT * 3);
@@ -676,7 +675,7 @@ function CablePulses() {
 // DATACENTER — parent group, writes to sceneState
 // ════════════════════════════════════════════════════════════════════════════
 
-export function Datacenter() {
+function Datacenter() {
   const group = useRef<THREE.Group>(null);
   const { gl } = useThree();
   const flashState = useRef<PhaseState>({ phase: 0, timer: 0 });

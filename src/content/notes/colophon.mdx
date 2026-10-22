@@ -8,7 +8,7 @@ It is served by Cloudflare Pages. It used to be served from my own rack (CT114, 
 
 ## The hero
 
-The data centre is three.js through React Three Fiber, WebGL2. It is a lazy chunk that mounts after the browser goes idle, behind a static SVG poster that paints with the first HTML. If WebGL2 is unavailable, if you have asked your OS for reduced motion, or if the renderer throws, the poster simply stays and the page keeps working. A WebGPU build with a compute-shader airflow layer exists behind `?renderer=webgpu`; it is opt-in until I have verified it on more GPUs than mine, because the first time it shipped as the default it blanked the hero on a GPU-accelerated Chrome and I found out from the production site.
+The data centre is three.js through React Three Fiber, WebGL2. It is a lazy chunk that mounts after the browser goes idle, behind a static SVG poster that paints with the first HTML. If WebGL2 is unavailable, if you have asked your OS for reduced motion, or if the renderer throws, the poster simply stays and the page keeps working. There was a WebGPU build of the same room for a while; it blanked the hero on a GPU-accelerated Chrome the first time it shipped, lived on as an opt-in nobody saw, and is gone now. One renderer, the one I have watched work.
 
 The racks are a drawing of my homelab, not a live view of it. The labels are real guest names; the boot logs on the screens are abbreviated from the real services. The section below the fold says "static inventory, not a live status page" and means it. The Homelab section below shows live guest state when the host publishes a status file; the racks themselves stay a drawing.
 

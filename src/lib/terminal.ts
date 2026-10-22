@@ -155,7 +155,6 @@ export function commandOutputs(): Record<string, string> {
       `${y("Build")}    Next.js 16 static export: plain HTML/JS/CSS, no server runtime\r\n` +
       `${y("Host")}     Cloudflare Pages, deployed by GitLab CI on green master\r\n` +
       `${y("Hero")}     three.js + React Three Fiber, loaded after idle behind an SVG poster\r\n` +
-      "         WebGPU + a TSL compute airflow layer is opt-in: ?renderer=webgpu\r\n" +
       `${y("Terminal")} xterm.js, fetched only when this section nears the viewport\r\n` +
       `${y("Motion")}   framer-motion, one token file; reduced-motion gets a static site\r\n` +
       `${y("Privacy")}  no cookies, no analytics of my own; Cloudflare may add its beacon\r\n` +
