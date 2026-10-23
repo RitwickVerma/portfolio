@@ -98,7 +98,7 @@ export default function HeroSceneWrapper() {
           scene is live. Hidden where there is no pointer to drag with. */}
       <p
         aria-hidden="true"
-        className="absolute bottom-8 left-6 z-20 hidden md:block font-mono text-xs text-muted/80 select-none pointer-events-none print:hidden"
+        className="absolute bottom-8 left-6 z-20 hidden md:block font-mono text-xs text-muted select-none pointer-events-none print:hidden"
         style={{ opacity: ready ? 1 : 0, ...fade }}
       >
         drag to rotate · double-click to boot

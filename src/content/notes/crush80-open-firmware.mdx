@@ -10,7 +10,7 @@ The LEDs went the same way. Reading the binary, I saw SPI traffic and concluded 
 
 ## What is inside
 
-| | |
+| Part | Detail |
 |---|---|
 | MCU | Telink TLSR9511 (B91): RISC-V RV32IMAC with Andes V5 extensions, 48 MHz, 1 MB flash, 128 KB + 128 KB SRAM |
 | Matrix | 6 rows by 16 columns, column to row, 88 keys with F13 |
@@ -31,7 +31,7 @@ Updating a keyboard that already runs ZMK takes about eleven seconds and starts 
 ## What it does now
 
 - A plain 80% layout on the base layer, with everything else behind Fn: arrows on HJKL, Home and End, page keys, Bluetooth profiles, output switching, a numpad under Fn+Space, Mac mode.
-- Twelve lighting effects, reactive ripples, a typing heatmap, Caps Lock and battery indicators, and layer lighting: holding Fn lights every bound key white, the active Bluetooth profile blue, the USB key green.
+- Twelve lighting effects, reactive ripples, a typing heatmap, Caps Lock and battery indicators and layer lighting: holding Fn lights every bound key white, the active Bluetooth profile blue, the USB key green.
 - OpenRGB over a raw HID interface, speaking the QMK OpenRGB protocol, so the keyboard joins the desktop's lighting with per-LED control.
 - VIA over USB and ZMK Studio over Bluetooth edit the same stored keymap. Combos and hold-tap timings still need the keymap file and a reflash.
 

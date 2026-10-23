@@ -2,11 +2,11 @@ Sixteen guests on one Proxmox host is a small lab. It runs on one rule: **git is
 
 ## The shape
 
-One Proxmox VE host. Fourteen LXC containers and two VMs: a Home Assistant VM with a Zigbee radio passed through, and a Debian gateway VM running Traefik, Authelia for SSO, Headscale for the VPN and CrowdSec. Behind the gateway: DNS and DHCP, a password manager, photos, documents, a media server, file sync, an e-book library, a GitLab CI runner, the trading bot, a backup server, a dev box and an observability box. Only two hostnames face the internet; everything else is reachable over the VPN, which answers the same names on private addresses so links work identically inside and out.
+One Proxmox VE host. Fourteen LXC containers and two VMs: a Home Assistant VM with a Zigbee radio passed through and a Debian gateway VM running Traefik, Authelia for SSO, Headscale for the VPN and CrowdSec. Behind the gateway: DNS and DHCP, a password manager, photos, documents, a media server, file sync, an e-book library, a GitLab CI runner, the trading bot, a backup server, a dev box and an observability box. Only two hostnames face the internet; everything else is reachable over the VPN, which answers the same names on private addresses so links work identically inside and out.
 
 ## Declared, then imported
 
-The hypervisor layer is OpenTofu, through the `bpg/proxmox` provider. Fourteen of the sixteen guests are resources; the dev box and the observability box are not yet. I did not build the lab from the declarations; the lab existed first, so the first job was importing the live resources into state and converging on zero drift (not yet reached; see below). The token the provider uses is a scoped Proxmox role, not root. One VM keeps its cloud-init and agent settings under `ignore_changes`, because they are baked into the running image and re-applying them would force a replacement.
+The hypervisor layer is OpenTofu, through the `bpg/proxmox` provider. Fourteen of the sixteen guests are resources; the dev box and the observability box are not yet. I did not build the lab from the declarations; the lab existed first, so the first job was importing the live resources into state and converging on zero drift. It has not got there yet; see below. The token the provider uses is a scoped Proxmox role, not root. One VM keeps its cloud-init and agent settings under `ignore_changes`, because they are baked into the running image and re-applying them would force a replacement.
 
 A generator script rebuilt the first `containers.tf` from the host's own `/etc/pve/lxc/*.conf`. That was bootstrap only. The HCL is hand-maintained now, and the script's comment says so, because a generator you keep running is a second source of truth.
 
@@ -24,9 +24,9 @@ The plan job still carries `allow_failure`, with a comment admitting why: the st
 
 ## What the sync caught
 
-The sync job once committed a live credential. A compose stack's `.env` had real values in it, the job pulled it faithfully, and the repo had a database password in history. The fix was three commits: untrack the live files and keep placeholders, encrypt the secrets that do belong in the repo with SOPS and age so they can be tracked safely, and add a redaction pass that runs on every synced file before the commit. The sync is now allowed to be faithful because the redactor is in front of it.
+The sync job once committed a live credential. A compose stack's `.env` had real values in it, the job pulled it faithfully, and the repo had a database password in history. The fix was three commits. The first untracked the live files and kept placeholders. The second encrypted the secrets that do belong in the repo with SOPS and age, so they can be tracked. The third added a redaction pass that runs on every synced file before the commit. The sync is now allowed to be faithful because the redactor is in front of it.
 
-The second was quieter. A watchtower container on the gateway was configured to update only labelled services, and the sync showed zero services carried the label. It had been doing nothing. Removed.
+The second was quieter. A Watchtower container on the gateway was configured to update only labelled services, and the sync showed zero services carried the label. It had been doing nothing. Removed.
 
 ## Paging without noise
 
@@ -48,4 +48,4 @@ One container runs Hermes, an open-source AI agent from Nous Research, on my own
 
 ## Limits
 
-It is not high availability. One host, one power supply, one disk for the photo library. A dead host is a restore from PBS onto new hardware, and that path has a written playbook. The declarations cover the hypervisor and the compose stacks; what is inside each container's filesystem is the backup's problem, not git's. One box is one failure domain; recovery is a PBS restore.
+It is not high availability. One host, one power supply, one disk for the photo library. A dead host is a restore from PBS onto new hardware, and that path has a written playbook. The declarations cover the hypervisor and the compose stacks; what is inside each container's filesystem is the backup's problem, not git's.

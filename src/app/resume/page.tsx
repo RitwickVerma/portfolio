@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import PrintButton from "@/components/PrintButton";
-import { socialLinks, hero, experiences } from "@/lib/data";
+import { socialLinks, hero, experiences, EBAY_ENDED } from "@/lib/data";
 import { resume } from "@/lib/resume";
 
 const DESCRIPTION =
-  "Resume of Ritwick Verma, backend engineer on eBay's Cassini search engine. Experience, projects, skills and education.";
+  "Resume of Ritwick Verma, backend engineer with 5.5 years on eBay's Cassini search engine. Experience, projects, skills and education.";
 
-const OG_ALT = "Resume of Ritwick Verma, backend engineer: C++ search systems.";
+// Says what the card says (resume/og.png): name, "Resume", the one-line role.
+const OG_ALT = `${hero.name}. Resume. ${EBAY_ENDED ? "Backend engineer, C++ search systems." : "Backend engineer at eBay."}`;
 
 export const metadata: Metadata = {
   title: "Resume",

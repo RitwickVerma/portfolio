@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/notes/`, changeFrequency: "weekly", priority: 0.8 },
     ...notes.map((n) => ({
       url: `${SITE_URL}${noteUrl(n)}`,
-      lastModified: new Date(n.date),
+      lastModified: new Date(n.updated ?? n.date),
       changeFrequency: "yearly" as const,
       priority: 0.7,
     })),

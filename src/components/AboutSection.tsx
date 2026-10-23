@@ -34,8 +34,8 @@ export default function AboutSection() {
           className="space-y-4"
         >
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
-            I&apos;m a backend engineer in San Francisco. I&apos;ve spent five and
-            a half years on Cassini, <span className="text-accent">eBay</span>&apos;s
+            I&apos;m a backend engineer in San Francisco. I&apos;ve spent 5.5 years
+            on Cassini, <span className="text-accent">eBay</span>&apos;s
             distributed C++ search engine, and since 2022 I&apos;ve owned{" "}
             <span className="text-accent">fitment</span>, the subsystem that
             decides which parts fit a buyer&apos;s vehicle across 16 eBay sites. MCS from{" "}
@@ -47,7 +47,7 @@ export default function AboutSection() {
             a TV&apos;s video plane, a keyboard&apos;s stock firmware, a
             phone&apos;s hinge sensor. <span className="text-accent">ShutUp</span>,
             an Android app I wrote in college, passed{" "}
-            {shutup?.metric.value ?? "26,000+"} downloads.
+            {(shutup?.metric.value ?? "26,000+").replace(/\+$/, "")} downloads.
           </motion.p>
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             I also run a small Proxmox lab: {services.length} guests, 14 of them

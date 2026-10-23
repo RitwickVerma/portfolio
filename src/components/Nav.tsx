@@ -121,7 +121,7 @@ export default function Nav() {
           ritwickverma<span className="text-muted">.dev</span>
         </Link>
 
-        {/* Inline links from 640px up */}
+        {/* Inline links from 768px (md) up */}
         <ul className="hidden md:flex items-center gap-1">
           {links.map((s) => (
             <li key={s.id}>
@@ -153,7 +153,7 @@ export default function Nav() {
           </li>
         </ul>
 
-        {/* Menu button below 640px */}
+        {/* Menu button below 768px */}
         <button
           ref={toggleRef}
           type="button"

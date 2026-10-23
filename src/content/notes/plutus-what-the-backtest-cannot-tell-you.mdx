@@ -1,6 +1,6 @@
 Plutus is my research harness for systematic US-equity strategies. The verdict first: across 30+ experiments on point-in-time data, with bootstrap confidence intervals, I found no edge that held up. The one result that reproduced in every configuration was smaller drawdowns, not higher returns.
 
-The strategy below is the last one standing. It runs on a timer in my homelab against a paper account, not real money, and its backtest over 2007 to 2026 shows a Sharpe of 1.04 against 0.63 for SPY. Read that as what a biased backtest shows: the universe is only partly corrected for survivorship, an equal-weight hold of the same universe beats SPY by 6.3% a year before any strategy runs, and the defaults were picked knowing this history. The paper account is the real test. This note covers the bot it replaced, the caveats, and the ideas I dropped.
+The strategy below is the last one standing. It runs on a timer in my homelab against a paper account, not real money, and its backtest over 2007 to 2026 shows a Sharpe of 1.04 against 0.63 for SPY. That number comes from a biased backtest. The universe is only partly corrected for survivorship, and an equal-weight hold of the same universe beats SPY by 6.3% a year before any strategy runs. The paper account is the real test. This note covers the bot it replaced, the caveats and the ideas I dropped.
 
 ## The version that lost
 
@@ -12,13 +12,13 @@ So the rewrite keeps the one thing that worked and adds two overlays from the li
 
 ## The strategy
 
-Universe: S&P 500 and S&P 400 constituents, plus names that were removed but are still listed, which softens survivorship bias without removing it. A stock must be above five dollars and trade twenty million dollars a day by 20-day median. Rank by 6- and 12-month momentum, skipping the most recent ten trading days; the skip was swept over 0, 5, 10, 15 and 21 days and the curve is a smooth hump, not a spike, which is what you want from a parameter. Hold only names above their own 200-day average. If SPY is below its own 200-day average, the book goes risk-off into bonds, gold or bills by their own six-month momentum. Size the whole thing to a 30% ex-ante volatility from a 60-day window. Rebalance monthly. Orders fill at the next open with ten basis points of slippage assumed each way.
+Universe: S&P 500 and S&P 400 constituents, plus names that were removed but are still listed, which softens survivorship bias without removing it. A stock must be above $5 and trade $20 million a day by 20-day median. Rank by 6- and 12-month momentum, skipping the most recent 10 trading days; the skip was swept over 0, 5, 10, 15 and 21 days and the curve is a smooth hump, not a spike, which is what you want from a parameter. Hold only names above their own 200-day average. If SPY is below its own 200-day average, the book goes risk-off into bonds, gold or bills by their own 6-month momentum. Size the whole thing to a 30% ex-ante volatility from a 60-day window. Rebalance monthly. Orders fill at the next open with 10 basis points of slippage assumed each way.
 
 Every knob is in one config file, every key maps onto a dataclass, and an unknown key fails loudly.
 
 ## What the number says
 
-Over 2007-01 to 2026-10, 1,107 tickers, $100k start, 10 bps per side:
+From January 2007 to October 2026, 1,107 tickers, $100k start, 10 bps per side:
 
 | | Plutus | SPY | Equal-weight universe |
 |---|---|---|---|

@@ -26,10 +26,10 @@ export default function HomelabSection() {
 
       <div className="grid lg:grid-cols-[1fr_auto] gap-x-12 gap-y-4 items-start mb-8">
         <p className="text-fg/80 text-sm leading-relaxed max-w-2xl">
-          One Proxmox host, {cts} containers and {vms} VMs, declared in OpenTofu and diffed
-          against the live host nightly by CI. A Debian gateway fronts it with Traefik,
-          Authelia and Headscale; secrets are SOPS-encrypted in the same repo; every guest
-          is backed up nightly and copied off the host.{" "}
+          One Proxmox host, {cts} containers and {vms} VMs. OpenTofu declares 14 of the{" "}
+          {cts + vms}, and CI diffs them against the live host nightly. A Debian
+          gateway fronts it with Traefik, Authelia and Headscale. Secrets are SOPS-encrypted
+          in the same repo, and every guest is backed up nightly and copied off the host.{" "}
           <Link href="/notes/homelab-git-is-the-truth/" className="text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent whitespace-nowrap">
             Git is the truth: how the lab runs →
           </Link>

@@ -15,6 +15,8 @@ describe("notes registry", () => {
 
   it("is ordered newest first with ISO dates", () => {
     for (const n of notes) expect(n.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    for (const n of notes) if (n.updated) expect(n.updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    for (const n of notes) if (n.updated) expect(n.updated > n.date, n.slug).toBe(true);
     const dates = notes.map((n) => n.date);
     expect([...dates].sort().reverse()).toEqual(dates);
   });
@@ -24,7 +26,8 @@ describe("notes registry", () => {
       expect(n.title.length, n.slug).toBeGreaterThan(10);
       expect(n.title.length, n.slug).toBeLessThanOrEqual(70);
       expect(n.summary.length, n.slug).toBeGreaterThan(40);
-      expect(n.summary.length, n.slug).toBeLessThanOrEqual(240);
+      // The summary is the meta description too: keep it under 160.
+      expect(n.summary.length, n.slug).toBeLessThanOrEqual(160);
       expect(n.tags.length, n.slug).toBeGreaterThan(0);
     }
   });

@@ -9,6 +9,8 @@ export interface Note {
   summary: string;
   /** ISO date, YYYY-MM-DD. */
   date: string;
+  /** ISO date of the last change a reader would notice; shown as "Updated …". */
+  updated?: string;
   tags: string[];
 }
 
@@ -19,38 +21,43 @@ export const notes: Note[] = [
     summary:
       "The Crush 80's chip carries only a batch code. I got it wrong twice, then read the board. What is inside, and how ZMK installs over the stock updater.",
     date: "2026-10-21",
+    updated: "2026-10-23",
     tags: ["ZMK", "RISC-V", "reverse engineering", "firmware"],
   },
   {
     slug: "homelab-git-is-the-truth",
     title: "Git is the truth: a homelab that diffs itself nightly",
     summary:
-      "Sixteen guests, fourteen declared in OpenTofu, a nightly pipeline that commits whatever changed on the box and reports what the plan disagrees with, paging that costs one message per fault. What it caught and where it falls short.",
+      "Sixteen guests with fourteen declared in OpenTofu. A nightly pipeline commits whatever changed on the box. What it caught and where it falls short.",
     date: "2026-10-13",
+    updated: "2026-10-23",
     tags: ["Proxmox", "OpenTofu", "GitOps", "on-call"],
   },
   {
     slug: "plutus-what-the-backtest-cannot-tell-you",
     title: "Plutus: what the backtest cannot tell you",
     summary:
-      "Verdict first: 30+ experiments found no edge that held up. Then the five-signal bot that lost to SPY, and a backtest Sharpe of 1.04 that survivorship and selection explain a good part of.",
+      "30+ experiments found no edge that held up. This covers the five-signal bot that lost to SPY and the biases behind a backtest Sharpe of 1.04.",
     date: "2026-10-13",
+    updated: "2026-10-23",
     tags: ["Python", "quant", "backtesting"],
   },
   {
     slug: "tizen-video-plane-ambilight",
     title: "Reading a Samsung TV's video plane from inside the TV",
     summary:
-      "No capture card, no HDMI splitter: a headless Tizen app pulls decoded frames out of memory and drives an LED strip. The capture ABI, the HDR colour math, and the ways it fails.",
+      "No capture card and no HDMI splitter. A headless Tizen app reads decoded frames from the TV's memory and drives an LED strip. How it works and how it fails.",
     date: "2026-10-13",
+    updated: "2026-10-23",
     tags: ["Tizen", ".NET", "HDR", "reverse engineering"],
   },
   {
     slug: "colophon",
     title: "How this site is built, and how it was made",
     summary:
-      "What on this site is mine, what is machine-made under my direction, and which numbers are dated snapshots.",
+      "What on this site is mine, what is machine-made under my direction and which numbers are dated snapshots.",
     date: "2026-10-13",
+    updated: "2026-10-23",
     tags: ["this site", "Next.js", "three.js"],
   },
 ];

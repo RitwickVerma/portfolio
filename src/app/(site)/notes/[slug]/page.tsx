@@ -22,7 +22,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const url = noteUrl(note);
   const og = `${url}og.png`;
   return {
-    title: note.title,
+    // Long titles drop the " · Ritwick Verma" suffix so the <title> stays under 60 characters.
+    title: note.title.length > 43 ? { absolute: note.title } : note.title,
     description: note.summary,
     alternates: { canonical: url },
     openGraph: {
@@ -33,6 +34,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       siteName: "ritwickverma.dev",
       locale: "en_US",
       publishedTime: note.date,
+      ...(note.updated ? { modifiedTime: note.updated } : {}),
       authors: [hero.name],
       images: [{ url: og, width: 1200, height: 630, alt: note.title }],
     },
@@ -58,6 +60,7 @@ export default async function NotePage({ params }: Params) {
     headline: note.title,
     description: note.summary,
     datePublished: note.date,
+    ...(note.updated ? { dateModified: note.updated } : {}),
     author: { "@type": "Person", name: hero.name, url: SITE_URL },
     url: `${SITE_URL}${noteUrl(note)}`,
   };
@@ -75,6 +78,12 @@ export default async function NotePage({ params }: Params) {
           </Link>
           <span aria-hidden="true"> · </span>
           <time dateTime={note.date}>{formatNoteDate(note.date)}</time>
+          {note.updated && (
+            <>
+              <span aria-hidden="true"> · </span>
+              Updated <time dateTime={note.updated}>{formatNoteDate(note.updated)}</time>
+            </>
+          )}
           <span aria-hidden="true"> · </span>
           {noteReadingMinutes(note.slug)} min read
         </p>

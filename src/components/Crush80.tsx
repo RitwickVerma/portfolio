@@ -131,6 +131,7 @@ export default function Crush80() {
       {/* Readout: the line being typed. Demo output lands here too, so the ghost typing is legible. */}
       <div
         className="mb-3 flex items-baseline gap-3 font-mono text-sm"
+        role="group"
         aria-label="Typed line"
       >
         <span aria-hidden="true" className="text-muted select-none">&gt;</span>

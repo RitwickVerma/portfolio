@@ -113,10 +113,10 @@ export function commandOutputs(): Record<string, string> {
       "  clear       Clear the terminal\r\n",
 
     whoami:
-      `${g("Ritwick Verma")}, backend engineer (${ebay.location?.split(",")[0]}). Five and a half\r\n` +
-      "years on Cassini, eBay's C++ search engine; owned eBay Motors fitment.\r\n" +
-      "MCS from UC Irvine. Side projects are built with AI coding agents under\r\n" +
-      `my direction. Runs a ${guests}-guest homelab as a hobby.\r\n`,
+      `${g("Ritwick Verma")}, backend engineer in ${ebay.location?.split(",")[0]}. 5.5 years on\r\n` +
+      "Cassini, eBay's C++ search engine. I took over eBay Motors fitment in\r\n" +
+      "2022. MCS from UC Irvine. My recent side projects are built by directing\r\n" +
+      `AI coding agents. I also run a ${guests}-guest homelab.\r\n`,
 
     projects: projects
       .map((p) => `${g(p.title.padEnd(24))}${p.metric.value} ${p.metric.label}\r\n`)
@@ -138,7 +138,7 @@ export function commandOutputs(): Record<string, string> {
       .map((e) => `${g(e.period.padEnd(periodCol))}${e.role} @ ${e.company}\r\n`)
       .join(""),
 
-    resume: `${g("Resume:")} ${SITE_URL}/resume  ${ANSI.dim}(Save as PDF from the page)${ANSI.reset}\r\n`,
+    resume: `${g("Resume:")} ${SITE_URL}/resume/  ${ANSI.dim}(Save as PDF from the page)${ANSI.reset}\r\n`,
 
     notes:
       notes
@@ -158,7 +158,7 @@ export function commandOutputs(): Record<string, string> {
       `${y("Hero")}     three.js + React Three Fiber, loaded after idle behind an SVG poster\r\n` +
       `${y("Terminal")} xterm.js, fetched only when this section nears the viewport\r\n` +
       `${y("Motion")}   framer-motion, one token file; reduced-motion gets a static site\r\n` +
-      `${y("Privacy")}  no cookies, no analytics of my own; Cloudflare may add its beacon\r\n` +
+      `${y("Privacy")}  no cookies, no analytics, no third-party requests\r\n` +
       `${y("CI")}       lint + typecheck + test on every push; master deploys to Pages\r\n`,
 
     neofetch:

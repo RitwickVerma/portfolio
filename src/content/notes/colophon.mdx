@@ -2,13 +2,13 @@ This page says what on the site is mine, what is machine-made under my direction
 
 ## What it is
 
-A static site. `next build` with `output: "export"` produces plain HTML, JavaScript and CSS, served as static files. There is no server runtime, no database, no cookies and no analytics of my own. The one third-party request is the Web Analytics beacon Cloudflare Pages injects; everything else loads from this origin. Fonts are self-hosted at build. The source is public on [GitLab](https://gitlab.com/ritwick7/portfolio).
+A static site. `next build` with `output: "export"` produces plain HTML, JavaScript and CSS, served as static files. There is no server runtime, no database, no cookies and no analytics. Every request goes to this origin. Fonts are self-hosted at build. The source is public on [GitLab](https://gitlab.com/ritwick7/portfolio).
 
 It is served by Cloudflare Pages. It used to be served from my own rack (CT114, behind the same Traefik gateway as everything else I run), and moved in October 2026 so a static site would stop holding 2 GB of homelab RAM just to build itself. That container is gone now. A push to `master` runs lint, typecheck and tests in GitLab CI on my own runner; if those pass, the same job builds the export and deploys it.
 
 ## The hero
 
-The data centre is three.js through React Three Fiber, WebGL2. It is a lazy chunk that mounts after the browser goes idle, behind a static SVG poster that paints with the first HTML. If WebGL2 is unavailable, if you have asked your OS for reduced motion, or if the renderer throws, the poster simply stays and the page keeps working. There was a WebGPU build of the same room for a while; it blanked the hero on a GPU-accelerated Chrome the first time it shipped, lived on as an opt-in nobody saw, and is gone now. One renderer, the one I have watched work.
+The data centre is three.js through React Three Fiber, WebGL2. It is a lazy chunk that mounts after the browser goes idle, behind a static SVG poster that paints with the first HTML. If WebGL2 is unavailable, if you have asked your OS for reduced motion, or if the renderer throws, the poster stays and the page keeps working. There was a WebGPU build of the same room for a while; it blanked the hero on a GPU-accelerated Chrome the first time it shipped, lived on as an opt-in nobody saw, and is gone now. One renderer, the one I have watched work.
 
 The racks are a drawing of my homelab, not a live view of it. The labels are real guest names; the boot logs on the screens are abbreviated from the real services. The Homelab section below the fold shows live guest state when the host publishes a status file and says "static inventory" when it does not; the racks themselves stay a drawing.
 
@@ -18,13 +18,13 @@ xterm.js, fetched only when the section nears the viewport, so it never ships in
 
 ## What is measured, what is a snapshot
 
-Numbers on this site fall into two kinds. Counts such as "16 guests" are read from the data file at build and change when I change the file. Figures such as the download count and rating for ShutUp are dated snapshots, written down with the date I checked them, and the Play Store listing they came from is no longer up; the number stands on my own records.
+Numbers on this site fall into two kinds. Counts such as "16 guests" are read from the data file at build and change when I change the file. Figures such as ShutUp's download count and rating are dated snapshots, written down with the date I checked them. The Play Store listing they came from is no longer up, so the number stands on my own records.
 
 The rule for the data file, written at its top, is that every claim in it must be one I can back in a conversation. Private addresses, ports and anything that would help someone find a machine are kept out, and a test fails the build if one slips in.
 
 ## How it was made
 
-I build with an AI pair programmer, and most of the current version's code was written by Claude from my direction: I set the goals, reviewed the diffs, ran the site and pushed back. Commits it wrote carry a co-author line, visible in the public history. The decisions, the content and the verification are mine. Every change was linted, typechecked and unit-tested, then rendered in a headless browser at desktop and phone widths before it was committed, and the resume page is printed to PDF on Letter and A4 to check it holds one page. I made the same disclosure in the upstream issue I opened on [kwin-canvas](https://github.com/aaronsb/kwin-canvas/issues/13). The recent side projects on the home page are built the same way, by directing AI coding agents; ShutUp's first version, the RPG engine and Gesture-Manager-X predate coding agents and are my own typing.
+I build with an AI pair programmer, and most of the current version's code was written by Claude under my direction: I set the goals, reviewed the diffs, ran the site and pushed back. Commits it wrote carry a co-author line, visible in the public history. The decisions, the content and the verification are mine. Every change was linted, typechecked and unit-tested, then rendered in a headless browser at desktop and phone widths before it was committed, and the resume page was printed to PDF on Letter and A4 to check it holds one page. I made the same disclosure in the upstream issue I opened on [kwin-canvas](https://github.com/aaronsb/kwin-canvas/issues/13). The recent side projects on the home page are built the same way, by directing AI coding agents; ShutUp's first version, the RPG engine and Gesture-Manager-X predate coding agents and are my own typing.
 
 ## Motion and accessibility
 

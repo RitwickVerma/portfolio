@@ -6,7 +6,7 @@ import { noteReadingMinutes } from "@/lib/notes.server";
 const DESCRIPTION =
   "Engineering notes by Ritwick Verma: how specific things were built, with the numbers left in.";
 
-const OG_ALT = "Engineering notes by Ritwick Verma.";
+const OG_ALT = "Ritwick Verma. Notes. How specific things were built, with the numbers left in.";
 
 export const metadata: Metadata = {
   title: "Notes",
@@ -43,6 +43,12 @@ export default function NotesIndex() {
             <article>
               <p className="font-mono text-xs text-muted mb-2">
                 <time dateTime={n.date}>{formatNoteDate(n.date)}</time>
+                {n.updated && (
+                  <>
+                    <span aria-hidden="true"> · </span>
+                    Updated <time dateTime={n.updated}>{formatNoteDate(n.updated)}</time>
+                  </>
+                )}
                 <span aria-hidden="true"> · </span>
                 {noteReadingMinutes(n.slug)} min read
               </p>
