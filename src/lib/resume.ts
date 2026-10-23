@@ -3,35 +3,35 @@
 
 export const resume = {
   "title": "Backend Engineer · C++ · Search Systems",
-  "summary": "Backend engineer with 5.5 years on Cassini, the C++ search engine behind every ebay.com search (1B+ listings). Owned eBay Motors fitment, and built request caching and query transforms on the engine's serving path.",
+  "summary": "Backend engineer with 5.5 years on Cassini, the distributed C++ search engine behind every ebay.com search (1B+ listings). Owned eBay Motors fitment; built caching and query transforms on the serving path. 215 merged PRs.",
   "roles": [
     {
-      "role": "Software Engineer 3, Search Backend (promoted from SE2)",
+      "role": "Software Engineer 3, Search Backend",
       "location": "San Francisco, CA",
-      "period": "Jun 2023 to Present",
+      "period": "Jun 2023 - Present",
       "bullets": [
-        "Owned eBay Motors fitment, the C++ subsystem that decides which parts fit a buyer's vehicle across 16 sites and 19 catalogs. Moved its config out of the engine repo, so config changes stopped waiting on engine releases.",
-        "Retired a legacy query language from fitment's production index and the engine's test fixtures without a flag day: the loader read both formats until the data migrated, then the fallback came out. Audited 404 deployed expressions in 4,815 configs first, kept 2,549 unit tests and 511 regression cases green, and wrote up the blocked tracks for their owners.",
-        "Caught a regression before merge by replaying 50,000 production-sampled queries: shared config was set by whichever transform initialized first. Made it order-independent, which also removed a latent startup crash. New errors fell from 167 to 6.",
-        "Removed repeat backend calls in recall recovery with a request-scoped cache that needs no invalidation and can't leak across users; transient failures are never cached. For embeddings, client-supplied vectors skip the service call when every item has one and large requests batch under the service's limit. Revived a silently dead embedding cache.",
-        "Built three C++ query transforms for search-result product carousels: one batched round trip prices products under the user's filters, and a failed table is dropped rather than shown half-built.",
-        "Led the engine-side design for a new fitment category: real size data showed the proposed bitmask match accepted wrong multi-blade packs and that the existing tire pipeline could serve the category with no new engine code, so the team switched. Disproved a ticket's root cause with read-only production queries and routed it to indexing.",
-        "Wrote tools other engineers build on: markdown test frameworks the team made its standard, a query-language server (719 operators), and an allocator-aware (C++ PMR) tokenizer served as an internal HTTP API. Fixed two crashes in shared engine code (a null dereference, an iterator invalidated mid-loop)."
+        "Owned eBay Motors fitment, the C++ subsystem that decides which parts fit a buyer's vehicle on 16 sites and 19 catalogs. Top author of its current code (31%) and point of contact for the partner teams that rely on it.",
+        "Led fitment's move to the engine's new transform architecture, then moved its production index and test fixtures off a legacy query language with no cutover outage, keeping all 2,549 unit and 511 regression tests green.",
+        "Replayed 50,000 production-sampled queries before merging my refactor of the client fitment operator, traced the new failures to init-order-dependent shared config and fixed the root cause: replay errors 167 to 6 (fix in review).",
+        "Built a request-scoped cache for recall recovery that needs no invalidation and never caches transient failures. Also in recall: client-supplied vectors skip the embedding service, and big requests run as concurrent batches.",
+        "Built three C++ query transforms for results-page product carousels (18 PRs): one batched round trip gets each product's listing count and lowest price under the user's filters; a failed table is dropped, not shown half-built.",
+        "Designed the engine side of a new fitment category (pre-launch): showed a proposed bitmask match accepted packs with the wrong piece counts, kept vehicle matching on the proven pipeline, raised a requirements conflict early.",
+        "Wrote the Markdown-driven test frameworks (tests as readable tables) the team made its standard. Made the tokenizer stack allocator-aware (C++ PMR) and served it as an internal HTTP API that science and QA use."
       ]
     },
     {
       "role": "Software Engineer 2, Search Backend",
       "location": "San Jose, CA",
-      "period": "Mar 2021 to Jun 2023",
+      "period": "Mar 2021 - Jun 2023",
       "bullets": [
-        "Took over the fitment code in year two, 6 to 13 years old with no tests: modernized its memory handling, refactored its worst components into a readable flow, rebuilt the config-generation scripts, and wrote its first unit and regression tests.",
-        "Designed the query operator that lets clients state fitment constraints directly, removing two downstream service calls from the latency path, in a cross-team Motors effort. Became the fitment point of contact for the SaaS, indexing and Motors teams.",
-        "Built garage-vehicle and tire-spec fitment: the buyer's chosen vehicle drives the constraints, with DE, FR and IT spec translation, and co-built A/B testing that tags only the queries a change affects. Moved the engine's core containers to C++ PMR allocators."
+        "Took over fitment in year two (code 6 to 13 years old, no unit tests): modernized its memory handling, refactored its worst parts, wrote its first unit tests, and rebuilt the config generators so config stopped waiting on engine releases.",
+        "Built garage-vehicle fitment in a cross-team Motors effort: constraints come from the buyer's vehicle, cutting two service calls from the latency path. Made tire fitment-by-spec config-driven, so new countries need no engine change.",
+        "Co-built fitment's A/B testing (control and treatment on one request, only affected queries tagged). Fixed a production memory spike by capping a combinatorial expansion. Moved core request containers to PMR allocators."
       ]
     }
   ],
   "earlier": "Earlier: software intern at Shoelace Wireless (Android, 2020) and BHEL (Java EE, 2017).",
-  "projectsNote": "Side projects are built with AI coding agents (Hermes, self-hosted) under my direction. Also ShutUp, an Android app with 26,000+ installs.",
+  "projectsNote": "Built with AI coding agents (Hermes, self-hosted) under my direction. Also ShutUp, an Android app with 26,000+ installs.",
   "projects": [
     {
       "name": "TizenAmbilight",
@@ -52,24 +52,24 @@ export const resume = {
       "value": "C++ (17/20/23), Python, Java"
     },
     {
-      "label": "Systems",
-      "value": "Query rewriting, tokenization, ranking factors, embedding retrieval, request caching, A/B testing, traffic replay"
+      "label": "Search",
+      "value": "Query understanding (rewriting, tokenization, spell correction), ranking factors, embedding retrieval, caching"
     },
     {
       "label": "Tooling",
-      "value": "C++ PMR, ASan, clang-tidy, CMake, GoogleTest, Linux, Docker, GitLab CI, Claude Code"
+      "value": "C++ PMR, ASan, clang-tidy, CMake, GoogleTest, Git, Jenkins, Linux, A/B tests, traffic replay, Claude Code"
     }
   ],
   "education": [
     {
       "degree": "Master of Computer Science",
       "school": "University of California, Irvine",
-      "period": "2019 to 2020"
+      "period": "2019 - 2020"
     },
     {
       "degree": "B.Tech, Computer Science and Engineering",
       "school": "SRM Institute of Science and Technology",
-      "period": "2015 to 2019"
+      "period": "2015 - 2019"
     }
   ]
 } as const;
