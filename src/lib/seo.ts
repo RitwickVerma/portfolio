@@ -2,7 +2,7 @@ import { SITE_URL, socialLinks, EBAY_ENDED } from "./data";
 
 export const SITE_TITLE = "Ritwick Verma, backend engineer";
 export const SITE_DESCRIPTION =
-  "Backend engineer: five years on Cassini, eBay's distributed C++ search engine, owning the fitment subsystem. Android, firmware and reverse-engineering projects, and engineering notes with the numbers left in.";
+  "Backend engineer: five years on Cassini, eBay's C++ search engine. Firmware, Android and reverse-engineering projects, and notes with the numbers left in.";
 
 /** schema.org Person for the home and resume pages. */
 export function personJsonLd() {
