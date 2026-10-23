@@ -66,14 +66,24 @@ export default function ResumePage() {
           <Link href="/" className="font-mono text-sm text-accent hover:underline underline-offset-4">
             ← ritwickverma.dev
           </Link>
-          <a
-            href="/Ritwick_Verma_Resume.pdf"
-            target="_blank"
-            rel="noopener"
-            className="px-4 py-3 rounded-lg bg-accent text-background text-sm font-medium hover:bg-accent/90 transition-colors"
-          >
-            Open PDF
-          </a>
+          <div className="flex items-center gap-4">
+            <span className="hidden sm:inline text-xs text-muted">Updated {resume.updated}</span>
+            <a
+              href="/Ritwick_Verma_Resume.pdf"
+              download="Ritwick_Verma_Resume.pdf"
+              className="font-mono text-sm text-accent hover:underline underline-offset-4"
+            >
+              Download
+            </a>
+            <a
+              href="/Ritwick_Verma_Resume.pdf"
+              target="_blank"
+              rel="noopener"
+              className="px-4 py-3 rounded-lg bg-accent text-background text-sm font-medium hover:bg-accent/90 transition-colors"
+            >
+              Open PDF
+            </a>
+          </div>
         </div>
       </nav>
 

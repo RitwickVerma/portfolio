@@ -1,9 +1,9 @@
-// GENERATED from the resume builder's base.json (vault resume-src). Do not edit by hand:
-// change base.json, rebuild the PDF, and regenerate this file so the page and the PDF match.
+// GENERATED from the resume builder's base.json (vault resume-src) by gen_resume_ts.py. Do not edit by hand.
 
 export const resume = {
   "title": "Backend Engineer · C++ · Search Systems",
   "summary": "Backend engineer with 5.5 years on Cassini, the C++ engine behind ebay.com search. Owned eBay Motors fitment and worked on caching, query transforms and the tokenizer on the serving path. 215 merged PRs since 2021.",
+  "updated": "Oct 2026",
   "roles": [
     {
       "role": "Software Engineer 3, Search Backend",
