@@ -40,3 +40,28 @@ deploy:
     - npm ci --prefer-offline
     - npm run build
     - npx wrangler pages deploy out --project-name=portfolio --branch=master --commit-dirty=true
+
+# Preview deploy for every non-master branch push, so an MR can be looked at
+# before it is merged. Same Pages project; wrangler publishes it as a preview
+# under the branch slug and never touches production. The job only exists when
+# the two Cloudflare variables reach the pipeline: they are marked "protected"
+# in CI/CD settings, which keeps them off non-protected branches, so until that
+# is changed this job is absent rather than failing.
+preview:
+  stage: deploy
+  image: node:${NODE_VERSION}
+  needs: [check]
+  rules:
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != "master" && $CLOUDFLARE_API_TOKEN && $CLOUDFLARE_ACCOUNT_ID
+  script:
+    - npm ci --prefer-offline
+    - npm run build
+    - npx wrangler pages deploy out --project-name=portfolio --branch="$CI_COMMIT_REF_SLUG" --commit-dirty=true | tee deploy.log
+    - echo "PREVIEW_URL=$(grep -o 'https://[A-Za-z0-9.-]*\.pages\.dev' deploy.log | head -1)" > deploy.env
+    - cat deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
+  environment:
+    name: preview/$CI_COMMIT_REF_SLUG
+    url: $PREVIEW_URL
