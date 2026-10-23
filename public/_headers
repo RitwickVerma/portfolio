@@ -1,11 +1,6 @@
-# Cloudflare Pages response headers (https://developers.cloudflare.com/pages/configuration/headers/)
-# Hashed build assets never change: cache for a year.
-/_next/static/*
-  Cache-Control: public, max-age=31536000, immutable
-
-# Everything else: the security headers the old nginx config set, plus a permissions policy.
-/*
-  X-Frame-Options: DENY
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+/Ritwick_Verma_Resume.pdf
+  Cache-Control: no-cache, must-revalidate
+/resume/
+  Cache-Control: no-cache, must-revalidate
+/
+  Cache-Control: no-cache, must-revalidate
