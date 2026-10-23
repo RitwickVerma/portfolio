@@ -24,9 +24,9 @@ export const resume = {
       "location": "San Jose, CA",
       "period": "Mar 2021 to Jun 2023",
       "bullets": [
-        "Took over fitment in year two, code that was 6 to 13 years old with no tests: modernized its memory handling, refactored its worst components into a readable flow, rebuilt the config-generation scripts, and wrote its first unit and regression tests.",
+        "Took over the fitment code in year two, 6 to 13 years old with no tests: modernized its memory handling, refactored its worst components into a readable flow, rebuilt the config-generation scripts, and wrote its first unit and regression tests.",
         "Designed the query operator that lets clients state fitment constraints directly, removing two downstream service calls from the latency path, in a cross-team Motors effort. Became the fitment point of contact for the SaaS, indexing and Motors teams.",
-        "Built garage-vehicle and tire-spec fitment: the buyer's chosen vehicle drives the constraints, with no guessing from search text. Added DE, FR and IT spec translation, A/B testing that tags only the queries a change affects, and C++ polymorphic allocators in the engine's core containers."
+        "Built garage-vehicle and tire-spec fitment: the buyer's chosen vehicle drives the constraints, with DE, FR and IT spec translation, and co-built A/B testing that tags only the queries a change affects. Moved the engine's core containers to C++ PMR allocators."
       ]
     }
   ],
