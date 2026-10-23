@@ -10,6 +10,7 @@ import { sceneState } from '@/lib/sceneState';
 import { advancePhase, phaseProgress, type PhaseState } from '@/lib/phaseMachine';
 import { mulberry32 } from '@/lib/random';
 import { placeLabel } from '@/lib/labels';
+import { hasCoarsePointer } from '@/lib/gpu';
 import { getStatusSnapshot, loadStatus } from '@/lib/statusStore';
 import { guestView } from '@/lib/status';
 import { ACCENT, GATEWAY as GATEWAY_ACCENT, WARN as WARN_ACCENT, BG, INK, RACK_BODY, RACK_BODY_GATEWAY, RACK_FLOOR, ROOM_LIGHT } from '@/lib/theme';
@@ -750,6 +751,9 @@ export default function HeroScene({ onReady }: { onReady?: () => void }) {
   }, []);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
+  // Phones render at most 1.5x: the scene is dark and soft, and DPR 2 against
+  // DPR 1.5 is 78% more fragments per frame for no visible gain on a 6" screen.
+  const [dpr] = useState<[number, number]>(() => (hasCoarsePointer() ? [1, 1.5] : [1, 2]));
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -766,7 +770,7 @@ export default function HeroScene({ onReady }: { onReady?: () => void }) {
     <div ref={wrapRef} style={{ width: '100%', height: '100%' }}>
     <Canvas
       flat
-      dpr={[1, 2]}
+      dpr={dpr}
       frameloop={inView ? 'always' : 'never'}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
       camera={{ position: [7, 7, 7], fov: 35, near: 0.1, far: 200 }}

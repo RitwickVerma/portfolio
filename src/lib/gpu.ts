@@ -21,6 +21,19 @@ export function hasWebGL2(): boolean {
   }
 }
 
+/**
+ * A touch-first device (phone, tablet): the primary pointer is coarse. Used to
+ * cap the hero's pixel ratio, where a full-screen antialiased canvas at DPR 3
+ * is fill-rate the GPU spends on pixels a thumb never notices.
+ */
+export function hasCoarsePointer(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(pointer: coarse)").matches
+  );
+}
+
 /** The OS-level "reduce motion" switch: static layers only, no turning room, no drifting grid. */
 export function prefersReducedMotion(): boolean {
   return (
