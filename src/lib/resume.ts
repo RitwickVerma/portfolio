@@ -3,18 +3,18 @@
 
 export const resume = {
   "title": "Backend Engineer · C++ · Search Systems",
-  "summary": "Backend engineer. 5.5 years on Cassini, the C++ search engine behind ebay.com search. Owned eBay Motors fitment and worked on caching, query transforms and the tokenizer on the serving path. 215 merged PRs.",
+  "summary": "Backend engineer with 5.5 years on Cassini, the C++ engine behind ebay.com search. Owned eBay Motors fitment and worked on caching, query transforms and the tokenizer on the serving path. 215 merged PRs since 2021.",
   "roles": [
     {
       "role": "Software Engineer 3, Search Backend",
       "location": "San Francisco, CA",
       "period": "Jun 2023 - Present",
       "bullets": [
-        "Owned eBay Motors fitment, the part of the engine that decides which parts fit a buyer's vehicle, on 16 sites and 19 catalogs. Partner teams came to me first with fitment questions. I wrote 31% of its current code.",
-        "Moved fitment onto the engine's new transform architecture, then took its production index and the test fixtures off a legacy query language without a cutover. 2,549 unit tests and 511 regression cases stayed green.",
-        "Before merging a refactor of the client fitment operator, replayed 50,000 production queries. The new failures traced to shared config that depended on initialization order. Fixed the cause; errors went from 167 to 6. The fix is in review.",
-        "Added a request-scoped cache in recall recovery so the same backend call is not repeated within one request. Nothing to invalidate, and failures are never cached. Also let clients pass their own embeddings.",
-        "Wrote three C++ query transforms for the product carousels on the results page (one batched round trip fetches listing counts and lowest prices under the user's filters), and the Markdown-driven test frameworks the team now uses."
+        "Owned eBay Motors fitment, the part of the engine that decides which parts fit a buyer's vehicle, across 16 sites and 19 catalogs. Partner teams came to me first with fitment questions. Wrote 31% of its current code.",
+        "Moved fitment onto the engine's new transform architecture. Then migrated its production index and test fixtures off a legacy query language in steps, with no big-bang switch, while 2,549 unit and 511 regression tests stayed green.",
+        "Replayed 50,000 production queries before merging a refactor of the client fitment operator. The new failures traced to shared config that depended on initialization order. Fixed the cause; replay errors fell from 167 to 6. In review.",
+        "Added a request-scoped cache in recall recovery so the same backend call is not repeated within one request: nothing to invalidate, and failures are never cached. Also let clients send precomputed embeddings.",
+        "Wrote three C++ query transforms for the product carousels on the results page, where one batched round trip fetches listing counts and lowest prices under the user's filters. Also wrote the Markdown-driven test frameworks the team now uses."
       ]
     },
     {
@@ -22,40 +22,40 @@ export const resume = {
       "location": "San Jose, CA",
       "period": "Mar 2021 - Jun 2023",
       "bullets": [
-        "Took over the fitment code in my second year. It was 6 to 13 years old with no unit tests. Modernized its memory handling, refactored the worst parts, wrote the first unit tests, and rebuilt the config generators so config stopped waiting on engine releases.",
-        "Garage-vehicle fitment, in a cross-team Motors effort: the buyer's saved vehicle sets the constraints, which took two service calls out of the latency path. Made tire fitment-by-spec config-driven for new countries.",
-        "Co-built fitment's A/B testing (control and treatment evaluated on one request, only affected queries tagged). Moved the engine's core request containers to C++ PMR allocators and made the tokenizer allocator-aware, later served as an internal HTTP API."
+        "Took over the fitment code in 2022, 6 to 13 years old with no unit tests. Modernized its memory handling, refactored the worst parts, wrote its first unit tests and rebuilt the config generators so config stopped waiting on releases.",
+        "Built garage-vehicle fitment in a cross-team Motors effort: the buyer's saved vehicle sets the constraints, taking two service calls out of the latency path. Made tire fitment by spec config-driven for new countries.",
+        "Co-built fitment's A/B testing, where control and treatment run on one request and only the affected queries are tagged. Moved the engine's core request containers to C++ PMR allocators and made the tokenizer allocator-aware; it was later exposed as an internal HTTP API."
       ]
     }
   ],
-  "earlier": "Earlier: software intern at Shoelace Wireless (Android, 2020) and BHEL (Java EE, 2017).",
-  "projectsNote": "ShutUp and the RPG are hand-written. TizenAmbilight was built by directing Claude; I did the design and the on-device verification. Hobby: a 16-machine homelab run as code.",
+  "earlier": "Earlier: Software intern at Shoelace Wireless (Android, 2020) and BHEL (Java EE, 2017).",
+  "projectsNote": "",
   "projects": [
     {
       "name": "ShutUp",
-      "description": "Android app that answers, silences and ends calls with a wave over the proximity sensor. Written in 2016. 26,000+ downloads, 4.3 stars on Play. Rebuilt in 2026 with AI assistance."
+      "description": "Android app that answers, silences and ends calls with a wave over the proximity sensor. Written in 2016. 26,000+ downloads, 4.3 stars on Google Play. AI-assisted rebuild in 2026."
     },
     {
-      "name": "RPG Engine",
-      "description": "2D RPG in C++ on SDL2 with no game engine. Collisions, sprite animation, weapons and dialogue trees written from scratch, 44 source files."
+      "name": "RPG in C++",
+      "description": "2D RPG on SDL2 with no game engine. Collisions, sprite animation, weapons and dialogue trees written from scratch across 44 source files."
     },
     {
-      "name": "TizenAmbilight",
-      "description": "Ambilight running on the Samsung TV itself. The public capture API only returns the UI layer, so it reads the decoded video plane, tone-maps HDR and drives an LED strip at 20 to 25 fps."
+      "name": "TizenAmbilight (AI-assisted)",
+      "description": "Ambient TV lighting that runs on the Samsung TV itself. The public capture API only returns the UI layer, so it reads the decoded video plane, tone-maps HDR and drives an LED strip at 20 to 25 fps."
     }
   ],
   "skills": [
     {
       "label": "Languages",
-      "value": "C++ (17/20/23), Python, Java"
+      "value": "C++17/20/23, Python, Java"
     },
     {
       "label": "Search",
-      "value": "Query understanding (rewriting, tokenization, spell correction), ranking factors, embedding retrieval, caching"
+      "value": "query understanding (rewriting, tokenization, spell correction), ranking factors, embedding retrieval, caching, A/B testing, traffic replay"
     },
     {
       "label": "Tooling",
-      "value": "C++ PMR, ASan, clang-tidy, CMake, GoogleTest, Git, Jenkins, Linux, A/B tests, traffic replay, Claude Code"
+      "value": "CMake, GoogleTest, ASan, clang-tidy, Git, Jenkins, Linux, Claude Code"
     }
   ],
   "education": [
@@ -66,7 +66,7 @@ export const resume = {
     },
     {
       "degree": "B.Tech, Computer Science and Engineering",
-      "school": "SRM Institute of Science and Technology",
+      "school": "SRM Institute of Science & Technology",
       "period": "2015 - 2019"
     }
   ]
