@@ -40,8 +40,8 @@ describe("site copy", () => {
     }
   });
 
-  it("lists only languages he writes himself (agent-written Kotlin and C# stay on project cards)", () => {
-    expect(skills.languages).toEqual(["C++", "Python", "Java", "C"]);
+  it("lists languages he writes himself (agent-written C# stays on project cards)", () => {
+    expect(skills.languages).toEqual(["C++", "Python", "Java", "Kotlin", "TypeScript", "C"]);
   });
 
   it("states the Plutus verdict and the homelab count the resume uses", () => {

@@ -246,7 +246,7 @@ export const services: Service[] = [
 export const skills = {
   // Languages match the resume: the ones he writes himself. Kotlin and C# in the
   // side projects are agent-written, so they stay on the project cards only.
-  languages: ["C++", "Python", "Java", "C"],
+  languages: ["C++", "Python", "Java", "Kotlin", "TypeScript", "C"],
   domains: [
     "Search & retrieval",
     "Query rewriting",
@@ -254,6 +254,8 @@ export const skills = {
     "Distributed systems",
     "Traffic replay & A/B testing",
     "Reverse engineering",
+    "Android",
+    "Embedded",
   ],
   tools: [
     "C++ PMR",
@@ -264,9 +266,10 @@ export const skills = {
     "Linux",
     "Docker",
     "GitLab CI",
-    "Claude Code",
     "OpenTofu",
     "Proxmox",
+    "Traefik",
+    "SQLite",
   ],
 };
 
@@ -288,5 +291,5 @@ export const hero = {
   name: "Ritwick Verma",
   /** One specific line, his voice, not a job-title list. True in any tense. */
   line: "Backend engineer. 5.5 years on eBay's C++ search engine.",
-  lineTwo: "I care about proving a change against real traffic before it merges.",
+  lineTwo: "I build and self-host the systems I ship.",
 };
