@@ -1,4 +1,4 @@
-import { hero } from "@/lib/data";
+import { hero, EBAY_ENDED } from "@/lib/data";
 import { renderOg } from "@/lib/og";
 
 export const dynamic = "force-static";
@@ -8,6 +8,6 @@ export function GET() {
     eyebrow: "ritwickverma.dev/resume",
     name: hero.name,
     line: "Resume",
-    lineTwo: "Backend engineer at eBay.",
+    lineTwo: EBAY_ENDED ? "Backend engineer, C++ search systems." : "Backend engineer at eBay.",
   });
 }

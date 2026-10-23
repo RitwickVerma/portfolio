@@ -6,6 +6,8 @@ import { noteReadingMinutes } from "@/lib/notes.server";
 const DESCRIPTION =
   "Engineering notes by Ritwick Verma: how specific things were built, with the numbers left in.";
 
+const OG_ALT = "Engineering notes by Ritwick Verma.";
+
 export const metadata: Metadata = {
   title: "Notes",
   description: DESCRIPTION,
@@ -14,7 +16,16 @@ export const metadata: Metadata = {
     title: "Notes · Ritwick Verma",
     description: DESCRIPTION,
     url: "/notes/",
+    siteName: "ritwickverma.dev",
     type: "website",
+    locale: "en_US",
+    images: [{ url: "/notes/og.png", width: 1200, height: 630, alt: OG_ALT }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Notes · Ritwick Verma",
+    description: DESCRIPTION,
+    images: [{ url: "/notes/og.png", alt: OG_ALT }],
   },
 };
 
