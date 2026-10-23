@@ -133,7 +133,7 @@ export default function ResumePage() {
         </Section>
 
         <Section title="Selected Projects">
-          <p className="text-sm italic text-fg/70 mb-2 print:text-[9pt] print:mb-0.5">{resume.projectsNote}</p>
+          {resume.projectsNote ? <p className="text-sm italic text-fg/70 mb-2 print:text-[9pt] print:mb-0.5">{resume.projectsNote}</p> : null}
           <ul className="space-y-2 list-disc pl-5 print:space-y-0.5">
             {resume.projects.map((p) => (
               <li key={p.name} className="text-sm text-fg/80 print:text-[9pt]">
