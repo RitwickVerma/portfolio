@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import PrintButton from "@/components/PrintButton";
 import { socialLinks, hero, experiences, EBAY_ENDED } from "@/lib/data";
 import { resume } from "@/lib/resume";
 
@@ -67,15 +66,13 @@ export default function ResumePage() {
           <Link href="/" className="font-mono text-sm text-accent hover:underline underline-offset-4">
             ← ritwickverma.dev
           </Link>
-          <div className="flex items-center gap-4">
-            <span className="hidden sm:inline text-xs text-muted">
-              Prints as one black-on-white page
-            </span>
-            <a href="/Ritwick_Verma_Resume.pdf" download className="font-mono text-sm text-accent hover:underline underline-offset-4">
-              Download PDF
-            </a>
-            <PrintButton />
-          </div>
+          <a
+            href="/Ritwick_Verma_Resume.pdf"
+            download="Ritwick_Verma_Resume.pdf"
+            className="px-4 py-3 rounded-lg bg-accent text-background text-sm font-medium hover:bg-accent/90 transition-colors"
+          >
+            Download PDF
+          </a>
         </div>
       </nav>
 
