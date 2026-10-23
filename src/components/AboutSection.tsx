@@ -36,7 +36,7 @@ export default function AboutSection() {
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             I&apos;m a backend engineer in San Francisco. I&apos;ve spent 5.5 years
             on Cassini, <span className="text-accent">eBay</span>&apos;s
-            distributed C++ search engine, and since 2022 I&apos;ve owned{" "}
+            distributed C++ search engine, and in 2022 I took over{" "}
             <span className="text-accent">fitment</span>, the subsystem that
             decides which parts fit a buyer&apos;s vehicle across 16 eBay sites. MCS from{" "}
             <span className="text-accent">UC Irvine</span>, BTech in CS from SRM

@@ -184,7 +184,7 @@ const BOOT_LOGS: Record<string, string[]> = {
   VM110: ['VM110 login:', '[  OK  ] Traefik v3 ▸ active', '[  OK  ] Authelia OIDC ▸ ok', '[  OK  ] Headscale VPN ▸ up', '[  OK  ] CrowdSec ▸ active', 'VM110:~# _'],
   CT101: ['CT101 login:', '[  OK  ] Hermes Agent ▸ live', '[  OK  ] SearXNG ▸ up', '[  OK  ] State DB ▸ SQLite', '[  OK  ] Cron ▸ scheduled', 'CT101:~# _'],
   CT102: ['CT102 login:', '[  OK  ] Technitium ▸ active', '[  OK  ] Upstream ▸ DoH x3', '[  OK  ] Blocklists ▸ Hagezi x2', '[  OK  ] DHCP ▸ active', 'CT102:~# _'],
-  CT104: ['CT104 login:', '[  OK  ] Vaultwarden ▸ up', '[  OK  ] Watchtower ▸ up', '[  OK  ] Behind ▸ Traefik', '[  OK  ] Backup ▸ nightly', 'CT104:~# _'],
+  CT104: ['CT104 login:', '[  OK  ] Vaultwarden ▸ up', '[  OK  ] Behind ▸ Traefik', '[  OK  ] Backup ▸ nightly', 'CT104:~# _'],
   CT106: ['CT106 login:', '[  OK  ] Immich ▸ running', '[  OK  ] PostgreSQL ▸ ok', '[  OK  ] Redis ▸ ok', '[  OK  ] ML ▸ ready', 'CT106:~# _'],
   CT107: ['CT107 login:', '[  OK  ] Paperless-ngx ▸ up', '[  OK  ] Redis ▸ ok', '[  OK  ] Gotenberg ▸ ok', '[  OK  ] Wake ▸ on demand', 'CT107:~# _'],
   CT111: ['CT111 login:', '[  OK  ] Remux ▸ running', '[  OK  ] Media server ▸ up', '[  OK  ] Docker ▸ ok', '[  OK  ] Backup ▸ nightly', 'CT111:~# _'],

@@ -4,9 +4,9 @@ import { notes, noteUrl, formatNoteDate } from "@/lib/notes";
 import { noteReadingMinutes } from "@/lib/notes.server";
 
 const DESCRIPTION =
-  "Engineering notes by Ritwick Verma: how specific things were built, with the numbers left in.";
+  "Engineering notes by Ritwick Verma: how specific things were built, with the numbers and the failures left in.";
 
-const OG_ALT = "Ritwick Verma. Notes. How specific things were built, with the numbers left in.";
+const OG_ALT = "Ritwick Verma. Notes. How specific things were built, with the numbers and the failures left in.";
 
 export const metadata: Metadata = {
   title: "Notes",

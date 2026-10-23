@@ -9,6 +9,6 @@ export function GET() {
     eyebrow: "ritwickverma.dev/notes",
     name: hero.name,
     line: "Notes",
-    lineTwo: "How specific things were built, with the numbers left in.",
+    lineTwo: "How specific things were built, with the numbers and the failures left in.",
   });
 }
