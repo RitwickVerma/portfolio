@@ -25,7 +25,7 @@ export const notes: Note[] = [
     slug: "homelab-git-is-the-truth",
     title: "Git is the truth: a homelab that diffs itself nightly",
     summary:
-      "Sixteen guests, fifteen declared in OpenTofu, a nightly pipeline that commits whatever changed on the box and reports what the plan disagrees with, paging that costs one message per fault. What it caught and where it falls short.",
+      "Sixteen guests, fourteen declared in OpenTofu, a nightly pipeline that commits whatever changed on the box and reports what the plan disagrees with, paging that costs one message per fault. What it caught and where it falls short.",
     date: "2026-10-13",
     tags: ["Proxmox", "OpenTofu", "GitOps", "on-call"],
   },
@@ -33,7 +33,7 @@ export const notes: Note[] = [
     slug: "plutus-what-the-backtest-cannot-tell-you",
     title: "Plutus: what the backtest cannot tell you",
     summary:
-      "The five-signal bot that lost to SPY, and a Sharpe of 1.04 with its confidence interval attached.",
+      "Verdict first: 30+ experiments found no edge that held up. Then the five-signal bot that lost to SPY, and a backtest Sharpe of 1.04 that survivorship and selection explain a good part of.",
     date: "2026-10-13",
     tags: ["Python", "quant", "backtesting"],
   },

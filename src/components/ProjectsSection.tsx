@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { projects } from "@/lib/data";
 import { DURATION, EASE } from "@/lib/motion";
@@ -101,6 +102,15 @@ export default function ProjectsSection() {
   return (
     <section id="projects" className="max-w-6xl mx-auto px-6 py-24 sm:py-32">
       <h2 className="font-mono text-muted text-sm mb-6 tracking-widest uppercase">Projects</h2>
+      <p className="text-fg/75 text-sm leading-relaxed max-w-3xl mb-8">
+        Side projects. The recent ones are built with AI coding agents (Hermes, self-hosted) under
+        my direction: I choose the problem, make the design calls, set the verification bar and
+        review every change. The{" "}
+        <Link href="/notes/colophon/" className="text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent">
+          colophon
+        </Link>{" "}
+        has the details.
+      </p>
       <div className="space-y-4">
         <Grid items={featured} className="md:grid-cols-2" />
         <Grid items={rest} className="md:grid-cols-2 lg:grid-cols-3" />

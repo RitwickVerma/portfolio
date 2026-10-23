@@ -85,12 +85,14 @@ Most of the code that exists today exists because a silent failure looked identi
 
 ## Tests
 
-The decoders are first-party code; the app has zero NuGet dependencies, so the PNG decoder, the baseline JPEG decoder, the JSON writer and the capture P/Invoke are all mine. A host harness compiles the same decoders the app uses and byte-compares: the JPEG decoder against libjpeg-turbo on 4:4:4, 4:2:2, 4:2:0, grayscale, restart-marker and odd-dimension inputs, worst per-channel error 3/255, mean at most 0.13. Both decoders are checked to **reject** what they do not support, CMYK, progressive, 12-bit, truncated files, rather than decode them wrongly. The same PNG decoder self-checks on the device at startup against an embedded 8×8 image and reports PASS or FAIL in the first telemetry report.
+The decoders are first-party code; the app has zero NuGet dependencies, so the PNG decoder, the baseline JPEG decoder, the JSON writer and the capture P/Invoke all live in this repository. A host harness compiles the same decoders the app uses and byte-compares: the JPEG decoder against libjpeg-turbo on 4:4:4, 4:2:2, 4:2:0, grayscale, restart-marker and odd-dimension inputs, worst per-channel error 3/255, mean at most 0.13. Both decoders are checked to **reject** what they do not support, CMYK, progressive, 12-bit, truncated files, rather than decode them wrongly. The same PNG decoder self-checks on the device at startup against an embedded 8×8 image and reports PASS or FAIL in the first telemetry report.
 
 ## Limits
 
 The capture ABI is reverse-engineered against one firmware on one model. The struct offsets and plane layout are not versioned and not documented for third-party apps. The app clamps the returned dimensions and pitch, bounds-checks every read, and reports the capture API as `ok` or `UNAVAILABLE`, so a changed ABI shows up as a visible state rather than a sheared picture. A firmware update is still a real risk.
 
 The video plane is pre-tone-map. A faithful mapping of a dark HDR film produces a dark strip, because the source is dark. Adaptive gamma softens that; it does not remove it.
+
+The code was written with Claude under my direction; the design and every on-device verification are mine, and the README says so.
 
 The idea, the DRGB protocol and a great deal of hard-won practical detail come from [Hyperion](https://github.com/hyperion-project/hyperion.ng), [HyperHDR](https://github.com/awawa-dev/HyperHDR) and [HyperTizen](https://github.com/reisxd/HyperTizen). This project exists because the compositor they capture cannot see the film, and the plane that can is reachable from inside the TV.

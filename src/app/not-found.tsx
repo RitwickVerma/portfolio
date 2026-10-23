@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = { title: "Not found", robots: { index: false } };
+// No canonical: the root layout's "/" would otherwise mark every 404 as a copy of the home page.
+export const metadata: Metadata = { title: "Not found", robots: { index: false }, alternates: { canonical: null } };
 
 export default function NotFound() {
   return (

@@ -34,21 +34,23 @@ export default function AboutSection() {
           className="space-y-4"
         >
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
-            I&apos;m a backend engineer in San Francisco. I&apos;ve spent five years
-            on Cassini, <span className="text-accent">eBay</span>&apos;s
-            distributed C++ search engine, in the Search Backend org&apos;s Query
-            Search Stack team, and from 2023 owned{" "}
-            <span className="text-accent">fitment</span>, the subsystem that
-            decides whether a listing fits the product a query names. MCS from{" "}
+            I&apos;m a backend engineer in San Francisco. I&apos;ve spent five and
+            a half years on Cassini, <span className="text-accent">eBay</span>&apos;s
+            distributed C++ search engine, in the Search Backend org. I took over
+            eBay Motors <span className="text-accent">fitment</span> in 2022, the
+            subsystem that decides which parts fit a buyer&apos;s vehicle across
+            16 eBay sites, and owned it from then on. I also built request caching
+            and query transforms on the engine&apos;s serving path. MCS from{" "}
             <span className="text-accent">UC Irvine</span>, BTech in CS from SRM
             Institute.
           </motion.p>
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             Outside work I take apart things that were not meant to be opened:
             a TV&apos;s video plane, a keyboard&apos;s stock firmware, a
-            phone&apos;s hinge sensor. <span className="text-accent">ShutUp</span>,
-            an Android app I wrote in college, passed{" "}
-            {shutup?.metric.value ?? "26,000+"} downloads.
+            phone&apos;s hinge sensor. I build those by directing AI coding
+            agents, which do most of the typing. <span className="text-accent">ShutUp</span>, an Android app I
+            wrote in college, has {shutup?.metric.value ?? "26,000+"} lifetime
+            downloads.
           </motion.p>
           <motion.p variants={fadeUp} className="text-fg/80 leading-relaxed">
             I also run a small Proxmox lab: {services.length} guests, 14 of them

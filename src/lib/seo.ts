@@ -1,8 +1,8 @@
 import { SITE_URL, socialLinks, EBAY_ENDED } from "./data";
 
-export const SITE_TITLE = "Ritwick Verma, backend engineer";
+export const SITE_TITLE = "Ritwick Verma, backend engineer: C++ search systems";
 export const SITE_DESCRIPTION =
-  "Backend engineer: five years on Cassini, eBay's C++ search engine. Firmware, Android and reverse-engineering projects, and notes with the numbers left in.";
+  "Backend engineer, C++ search systems: 5.5 years on Cassini, eBay's search engine. Owned eBay Motors fitment; built request caching and query transforms.";
 
 /** schema.org Person for the home and resume pages. */
 export function personJsonLd() {
@@ -12,6 +12,7 @@ export function personJsonLd() {
     name: "Ritwick Verma",
     url: SITE_URL,
     jobTitle: "Backend Engineer",
+    knowsAbout: ["C++", "Search systems", "Information retrieval", "Query rewriting", "Distributed systems"],
     ...(EBAY_ENDED ? {} : { worksFor: { "@type": "Organization", name: "eBay", url: "https://www.ebay.com" } }),
     alumniOf: [
       { "@type": "CollegeOrUniversity", name: "University of California, Irvine" },

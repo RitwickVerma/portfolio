@@ -113,9 +113,10 @@ export function commandOutputs(): Record<string, string> {
       "  clear       Clear the terminal\r\n",
 
     whoami:
-      `${g("Ritwick Verma")}, backend engineer (${ebay.location?.split(",")[0]}). Five years on\r\n` +
-      "Cassini, eBay's C++ search engine. MCS from UC Irvine. Writes Android\r\n" +
-      `apps, keyboard firmware and a C++ game engine; runs a ${guests}-guest homelab.\r\n`,
+      `${g("Ritwick Verma")}, backend engineer (${ebay.location?.split(",")[0]}). Five and a half\r\n` +
+      "years on Cassini, eBay's C++ search engine; owned eBay Motors fitment.\r\n" +
+      "MCS from UC Irvine. Side projects are built with AI coding agents under\r\n" +
+      `my direction. Runs a ${guests}-guest homelab as a hobby.\r\n`,
 
     projects: projects
       .map((p) => `${g(p.title.padEnd(24))}${p.metric.value} ${p.metric.label}\r\n`)
@@ -158,14 +159,14 @@ export function commandOutputs(): Record<string, string> {
       `${y("Terminal")} xterm.js, fetched only when this section nears the viewport\r\n` +
       `${y("Motion")}   framer-motion, one token file; reduced-motion gets a static site\r\n` +
       `${y("Privacy")}  no cookies, no analytics of my own; Cloudflare may add its beacon\r\n` +
-      `${y("CI")}       lint + typecheck + test on every push; master rebuilds on the host\r\n`,
+      `${y("CI")}       lint + typecheck + test on every push; master deploys to Pages\r\n`,
 
     neofetch:
       `       ${g("▄▄▄▄▄▄▄")}        ${y("Host:")}     ritwickverma.dev\r\n` +
       `    ${g("▄███████████▄")}     ${y("Role:")}     ${ebay.role} @ eBay\r\n` +
       `   ${g("███████████████")}    ${y("Homelab:")}  ${guests} guests on Proxmox\r\n` +
       `  ${g("█████████████████")}   ${y("Projects:")} ${projects.length} (${featured} featured)\r\n` +
-      `  ${g("█████████████████")}   ${y("Site:")}     Next.js static export + nginx\r\n` +
+      `  ${g("█████████████████")}   ${y("Site:")}     Next.js static export, Cloudflare Pages\r\n` +
       `   ${g("███████████████")}    ${y("Email:")}    ${socialLinks.email}\r\n` +
       `    ${g("▀███████████▀")}\r\n` +
       `       ${g("▀▀▀▀▀▀▀")}\r\n`,

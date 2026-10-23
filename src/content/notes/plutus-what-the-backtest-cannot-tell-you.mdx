@@ -1,4 +1,6 @@
-Plutus is a systematic US-equity trader. It runs on a timer in my homelab against a paper account, and its backtest over 2007 to 2026 shows a Sharpe of 1.04 against 0.63 for SPY. The Sharpe is one path through one history. This note covers the bot it replaced, the caveats, and the ideas I dropped.
+Plutus is my research harness for systematic US-equity strategies. The verdict first: across 30+ experiments on point-in-time data, with bootstrap confidence intervals, I found no edge that held up. The one result that reproduced in every configuration was smaller drawdowns, not higher returns.
+
+The strategy below is the last one standing. It runs on a timer in my homelab against a paper account, not real money, and its backtest over 2007 to 2026 shows a Sharpe of 1.04 against 0.63 for SPY. Read that as what a biased backtest shows: the universe is only partly corrected for survivorship, an equal-weight hold of the same universe beats SPY by 6.3% a year before any strategy runs, and the defaults were picked knowing this history. The paper account is the real test. This note covers the bot it replaced, the caveats, and the ideas I dropped.
 
 ## The version that lost
 
@@ -49,10 +51,12 @@ Each of these is a config option that still exists, defaulted off, with its resu
 | Leverage at 1.5× and 2× | | Lower CAGR, deeper drawdowns: borrow cost eats the extra return |
 | Add S&P 600 small caps (1,708 names) | | Sharpe 0.58 to 0.73, drawdowns −44% to −55%: worse per unit of risk for barely more return |
 
-Two sleeves survived testing and run in the paper account at 10% each: a leveraged Nasdaq ETF held only while the market filter is on, with a daily exit, and a bitcoin slice gated on its own 200-day average. Both raise Sharpe and lower the worst year in the sample. Both come with warnings in the README: the sample has no Nasdaq-specific crash like 2000 to 2002, where a monthly-gated 3× position would have lost most of its value before the filter fired, and bitcoin history only starts in 2014. These are the knobs I would turn off first if I stopped believing the backtest.
+Two sleeves held up in this same backtest and run in the paper account at 10% each: a leveraged Nasdaq ETF held only while the market filter is on, with a daily exit, and a bitcoin slice gated on its own 200-day average. Both raise Sharpe and lower the worst year in the sample. Both come with warnings in the README: the sample has no Nasdaq-specific crash like 2000 to 2002, where a monthly-gated 3× position would have lost most of its value before the filter fired, and bitcoin history only starts in 2014. These are the knobs I would turn off first if I stopped believing the backtest.
 
 ## Running it
 
 The repository is private; it has keys in its deployment path and the state of a brokerage account. The shape is public enough to describe. A GitLab pipeline runs commit-lint, the test suite and ruff on every push; on green `master` it rsyncs to a container in the homelab, installs a systemd timer, and runs a doctor command. Deploying never places an order. The trader runs once per weekday morning from the timer, writes a JSON record of what it decided and why, and that record is what I read, not the broker's dashboard.
+
+Like my other recent side projects, the code was written by AI coding agents under my direction; the experiment design, the bar for evidence and the verdicts are mine.
 
 The broker abstraction has an in-memory fake, so every test that touches order logic runs without a network. The live trader and the backtester share the rebalance schedule and phase, with a test that the two produce the same decision days, so the run record can be compared against what the simulator would have done on the same day with the same data.

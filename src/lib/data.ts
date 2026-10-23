@@ -11,7 +11,7 @@ export const projects: Project[] = [
     title: "ShutUp",
     description:
       "Android app that answers, silences and ends calls from proximity-sensor wave gestures.",
-    role: "Author & maintainer · GPLv3",
+    role: "Author (2016); rebuilt in 2026 with AI assistance · GPLv3",
     metric: { value: "26,000+", label: "lifetime downloads, 4.3★ when the Play listing was last up" },
     why: "Turns a binary proximity sensor and the accelerometer into gestures: a double-wave timing window, pick-up from a flat surface, face-down detection mid-call.",
     tech: ["Java", "Kotlin", "Android", "EventBus"],
@@ -24,11 +24,11 @@ export const projects: Project[] = [
     slug: "plutus",
     title: "Plutus",
     description:
-      "Research harness for systematic US-equity strategies. The one that survived testing, trend-filtered cross-sectional momentum with volatility targeting, paper-trades through Alpaca.",
+      "Research harness for systematic US-equity strategies. The verdict after 30+ experiments: no edge that held up. A trend-filtered cross-sectional momentum strategy with volatility targeting paper-trades through Alpaca as a live test.",
     role: "Author, private repository, paper account",
     // Lead with the method, not a backtest number: the research ledger (30+ experiments, Aug-Sep 2026) found no
     // demonstrated edge, and the surviving backtest's universe is only partly survivorship-corrected.
-    metric: { value: "30+ experiments", label: "most ideas falsified on point-in-time data with block-bootstrap intervals; the survivor runs on a paper account, not real money" },
+    metric: { value: "30+ experiments", label: "on point-in-time data with block-bootstrap intervals; none showed a durable edge. Paper account, not real money" },
     why: "Universe is S&P 500 + 400 plus still-listed removals to soften survivorship bias; block-bootstrap confidence intervals; stop-losses and daily regime exits were tested and rejected, not assumed. CI deploys to a timer on green master.",
     tech: ["Python", "pandas", "Alpaca", "uv", "GitLab CI"],
     links: {},
@@ -41,7 +41,7 @@ export const projects: Project[] = [
     title: "TizenAmbilight",
     description:
       "Real-frame ambilight for Samsung Tizen TVs: a headless .NET service on the TV reads the decoded video plane from memory and drives a WLED strip over UDP.",
-    role: "Author",
+    role: "Design and on-device verification mine, code written with Claude · MIT",
     metric: { value: "20–25 fps", label: "one process on the TV, no capture card, no HDMI splitter" },
     why: "Samsung's capture API returns the static UI layer, so the app dlopens the video-plane entry point instead: NV12 in PQ HDR, tone-mapped per scene and gamut-mapped from BT.2020 to the LEDs.",
     tech: ["C#", ".NET", "Tizen", "WLED", "HDR"],
@@ -98,7 +98,7 @@ export const projects: Project[] = [
     title: "SudoStamp",
     description:
       "Approve a sudo prompt on my workstation with a fingerprint on my phone. LAN only, key in the phone's hardware keystore.",
-    role: "Author · Apache-2.0 · signed release APKs",
+    role: "Author · MIT · signed release APKs",
     metric: { value: "18 of 18", label: "checks pass in a replay of pam_rssh's real sequence, negative controls included" },
     why: "The phone speaks two ssh-agent messages; the ECDSA key never leaves the TEE and BiometricPrompt gates every signature. A replay of pam_rssh's real sequence, with negative controls, is the gate before touching /etc/pam.d/sudo.",
     tech: ["Kotlin", "Android Keystore", "ssh-agent", "PAM"],
@@ -226,7 +226,7 @@ export const education: Education[] = [
 // this ships to the browser.
 export const services: Service[] = [
   { name: "Home Assistant", description: "Home automation", ct: "VM100", tech: ["Home Assistant OS"] },
-  { name: "Hermes Agent", description: "Self-hosted AI agent that builds, operates and monitors this lab", ct: "CT101", tech: ["Python", "Claude"] },
+  { name: "Hermes Agent", description: "Open-source AI agent (Nous Research), self-hosted; builds and operates this lab", ct: "CT101", tech: ["Python", "Claude"] },
   { name: "Technitium", description: "DNS and DHCP with blocklists", ct: "CT102", tech: ["Technitium", "DoH"] },
   { name: "Vaultwarden", description: "Password manager", ct: "CT104", tech: ["Rust", "Docker"] },
   { name: "Glance", description: "Start-page dashboard", ct: "CT105", tech: ["Glance"] },
@@ -244,25 +244,29 @@ export const services: Service[] = [
 ];
 
 export const skills = {
-  languages: ["C++", "Python", "Java", "Kotlin", "C#", "TypeScript", "C"],
+  // Languages match the resume: the ones he writes himself. Kotlin and C# in the
+  // side projects are agent-written, so they stay on the project cards only.
+  languages: ["C++", "Python", "Java", "C"],
   domains: [
     "Search & retrieval",
+    "Query rewriting",
+    "Request caching",
     "Distributed systems",
-    "Infrastructure & GitOps",
+    "Traffic replay & A/B testing",
     "Reverse engineering",
-    "Android",
-    "Embedded",
   ],
   tools: [
-    "Proxmox",
-    "OpenTofu",
-    "Docker",
-    "Traefik",
-    "GitLab CI",
+    "C++ PMR",
+    "CMake",
+    "GoogleTest",
+    "ASan",
+    "clang-tidy",
     "Linux",
-    "SOPS",
-    "PostgreSQL",
-    "SQLite",
+    "Docker",
+    "GitLab CI",
+    "Claude Code",
+    "OpenTofu",
+    "Proxmox",
   ],
 };
 
@@ -283,6 +287,6 @@ export const SITE_URL = "https://www.ritwickverma.dev";
 export const hero = {
   name: "Ritwick Verma",
   /** One specific line, his voice, not a job-title list. True in any tense. */
-  line: "Backend engineer. Five years inside eBay's C++ search engine.",
-  lineTwo: "I build and self-host the systems I ship.",
+  line: "Backend engineer. 5.5 years on eBay's C++ search engine.",
+  lineTwo: "I care about proving a change against real traffic before it merges.",
 };

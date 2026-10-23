@@ -2,11 +2,11 @@ Sixteen guests on one Proxmox host is a small lab. It runs on one rule: **git is
 
 ## The shape
 
-One Proxmox VE host. Fourteen LXC containers and two VMs: a Home Assistant VM with a Zigbee radio passed through, and a Debian gateway VM running Traefik, Authelia for SSO, Headscale for the VPN and CrowdSec. Behind the gateway: DNS and DHCP, a password manager, photos, documents, a media server, file sync, an e-book library, a GitLab CI runner, the trading bot, a backup server, and the container that serves this site. Only two hostnames face the internet; everything else is reachable over the VPN, which answers the same names on private addresses so links work identically inside and out.
+One Proxmox VE host. Fourteen LXC containers and two VMs: a Home Assistant VM with a Zigbee radio passed through, and a Debian gateway VM running Traefik, Authelia for SSO, Headscale for the VPN and CrowdSec. Behind the gateway: DNS and DHCP, a password manager, photos, documents, a media server, file sync, an e-book library, a GitLab CI runner, the trading bot, a backup server, a dev box and an observability box. Only two hostnames face the internet; everything else is reachable over the VPN, which answers the same names on private addresses so links work identically inside and out.
 
 ## Declared, then imported
 
-The hypervisor layer is OpenTofu, through the `bpg/proxmox` provider. Every container and VM but the dev box is a resource. I did not build the lab from the declarations; the lab existed first, so the first job was importing fifteen live resources into state and converging on zero drift (not yet reached; see below). The token the provider uses is a scoped Proxmox role, not root. One VM keeps its cloud-init and agent settings under `ignore_changes`, because they are baked into the running image and re-applying them would force a replacement.
+The hypervisor layer is OpenTofu, through the `bpg/proxmox` provider. Fourteen of the sixteen guests are resources; the dev box and the observability box are not yet. I did not build the lab from the declarations; the lab existed first, so the first job was importing the live resources into state and converging on zero drift (not yet reached; see below). The token the provider uses is a scoped Proxmox role, not root. One VM keeps its cloud-init and agent settings under `ignore_changes`, because they are baked into the running image and re-applying them would force a replacement.
 
 A generator script rebuilt the first `containers.tf` from the host's own `/etc/pve/lxc/*.conf`. That was bootstrap only. The HCL is hand-maintained now, and the script's comment says so, because a generator you keep running is a second source of truth.
 
@@ -44,7 +44,7 @@ Proxmox Backup Server takes every guest nightly with a kept-copies schedule. The
 
 ## The agent
 
-One container runs a self-hosted AI agent. It owns the cron entry points: the health check, the watchdogs, an inbox triage, a few upstream-release watchers for projects I patch. Its scripts directory is a symlink into this repo so there is one copy and nothing to sync, and its README has a rule I keep: domain logic lives in the product's own repository, never in the agent's. The agent is an operator, not a place code goes to hide.
+One container runs Hermes, an open-source AI agent from Nous Research, on my own hardware. It also did most of the typing in this repository: the HCL, the pipeline and the scripts were written by the agent under my direction, and I made the design calls and reviewed what landed. It owns the cron entry points: the health check, the watchdogs, an inbox triage, a few upstream-release watchers for projects I patch. Its scripts directory is a symlink into this repo so there is one copy and nothing to sync, and its README has a rule I keep: domain logic lives in the product's own repository, never in the agent's. The agent is an operator, not a place code goes to hide.
 
 ## Limits
 
