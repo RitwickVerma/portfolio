@@ -2,7 +2,7 @@
 
 export const resume = {
   "title": "Backend Engineer · C++ · Search Systems",
-  "summary": "Backend engineer with 5.5 years on Cassini, the C++ engine behind ebay.com search. Owned eBay Motors fitment and worked on caching, query transforms and the tokenizer on the serving path. 215 merged PRs since 2021.",
+  "summary": "Backend engineer with 5.5 years on Cassini, the C++ engine behind ebay.com search. Owned eBay Motors fitment and worked on caching, query transforms and the tokenizer on the serving path.",
   "updated": "Oct 2026",
   "roles": [
     {
