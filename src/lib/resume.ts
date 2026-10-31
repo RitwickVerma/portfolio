@@ -2,7 +2,7 @@
 
 export const resume = {
   "title": "Backend Engineer · C++ · Search Systems",
-  "summary": "Backend engineer with 5.5 years on Cassini, the C++ engine behind ebay.com search. Owned eBay Motors fitment and worked on caching, query transforms and the tokenizer on the serving path.",
+  "summary": "Backend engineer with 5.5 years on Cassini, the C++ search engine behind ebay.com. Owned eBay Motors fitment from 2022, and built caching, query transforms and test tooling on the engine's serving path.",
   "updated": "Oct 2026",
   "roles": [
     {
@@ -10,11 +10,12 @@ export const resume = {
       "location": "San Francisco, CA",
       "period": "Jun 2023 - Present",
       "bullets": [
-        "Owned eBay Motors fitment, the part of the engine that decides which parts fit a buyer's vehicle, across 16 sites and 19 catalogs. Partner teams came to me first with fitment questions. Wrote 31% of its current code.",
-        "Moved fitment onto the engine's new transform architecture. Then migrated its production index and test fixtures off a legacy query language in steps, with no big-bang switch, while 2,549 unit and 511 regression tests stayed green.",
-        "Replayed 50,000 production queries before merging a refactor of the client fitment operator. The new failures traced to shared config that depended on initialization order. Fixed the cause; replay errors fell from 167 to 6. In review.",
-        "Added a request-scoped cache in recall recovery so the same backend call is not repeated within one request: nothing to invalidate, and failures are never cached. Also let clients send precomputed embeddings.",
-        "Wrote three C++ query transforms for the product carousels on the results page, where one batched round trip fetches listing counts and lowest prices under the user's filters. Also wrote the Markdown-driven test frameworks the team now uses."
+        "Owned eBay Motors fitment, the engine logic that decides which parts fit a buyer's vehicle on 16 sites and 19 catalogs. Top contributor to its current code and the first contact for the partner teams that depend on it.",
+        "Led fitment's move onto the engine's new query-transform architecture, then migrated its production index and test fixtures off a legacy query language step by step, with 2,549 unit and 511 regression tests green throughout.",
+        "Before merging my refactor of how fitment requests are built, replayed 50,000 production queries against old and new builds and traced the new errors to shared config that depended on initialization order. Fixing the root cause cut them from 167 to 6; the change is in final review.",
+        "Added a per-request cache to the path that retries searches returning too few results, so each repeated backend lookup in a search runs only once. Failures are never cached.",
+        "Built three C++ query transforms for results-page product carousels, where one batched round trip fetches each product's listing count and lowest price under the shopper's filters.",
+        "Wrote Markdown test frameworks for the engine's query transforms and HTTP endpoints, so tests read as tables; the team adopted them for new tests. Served the tokenizer as an internal HTTP API for science and QA."
       ]
     },
     {
@@ -22,9 +23,9 @@ export const resume = {
       "location": "San Jose, CA",
       "period": "Mar 2021 - Jun 2023",
       "bullets": [
-        "Took over the fitment code in 2022, 6 to 13 years old with no unit tests. Modernized its memory handling, refactored the worst parts, wrote its first unit tests and rebuilt the config generators so config stopped waiting on releases.",
-        "Built garage-vehicle fitment in a cross-team Motors effort: the buyer's saved vehicle sets the constraints, taking two service calls out of the latency path. Made tire fitment by spec config-driven for new countries.",
-        "Co-built fitment's A/B testing, where control and treatment run on one request and only the affected queries are tagged. Moved the engine's core request containers to C++ PMR allocators and made the tokenizer allocator-aware; it was later exposed as an internal HTTP API."
+        "Took over fitment in 2022, when the code was 6 to 13 years old with no unit tests. Modernized its memory handling, refactored the worst components, wrote its first tests, and moved config generation off the engine release cycle.",
+        "Built garage-vehicle fitment in a cross-team Motors project: the buyer's saved vehicle sets the constraints directly, removing two service calls from the search latency path. Made tire-size fitment config-driven for new countries.",
+        "Co-built fitment's A/B testing: control and treatment run in one request, and only the queries a change affects are tagged. Moved the engine's core request containers and the tokenizer to C++ PMR allocators."
       ]
     }
   ],
@@ -51,7 +52,7 @@ export const resume = {
     },
     {
       "label": "Search",
-      "value": "query understanding (rewriting, tokenization, spell correction), ranking factors, embedding retrieval, caching, A/B testing, traffic replay"
+      "value": "query understanding (rewriting, tokenization), ranking factors, embedding retrieval, request caching, traffic replay, A/B tests"
     },
     {
       "label": "Tooling",
