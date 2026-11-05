@@ -33,6 +33,7 @@ export const metadata: Metadata = {
 const contact = [
   { label: experiences[0].location ?? "", href: "" },
   { label: socialLinks.email, href: `mailto:${socialLinks.email}` },
+  { label: "(949) 561-7197", href: "tel:+19495617197" },
   { label: "linkedin.com/in/ritwick-verma", href: socialLinks.linkedin },
   { label: "github.com/RitwickVerma", href: socialLinks.github },
   { label: "gitlab.com/ritwick7", href: socialLinks.gitlab },
