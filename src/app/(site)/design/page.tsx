@@ -2,9 +2,13 @@ import type { Metadata } from "next";
 import Section from "@/components/Section";
 import WidthSpecimen from "@/components/design/WidthSpecimen";
 import { LIGHT, DARK, INK, contrast, type Palette } from "@/lib/theme";
+import { workRoles } from "@/lib/corpus";
+
+// The current role as the site sets it everywhere else, so the specimens say "Present" or the month the same way the Work section does.
+const CURRENT_ROLE = `${workRoles[0].role}, ${workRoles[0].period}`;
 
 const DESCRIPTION =
-  "Index, the design language of ritwickverma.dev: five rules, the colour and type tokens with their contrast ratios, the components, and the three things that are allowed to move.";
+  "Index, the design language of ritwickverma.dev: five rules, the colour and type tokens with their contrast ratios, the components, and what is allowed to move.";
 
 export const metadata: Metadata = {
   title: "The design language",
@@ -28,7 +32,7 @@ const RULES = [
   ["One typeface, three widths.", "Expanded says who or what. Regular is for reading. Condensed carries facts. Monospace is for code, ids and the query plan, and for nothing else."],
   ["Colour means something.", "Blue is a place you can go. Yellow is a match. Green and red appear only next to a number that changed. If a colour is not doing one of those jobs it is not on the page."],
   ["Headings are claims.", "A section's heading is one sentence that could be wrong, and the section is the evidence for it. No labels above headings, no capitals for emphasis, no numbering unless the content is a sequence."],
-  ["Nothing moves unless you did something.", "Three animations exist: results settle when the ranking changes, a row is marked when you land on it, and the search box types one query on first load to show that it works. All three stop under reduced motion."],
+  ["Nothing moves unless you did something.", "Three animations answer something you did: results settle when the ranking changes, a row is marked when you land on it, and the palette settles open. Three more play unprompted, and are this rule’s exceptions: the search box types one query on first load to show that it works, the keyboard demo types by itself until you focus it, and the ambilight simulation plays while it is on screen. All of them stop under reduced motion."],
 ];
 
 const TYPE = [
@@ -36,7 +40,7 @@ const TYPE = [
   { name: "Claim", cls: "wd-semi font-extrabold text-3xl leading-[1.02]", sample: "Five and a half years on one search engine.", spec: "112% width, weight 800. A section's one sentence." },
   { name: "Lede", cls: "text-lede leading-[1.25]", sample: "I build and self-host the systems I ship.", spec: "100% width, weight 400 to 600, fluid 20 to 28 px." },
   { name: "Reading", cls: "text-base text-fg/85", sample: "Added a per-request cache to the path that retries searches returning too few results.", spec: "100% width, 16 px on 1.6, at most 68 characters a line." },
-  { name: "Fact", cls: "fact", sample: "Software Engineer 3, Search Backend, Jun 2023 – Present", spec: "78% width, 15 px, graphite. Dates, roles, stacks." },
+  { name: "Fact", cls: "fact", sample: CURRENT_ROLE, spec: "78% width, 15 px, graphite. Dates, roles, stacks." },
   { name: "Code", cls: "font-mono text-xs", sample: "cach  rewrit  50000  cpp", spec: "Martian Mono, 11 to 12 px. Stems, ids, numbers in the plan." },
 ];
 
@@ -154,7 +158,7 @@ export default function DesignPage() {
                   <span className="fact">eBay</span>
                   <span>
                     <span className="link font-semibold">A per-request cache on the search retry path</span>
-                    <span className="fact block">Software Engineer 3, Jun 2023 – Present</span>
+                    <span className="fact block">{CURRENT_ROLE}</span>
                   </span>
                 </div>
               ),
