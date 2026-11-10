@@ -34,7 +34,8 @@ function load() {
       for (const l of listeners) l();
     })
     .catch(() => {
-      // Stay on the record-only index.
+      // Stay on the record-only index, and let the next mount try again.
+      started = false;
     });
 }
 

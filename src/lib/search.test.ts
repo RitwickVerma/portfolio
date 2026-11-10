@@ -114,6 +114,23 @@ describe("search", () => {
     expect(search(both, "firmware ").hits.map((h) => h.doc.id)).toEqual(["title", "body"]);
   });
 
+  it("offers the commonest completions first, and no more than eight", () => {
+    const many = buildIndex([
+      ...Array.from({ length: 12 }, (_, i) => doc(`r${i}`, `re${String.fromCharCode(97 + i)}x`, "x")),
+      doc("a", "replay", "replay"),
+      doc("b", "replay again", "y"),
+    ]);
+    const plan = planQuery(many, "re");
+    expect(plan.filter((t) => t.source === "prefix")).toHaveLength(8);
+    expect(plan.find((t) => t.source === "prefix")!.term).toBe("replay");
+  });
+
+  it("a repeated exclusion or filter is one exclusion or filter", () => {
+    const p = parseQuery("x -java -java tech:kotlin tech:kotlin ");
+    expect(p.excluded).toEqual(["java"]);
+    expect(p.tech).toEqual(["kotlin"]);
+  });
+
   it("completes the word being typed, and scores a completion below an exact match", () => {
     expect(ids("jav")).toEqual(["java"]);
     const plan = planQuery(index, "rep");
@@ -253,6 +270,11 @@ describe("highlight and snippet", () => {
   it("marks C++ whole and 50,000 whole", () => {
     expect(highlight("Written in C++.", ["cpp"]).find((s) => s.hit)?.text).toBe("C++");
     expect(highlight("Replayed 50,000 queries.", ["50000"]).find((s) => s.hit)?.text).toBe("50,000");
+  });
+
+  it("keeps a domain or a decimal inside its sentence", () => {
+    const long = `Cassini is the engine behind ebay.com and a Sharpe of 1.04 is not an edge. ${"Filler sentence about nothing. ".repeat(9)}The needle is here.`;
+    expect(snippet(long, ["cassini"])).toContain("behind ebay.com and a Sharpe of 1.04 is not an edge.");
   });
 
   it("returns short text whole and starts long text at the densest matching sentence", () => {

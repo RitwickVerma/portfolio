@@ -42,10 +42,6 @@ const ALIASES: Record<string, string> = {
   "search systems": "search",
   "search infrastructure": "search",
   "query parsing": "query understanding",
-  "mentor": "mentoring",
-  "lead": "leadership",
-  "owning": "ownership",
-  "own": "ownership",
   "large language models": "LLM",
   "llms": "LLM",
 };
@@ -58,12 +54,18 @@ export { ALIASES as LEXICON_ALIASES };
 
 /**
  * Skills whose name is also an ordinary word. They only count when written
- * the way the skill is written: "Go" capitalised and not followed by a
- * preposition, "R" next to another language.
+ * the way the skill is written: "Go" capitalised and followed by a list or a
+ * noun, "C" beside another language. Ordinary verbs ("own", "lead") are not
+ * aliases for anything: a posting has to say "ownership" to be asked about it.
  */
 export const CASE_SENSITIVE: { label: string; pattern: RegExp }[] = [
   { label: "Go", pattern: /\bGolang\b|\bGo\b(?=\s*(?:,|\/|\band\b|\bor\b|\)|\.|$|\bprogramming\b|\bservices?\b|\bdevelop))/m },
-  { label: "C", pattern: /\bC\b(?=\s*(?:,|\/(?!C\+\+)|\band\b|\bor\b|\bprogramming\b))(?!\+)/m },
+  // C only counts beside another language, or spelt out: "Series C, and" and "grade C or better" are not C.
+  {
+    label: "C",
+    pattern:
+      /\bC\s*(?:,|\/|\band\b|\bor\b)\s*(?:C\+\+|C#|Java\b|Python|Rust|Go\b|Assembly|Fortran)|\b(?:C\+\+|Java|Python|Rust|Assembly)\s*(?:,|\/|\band\b|\bor\b)\s*C\b(?![+#])|\bC programming\b|\b[Ee]mbedded C\b(?![+#])/,
+  },
 ];
 
 /**

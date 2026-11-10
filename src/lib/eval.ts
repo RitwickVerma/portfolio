@@ -8,6 +8,10 @@ import { search, type RankerConfig, type SearchIndex } from "./search";
 //
 // Grade 2 is the answer I would give in person; grade 1 is a fair answer.
 // A key ending in * judges every document whose id starts with it.
+//
+// Every query here is spelt correctly. A misspelt one would score zero in the
+// control by construction (it has no spelling fallback) and flatter the
+// treatment; spelling is tested on its own in search.test.ts.
 
 export interface Judgment {
   query: string;
@@ -50,7 +54,6 @@ export const JUDGMENTS: Judgment[] = [
   { query: "internship", relevant: { "earlier-*": 2, "page-resume": 1 } },
   { query: "mobile", relevant: { "project-shutup": 2, "earlier-0": 2, "project-sudostamp": 1, "project-kaeru": 1 } },
   { query: "ai", relevant: { "note-colophon--how-it-was-made": 2, "project-shutup": 1, "project-tizen-ambilight": 1, "project-kwin-canvas": 1, "lab-CT101": 1, "note-colophon": 1 } },
-  { query: "fitmnet", relevant: { "work-0-0": 2, "work-1-0": 2, "work-*": 1 } },
 ];
 
 /** The grade a document earns for a judgment: an exact key first, then the longest matching prefix key. */

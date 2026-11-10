@@ -3,7 +3,7 @@ import { buildCorpus } from "./corpus";
 import { notes } from "./notes";
 import { noteText } from "./notes.server";
 import { buildIndex } from "./search";
-import { extractSkills, checkSkill, fitReport, SAMPLE_JD } from "./fit";
+import { extractSkills, checkSkill, fitReport, yearsAsked, SAMPLE_JD } from "./fit";
 import { LEXICON, NEAREST_ON_SITE } from "./lexicon";
 import { YEARS_AT_EBAY, hero } from "./data";
 import { resume } from "./resume";
@@ -17,7 +17,7 @@ describe("extractSkills", () => {
   });
 
   it("prefers the longest phrase: 'search engine' is not also 'search'", () => {
-    expect(extractSkills("Own our search engine.")).toEqual(["ownership", "search engine"]);
+    expect(extractSkills("Build our search engine.")).toEqual(["search engine"]);
   });
 
   it("resolves aliases to one label", () => {
@@ -35,6 +35,21 @@ describe("extractSkills", () => {
 
   it("ignores ordinary words", () => {
     expect(extractSkills("We value a strong team with great communication and passion.")).toEqual([]);
+  });
+
+  it("does not read verbs as skills: own and lead are not ownership and leadership", () => {
+    expect(extractSkills("You will own our own tools, and lead time is short.")).toEqual([]);
+    expect(extractSkills("We expect ownership and leadership.")).toEqual(["ownership", "leadership"]);
+  });
+
+  it("reads C as a language only beside another language or spelt out", () => {
+    for (const text of ["We raised a Series C, and are hiring.", "A grade of C or better.", "Vitamin C and D."]) {
+      expect(extractSkills(text), text).not.toContain("C");
+    }
+    for (const text of ["Firmware in C and C++.", "Python, C, or Rust.", "Strong C programming.", "Embedded C on ARM."]) {
+      expect(extractSkills(text), text).toContain("C");
+    }
+    expect(extractSkills("C++ only.")).toEqual(["C++"]);
   });
 });
 
@@ -94,6 +109,16 @@ describe("fitReport", () => {
   it("reads the years asked for and states the years I have", () => {
     expect(report.years).toEqual({ asked: 5, have: 5.5 });
     expect(fitReport(index, "No number here.", 5.5).years).toBeUndefined();
+  });
+
+  it("only reads years that are tied to experience", () => {
+    expect(yearsAsked("Must be 18 years or older. 5+ years of C++ experience.")).toBe(5);
+    expect(yearsAsked("Founded 12 years ago. We want at least 3 years in backend roles.")).toBe(3);
+    expect(yearsAsked("7 years' professional software engineering experience")).toBe(7);
+    expect(yearsAsked("Experience: 4+ years")).toBe(4);
+    expect(yearsAsked("Must be 18 years or older.")).toBeNull();
+    expect(yearsAsked("Our company is 20 years old and growing.")).toBeNull();
+    expect(yearsAsked("A minimum of 21 years of age.")).toBeNull();
   });
 
   it("the years figure is the one the hero line and the resume state", () => {

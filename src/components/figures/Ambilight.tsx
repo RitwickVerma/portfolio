@@ -73,6 +73,8 @@ export default function Ambilight() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(true);
+  /** Film time in seconds. Kept across pauses so Pause freezes the frame it is on. */
+  const filmTime = useRef(7);
   const [zones, setZones] = useState(true);
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export default function Ambilight() {
       });
     };
 
-    paint(7);
+    paint(filmTime.current);
     if (!playing || still) return;
 
     let raf = 0;
@@ -104,9 +106,15 @@ export default function Ambilight() {
     io.observe(wrap);
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
-      if (!visible || now - last < 1000 / FPS) return;
+      if (!visible) {
+        last = 0;
+        return;
+      }
+      if (now - last < 1000 / FPS) return;
+      // Advance by the time actually played, so the film resumes where it stopped.
+      if (last > 0) filmTime.current += (now - last) / 1000;
       last = now;
-      paint(7 + now / 1000);
+      paint(filmTime.current);
     };
     raf = requestAnimationFrame(tick);
     return () => {

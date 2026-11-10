@@ -21,7 +21,7 @@ npm run build      # static export -> out/
 **A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
-Vitest 4 + jsdom, pure logic only (no component or browser tests). Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 14 files / 157 tests pass.
+Vitest 4 + jsdom, pure logic only (no component or browser tests). Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 14 files / 164 tests pass.
 ```bash
 npm run lint && npm run typecheck && npm test   # exactly what the CI `check` job runs
 npm run test:watch
@@ -90,5 +90,8 @@ npm run test:watch
 8. `status.json` written with `mktemp` default mode made nginx return 403; the script sets 0644 before the atomic rename. A privilege-separated Proxmox token needs the role on both user and token (`5c853e8`).
 9. Turbopack cannot take JS functions as MDX plugins; name them as strings in `next.config.ts`.
 11. Heading ids come from `slugify` in two places that must agree: `mdx-components.tsx` (rendered ids) and `notes.server.ts` (index links, contents rail). A raw `<h2>` written as JSX inside MDX bypasses the first; use markdown `##`.
+13. No regex lookbehind (`(?<=`, `(?<!`) anywhere in `src/`: Safari before 16.4 fails to parse the whole chunk. `copy.test.ts` enforces it.
+14. A figure must not trap the page: `InfiniteCanvas` uses `touch-action: pan-y`, never `none`.
+15. The fit check must not guess: years count only when tied to the word experience (`yearsAsked`), and ordinary verbs are never aliases for skills.
 12. Search results for notes link with `?q=`; `NoteHighlights` reads it and paints matches with the CSS Custom Highlight API. It must never mutate the note's DOM.
 10. Martian Mono is wide: a mono string longer than about 40 characters wraps on phones. Keep mono for short tokens.

@@ -137,6 +137,8 @@ export function parseQuery(query: string): ParsedQuery {
   });
 
   parsed.terms = [...new Set(tokenize(rest))];
+  parsed.excluded = [...new Set(parsed.excluded)];
+  parsed.tech = [...new Set(parsed.tech)];
   // A query that ends inside a quote, a filter or an exclusion is not growing a free term.
   parsed.stillTyping = /[a-z0-9+#]$/i.test(rest);
   parsed.kinds = [...new Set(parsed.kinds)];
@@ -387,8 +389,10 @@ export function planQuery(index: SearchIndex, query: string | ParsedQuery, confi
   const last = parsed.terms[parsed.terms.length - 1];
   let completed = false;
   if (config.prefix && parsed.stillTyping && last && last.length >= 2) {
+    // Commonest completions first: a short prefix should reach the words the site uses most.
     index.terms
       .filter((t) => t !== last && t.startsWith(last))
+      .sort((x, y) => df(y) - df(x) || x.localeCompare(y))
       .slice(0, MAX_PREFIX_EXPANSIONS)
       .forEach((t) => {
         completed = true;
@@ -447,6 +451,20 @@ export interface SearchResult {
   total: number;
 }
 
+/** Mean boosted document length, remembered per index and set of field weights. */
+const averages = new WeakMap<SearchIndex, Map<string, number>>();
+function averageLength(index: SearchIndex, boost: RankerConfig["boost"]): number {
+  let byBoost = averages.get(index);
+  if (!byBoost) averages.set(index, (byBoost = new Map()));
+  const key = `${boost.title}/${boost.keywords}/${boost.text}`;
+  let avg = byBoost.get(key);
+  if (avg === undefined) {
+    const total = index.lengths.reduce((sum, l) => sum + l[0] * boost.title + l[1] * boost.keywords + l[2] * boost.text, 0);
+    byBoost.set(key, (avg = total / Math.max(1, index.docs.length)));
+  }
+  return avg;
+}
+
 function containsPhrase(sequence: (string | null)[], phrase: string[]): boolean {
   outer: for (let i = 0; i + phrase.length <= sequence.length; i++) {
     for (let j = 0; j < phrase.length; j++) if (sequence[i + j] !== phrase[j]) continue outer;
@@ -461,7 +479,7 @@ export function search(index: SearchIndex, query: string, config: RankerConfig =
   const n = index.docs.length;
   const { boost, k1, b } = config;
   const weighted = (tf: FieldTf) => tf[0] * boost.title + tf[1] * boost.keywords + tf[2] * boost.text;
-  const avgLength = index.lengths.reduce((sum, l) => sum + weighted(l), 0) / Math.max(1, n);
+  const avgLength = averageLength(index, boost);
 
   const candidates = new Map<number, TermScore[]>();
   for (const { term, source, from, weight } of plan) {
@@ -547,7 +565,8 @@ export function snippet(text: string, stems: Iterable<string>, max = 230): strin
   if (text.length <= max) return text;
   const set = new Set(stems);
   // A sentence ends at punctuation followed by a space, so "ebay.com" and "1.04" stay whole.
-  const sentences = text.split(/(?<=[.!?])\s+/).map((s) => `${s} `);
+  // No lookbehind: Safari before 16.4 rejects one at parse time and takes the whole script with it.
+  const sentences = text.match(/[\s\S]+?(?:[.!?]+(?=\s|$)|$)\s*/g) ?? [text];
   const hitsIn = sentences.map((s) => new Set(tokenize(s).filter((t) => set.has(t))).size);
   // Start at the sentence with the most distinct matched terms; earliest wins a tie.
   let first = 0;

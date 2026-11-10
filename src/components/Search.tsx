@@ -189,7 +189,6 @@ export default function Search() {
           enterKeyHint="search"
           maxLength={120}
           aria-controls="hits"
-          aria-activedescendant={selected >= 0 ? `hit-${selected}` : undefined}
           className="flex-1 min-w-0 bg-transparent py-4 sm:py-5 text-xl sm:text-2xl font-medium placeholder:text-muted placeholder:font-normal outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {text ? (
@@ -263,7 +262,11 @@ export default function Search() {
       )}
 
       <p className="sr-only" role="status" aria-live="polite">
-        {result ? `${result.hits.length} of ${result.total} documents match` : ""}
+        {selected >= 0 && visible[selected]
+          ? `Result ${selected + 1} of ${visible.length}: ${visible[selected].doc.title}. Enter opens it.`
+          : result
+            ? `${result.hits.length} of ${result.total} documents match`
+            : ""}
       </p>
 
       <div className="mt-6">

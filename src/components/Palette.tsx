@@ -35,7 +35,6 @@ const ACTIONS: Action[] = [
   { label: "The engine room: how this search works", hint: "Go to", run: go("/engine/") },
   { label: "The design language", hint: "Go to", run: go("/design/") },
   { label: "Email me", hint: "Do", run: go(`mailto:${socialLinks.email}?subject=${encodeURIComponent("Hello from ritwickverma.dev")}`) },
-  { label: "Copy my email address", hint: "Do", run: () => navigator.clipboard?.writeText(socialLinks.email) },
   { label: "Download the resume (PDF)", hint: "Do", run: go("/Ritwick_Verma_Resume.pdf") },
   { label: "Switch between light and dark", hint: "Do", run: () => void toggleTheme() },
   { label: "Follow my system's theme", hint: "Do", run: () => setTheme(null) },
@@ -134,6 +133,9 @@ export default function Palette() {
           onKeyDown={onKeyDown}
           placeholder="Search the record, the notes, or type a command"
           aria-label="Search the record, the notes, or type a command"
+          role="combobox"
+          aria-expanded={count > 0}
+          aria-autocomplete="list"
           aria-controls="palette-list"
           aria-activedescendant={count > 0 ? `palette-${selected}` : undefined}
           autoComplete="off"

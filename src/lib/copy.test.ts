@@ -40,6 +40,10 @@ describe("site copy", () => {
     }
   });
 
+  it("ships no regex lookbehind: Safari before 16.4 fails to parse the whole script", () => {
+    for (const { path, text } of sources) expect(text, path).not.toMatch(/\(\?<[=!]/);
+  });
+
   it("lists languages he writes himself (agent-written C# stays on project cards)", () => {
     expect(skills.languages).toEqual(["C++", "Python", "Java", "Kotlin", "TypeScript", "C"]);
   });

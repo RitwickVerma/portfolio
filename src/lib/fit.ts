@@ -111,12 +111,31 @@ export function checkSkill(index: SearchIndex, label: string): FitTerm {
   return { label, status: "adjacent", via, evidence: hits.slice(0, EVIDENCE) };
 }
 
+/**
+ * The years of experience a posting asks for, or null. A number of years only
+ * counts when the text ties it to experience ("5+ years of experience", "at
+ * least 5 years"), so "must be 18 years or older" and "founded 12 years ago"
+ * are not read as requirements.
+ */
+export function yearsAsked(text: string): number | null {
+  const patterns = [
+    /(\d{1,2})\s*\+?\s*(?:or more\s+)?years?['’]?\s+(?:of\s+)?(?:[\w+#./-]+\s+){0,4}?experience/i,
+    /(?:at least|minimum(?: of)?|a minimum of|more than|over)\s+(\d{1,2})\s*\+?\s*years?\b(?!\s+(?:old|of age|ago))/i,
+    /experience\s*(?:of|:)?\s*(\d{1,2})\s*\+?\s*years?/i,
+  ];
+  for (const re of patterns) {
+    const n = Number(text.match(re)?.[1]);
+    if (n > 0 && n <= 30) return n;
+  }
+  return null;
+}
+
 export function fitReport(index: SearchIndex, text: string, yearsHave: number): FitReport {
   const terms = extractSkills(text).map((label) => checkSkill(index, label));
   const counts: Record<FitStatus, number> = { direct: 0, adjacent: 0, missing: 0 };
   for (const t of terms) counts[t.status] += 1;
-  const asked = text.match(/(\d{1,2})\s*\+?\s*(?:or more\s+)?years?/i);
-  return { terms, counts, ...(asked ? { years: { asked: Number(asked[1]), have: yearsHave } } : {}) };
+  const asked = yearsAsked(text);
+  return { terms, counts, ...(asked !== null ? { years: { asked, have: yearsHave } } : {}) };
 }
 
 /** A made-up posting for the "try a sample" button. No real company. */

@@ -4,8 +4,8 @@ import PaletteButton from "@/components/PaletteButton";
 import ThemeToggle from "@/components/ThemeToggle";
 
 // One row, no menu button. The in-page links drop out on a phone, where the
-// page is a single scroll and the palette reaches everything; search, theme,
-// Resume and Email always stay.
+// page is a single scroll and the palette reaches everything. Search, theme
+// and Email always stay; Resume yields below 360 px and is in the palette.
 const links = [
   { href: "/#work", label: "Work", always: false },
   { href: "/#projects", label: "Projects", always: false },

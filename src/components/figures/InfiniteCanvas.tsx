@@ -6,6 +6,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // positions on a plane much larger than the screen; nothing ever moves them.
 // The only thing that changes is the camera: where it looks and how far out
 // it is. Drag to pan, use the buttons or Ctrl and the wheel to zoom.
+//
+// On a touch screen a vertical swipe still scrolls the page (touch-action:
+// pan-y): a figure must never trap the reader. Sideways drags pan the canvas.
 
 interface Win {
   title: string;
@@ -31,6 +34,17 @@ const PLANE = { w: 1600, h: 680 };
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 1.6;
 const START = { x: 20, y: 10, zoom: 0.62 };
+
+/** Keep the middle of the view over the plane, so the windows can never be dragged out of sight. */
+function clamp(c: Camera, size: { w: number; h: number }): Camera {
+  const halfW = size.w / 2 / c.zoom;
+  const halfH = size.h / 2 / c.zoom;
+  return {
+    zoom: c.zoom,
+    x: Math.min(PLANE.w - halfW, Math.max(-halfW, c.x)),
+    y: Math.min(PLANE.h - halfH, Math.max(-halfH, c.y)),
+  };
+}
 
 interface Camera {
   /** Plane coordinate at the viewport's top-left corner. */
@@ -60,7 +74,7 @@ export default function InfiniteCanvas() {
         const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, c.zoom * factor));
         const cx = c.x + size.w / 2 / c.zoom;
         const cy = c.y + size.h / 2 / c.zoom;
-        return { zoom, x: cx - size.w / 2 / zoom, y: cy - size.h / 2 / zoom };
+        return clamp({ zoom, x: cx - size.w / 2 / zoom, y: cy - size.h / 2 / zoom }, size);
       }),
     [size],
   );
@@ -89,7 +103,7 @@ export default function InfiniteCanvas() {
     const m = moves[e.key];
     if (m) {
       e.preventDefault();
-      setCam((c) => ({ ...c, x: c.x + m[0], y: c.y + m[1] }));
+      setCam((c) => clamp({ ...c, x: c.x + m[0], y: c.y + m[1] }, size));
     } else if (e.key === "+" || e.key === "=") zoomBy(1.2);
     else if (e.key === "-") zoomBy(1 / 1.2);
   };
@@ -106,17 +120,18 @@ export default function InfiniteCanvas() {
         aria-label="An infinite canvas of windows. Drag or use the arrow keys to move the camera; plus and minus zoom."
         onKeyDown={onKeyDown}
         onPointerDown={(e) => {
+          if (e.button !== 0) return;
           e.currentTarget.setPointerCapture(e.pointerId);
           drag.current = { id: e.pointerId, px: e.clientX, py: e.clientY, cx: cam.x, cy: cam.y };
         }}
         onPointerMove={(e) => {
           const d = drag.current;
           if (!d || d.id !== e.pointerId) return;
-          setCam((c) => ({ ...c, x: d.cx - (e.clientX - d.px) / c.zoom, y: d.cy - (e.clientY - d.py) / c.zoom }));
+          setCam((c) => clamp({ ...c, x: d.cx - (e.clientX - d.px) / c.zoom, y: d.cy - (e.clientY - d.py) / c.zoom }, size));
         }}
         onPointerUp={() => (drag.current = null)}
         onPointerCancel={() => (drag.current = null)}
-        className="relative h-[19rem] sm:h-[22rem] overflow-hidden border-2 border-fg rounded-[var(--r-box)] bg-surface cursor-grab active:cursor-grabbing touch-none select-none outline-none focus-visible:border-accent"
+        className="relative h-[19rem] sm:h-[22rem] overflow-hidden border-2 border-fg rounded-[var(--r-box)] bg-surface cursor-grab active:cursor-grabbing touch-pan-y select-none outline-none focus-visible:border-accent"
         style={{
           backgroundImage: "radial-gradient(rgb(var(--fg-rgb) / 0.22) 1px, transparent 1px)",
           backgroundSize: `${40 * cam.zoom}px ${40 * cam.zoom}px`,
