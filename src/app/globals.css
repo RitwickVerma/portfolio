@@ -10,124 +10,394 @@
   --color-accent: var(--accent);
   --color-muted: var(--muted);
   --color-warn: var(--warn);
+  --color-hit: var(--hit);
+  --color-ok: var(--ok);
+  --color-ink: var(--ink);
   --color-border: var(--border);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-archivo);
+  --font-mono: var(--font-martian);
 }
 
 @theme {
-  /* Fluid modular type scale — 1.25 (major third), clamped to viewport */
-  --text-display: clamp(2.75rem, 6vw + 0.5rem, 5rem);
-  --text-h2: clamp(1.5rem, 2vw + 0.5rem, 2rem);
+  /* Fluid type scale. Display is the name; h2 is a section's one sentence. */
+  --text-display: clamp(3rem, 9.5vw, 8.25rem);
+  --text-h2: clamp(1.75rem, 3.2vw + 0.5rem, 3rem);
+  --text-lede: clamp(1.25rem, 1.1vw + 0.9rem, 1.75rem);
 }
 
+/* ─── The "Index" design language: tokens ────────────────────────────────
+   Documented, with live specimens, at /design. Colours mirror src/lib/theme.ts
+   and theme.test.ts fails if the two drift. */
 :root {
-  /* mirrors src/lib/motion.ts — motion.test.ts keeps them in sync */
-  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-slow: 700ms;
-  --stagger-line: 90ms;
+  --bg: #f1f2ee;
+  --fg: #12161b;
+  --fg-rgb: 18 22 27;
+  --muted: #566068;
+  --accent: #1a3fd0;
+  --accent-rgb: 26 63 208;
+  --hit: #ffe45c;
+  --warn: #b3261a;
+  --ok: #17643a;
+  --ink: #12161b;
+  --surface: rgb(var(--fg-rgb) / 0.035);
+  --border: rgb(var(--fg-rgb) / 0.16);
 
-  /* mirrors src/lib/theme.ts — theme.test.ts keeps them in sync */
-  --bg: #0c0b09;
-  --fg: #ebe7df;
-  --muted: #8f8a80;
-  --accent: #f0b35a;
-  --accent-rgb: 240 179 90;
-  --warn: #ff5a4e;
-  --surface: rgba(255, 250, 240, 0.03);
-  --border: rgba(255, 250, 240, 0.08);
+  /* Motion: one curve, three lengths. Tap, settle, mark. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-tap: 120ms;
+  --dur-settle: 320ms;
+  --dur-mark: 2400ms;
+
+  /* Shape: small radii, hairline rules, one heavy rule per section. */
+  --r-chip: 3px;
+  --r-box: 6px;
+  --page: 78rem;
+}
+
+/* mirrors src/lib/theme.ts (DARK): an OS that asks for dark, unless the switch says light */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1317;
+    --fg: #e8ebe6;
+    --fg-rgb: 232 235 230;
+    --muted: #97a1a6;
+    --accent: #9db4ff;
+    --accent-rgb: 157 180 255;
+    --hit: #ffe45c;
+    --warn: #ff8a7a;
+    --ok: #7fd69b;
+  }
+}
+
+/* mirrors src/lib/theme.ts (DARK): the switch says dark */
+:root[data-theme="dark"] {
+  --bg: #0f1317;
+  --fg: #e8ebe6;
+  --fg-rgb: 232 235 230;
+  --muted: #97a1a6;
+  --accent: #9db4ff;
+  --accent-rgb: 157 180 255;
+  --hit: #ffe45c;
+  --warn: #ff8a7a;
+  --ok: #7fd69b;
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
     text-rendering: optimizeLegibility;
+    color-scheme: light dark;
+  }
+  html[data-theme="light"] {
+    color-scheme: light;
+  }
+  html[data-theme="dark"] {
+    color-scheme: dark;
   }
 
   body {
     background: var(--bg);
     color: var(--fg);
-    font-family: var(--font-geist-sans), system-ui, sans-serif;
-    line-height: 1.7;
+    font-family: var(--font-archivo), system-ui, sans-serif;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Balanced headings + consistent optical tracking */
   h1, h2, h3, h4 {
     text-wrap: balance;
-    letter-spacing: -0.02em;
   }
 
-  /* Tabular figures for mono — aligned numbers in stats/terminal */
+  p, li, dd {
+    text-wrap: pretty;
+  }
+
+  /* Tabular figures for mono: aligned numbers in the query plan and tables. */
   code, pre, .font-mono {
     font-variant-numeric: tabular-nums;
   }
+
+  /* The highlighter. Ink on yellow in both schemes. */
+  mark {
+    background: var(--hit);
+    color: var(--ink);
+    padding: 0.04em 0.12em;
+    margin: 0 -0.12em;
+    border-radius: 2px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+}
+
+/* One typeface, three widths. Expanded says who and what; the regular width
+   is for reading; condensed carries facts about a thing (dates, roles, ids). */
+.wd-wide {
+  font-stretch: 125%;
+  letter-spacing: -0.035em;
+}
+.wd-semi {
+  font-stretch: 112%;
+  letter-spacing: -0.02em;
+}
+.wd-narrow {
+  font-stretch: 78%;
+  letter-spacing: 0.005em;
+}
+
+/* A fact about a thing: a date, a role, a stack. Condensed and quiet. */
+.fact {
+  font-stretch: 78%;
+  letter-spacing: 0.005em;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+/* Two buttons. Solid is the one thing to do here; quiet is everything else. */
+.btn,
+.btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  border: 1.5px solid var(--fg);
+  transition: background-color var(--dur-tap), color var(--dur-tap), border-color var(--dur-tap);
+}
+.btn {
+  background: var(--fg);
+  color: var(--bg);
+}
+.btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.btn-quiet {
+  color: var(--fg);
+}
+.btn-quiet:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn:disabled,
+.btn-quiet:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* A term in a query plan. The border says where the term came from. */
+.term {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-family: var(--font-martian), monospace;
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 0.38rem 0.4rem;
+  border: 1px solid var(--fg);
+  border-radius: var(--r-chip);
+  white-space: nowrap;
+}
+.term[data-source="rewrite"] {
+  border-style: dashed;
+  border-color: rgb(var(--fg-rgb) / 0.55);
+}
+.term[data-source="prefix"] {
+  border-style: dotted;
+  border-color: rgb(var(--fg-rgb) / 0.55);
+}
+.term[data-source="fuzzy"] {
+  border-style: double;
+  border-width: 3px;
+  padding: 0.26rem 0.34rem;
+}
+.term[data-source="phrase"] {
+  border-left-width: 3px;
+  border-right-width: 3px;
+}
+.term[data-source="excluded"] {
+  border-color: var(--warn);
+  color: var(--warn);
+  text-decoration: line-through;
+}
+.term[data-source="filter"] {
+  background: var(--fg);
+  color: var(--bg);
+}
+.term[data-empty="true"] {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.term > span {
+  color: var(--muted);
+}
+.term[data-source="filter"] > span {
+  color: inherit;
+  opacity: 0.7;
+}
+
+kbd {
+  font-family: var(--font-martian), monospace;
+  font-size: 0.68rem;
+  line-height: 1;
+  padding: 0.3rem 0.38rem;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: var(--r-chip);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* The corpus map: one tick per document, grouped by kind. Lit ticks match; height is score. */
+.corpus-map {
+  display: flex;
+  gap: clamp(0.2rem, 0.6vw, 0.5rem);
+}
+.corpus-map > div {
+  min-width: 0;
+}
+.corpus-map > div > div {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(0px, 0.1vw, 1px);
+  height: var(--map-h, 2.75rem);
+  border-bottom: 1px solid var(--fg);
+}
+.corpus-map span {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 14%;
+  background: rgb(var(--fg-rgb) / 0.22);
+  transition: height var(--dur-settle) var(--ease-out), background-color var(--dur-tap);
+}
+.corpus-map span[data-lit="true"] {
+  background: var(--fg);
+  height: var(--h, 60%);
+}
+.corpus-map span[data-top="true"] {
+  background: var(--hit);
+  box-shadow: inset 0 0 0 1px var(--fg);
+}
+.corpus-map span:hover {
+  background: var(--accent);
+}
+@media (max-width: 639px) {
+  .corpus-map p {
+    display: none;
+  }
+}
+.corpus-map p {
+  font-size: 0.72rem;
+  margin-top: 0.3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+/* Text highlighted in a note when you arrive from a search (CSS Custom Highlight API). */
+::highlight(search-hit) {
+  background-color: var(--hit);
+  color: var(--ink);
+}
+
+/* The command palette. */
+dialog.palette {
+  width: min(44rem, calc(100vw - 1.5rem));
+  max-height: min(34rem, calc(100dvh - 5rem));
+  margin: 4.5rem auto auto;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  border: 2px solid var(--fg);
+  border-radius: var(--r-box);
+  box-shadow: 0.5rem 0.5rem 0 rgb(var(--fg-rgb) / 0.18);
+  overflow: hidden;
+}
+dialog.palette[open] {
+  display: flex;
+  flex-direction: column;
+  animation: rank-in var(--dur-settle) var(--ease-out);
+}
+dialog.palette::backdrop {
+  background: rgb(var(--fg-rgb) / 0.35);
+}
+:root[data-theme="dark"] dialog.palette::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+
+/* A text link: blue and underlined, like a result. */
+.link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--accent-rgb) / 0.4);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+.link:hover {
+  text-decoration-color: var(--accent);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(var(--accent-rgb) / 0.25) transparent;
+  scrollbar-color: rgb(var(--fg-rgb) / 0.3) transparent;
 }
 
 ::selection {
-  background: rgb(var(--accent-rgb) / 0.22);
-  color: var(--fg);
+  background: var(--hit);
+  color: var(--ink);
 }
 
-/* Keyboard focus ring */
 *:focus-visible {
-  outline: 2px solid rgb(var(--accent-rgb) / 0.6);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
-/* Hero line reveal — each line rises through its own mask. Tokens above. */
-.line-mask {
-  display: block;
-  overflow: hidden;
-  /* room for descenders so the mask never clips them */
-  padding-bottom: 0.14em;
-  margin-bottom: -0.14em;
+/* A field you type into shows focus on its own border, not with a second ring. */
+:where(input[type="search"], textarea):focus-visible {
+  outline: none;
 }
-.line-mask > span {
-  display: block;
-  animation: line-rise var(--dur-slow) var(--ease-out-quint) both;
-  animation-delay: calc(120ms + var(--i, 0) * var(--stagger-line));
+
+/* Anchor targets sit below the sticky nav */
+[id] {
+  scroll-margin-top: 5.5rem;
 }
-@keyframes line-rise {
-  from {
-    transform: translateY(110%);
+
+/* Arriving at a result's anchor: the highlighter marks where you landed, then lets go. */
+.landing:target {
+  animation: landed var(--dur-mark) var(--ease-out) 1;
+}
+@keyframes landed {
+  0%, 35% {
+    background: color-mix(in srgb, var(--hit) 55%, transparent);
+    box-shadow: 0 0 0 0.6rem color-mix(in srgb, var(--hit) 55%, transparent);
+  }
+  100% {
+    background: transparent;
+    box-shadow: 0 0 0 0.6rem transparent;
   }
 }
 
-/* No JavaScript: nothing below the hero may stay at its hidden initial state */
-html:not(.js) .reveal-root [style*="opacity"] {
-  opacity: 1 !important;
-  transform: none !important;
+/* Results re-rank on every keystroke; each row settles in, top first. */
+.rank-in {
+  animation: rank-in var(--dur-settle) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+@keyframes rank-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
-/* Anchor targets sit below the fixed nav */
-section[id] {
-  scroll-margin-top: 4rem;
-}
-
-/* Surface: a flat tint and a hairline. No blur — nothing moves behind a card. */
+/* Surface used by the keyboard and note code blocks: a tint and a hairline. */
 .glass {
   background: var(--surface);
   border: 1px solid var(--border);
-}
-
-.glass-hover:hover {
-  background: rgba(255, 250, 240, 0.05);
-  border-color: rgb(var(--accent-rgb) / 0.3);
-}
-
-/* Prevent canvas focus on mobile */
-canvas {
-  outline: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
 /* Notes: fenced code inherits the <pre> styling, not the inline-code pill */
@@ -139,33 +409,15 @@ canvas {
   font-size: inherit;
 }
 
-/* Terminal styles */
-.xterm-viewport::-webkit-scrollbar {
-  width: 4px;
-}
-.xterm-viewport::-webkit-scrollbar-track {
-  background: transparent;
-}
-.xterm-viewport::-webkit-scrollbar-thumb {
-  background: rgb(var(--accent-rgb) / 0.25);
-  border-radius: 2px;
-}
-
-/* ─── Reduced motion — respect the OS setting ─────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-  .scroll-indicator {
-    display: none;
-  }
-  .line-mask > span {
-    animation: none;
   }
 }
 
@@ -182,21 +434,13 @@ canvas {
     animation: none !important;
   }
 
-  /* Interactive/decorative chrome */
-  nav, canvas, .scroll-indicator {
+  nav, .no-print {
     display: none !important;
   }
 
   body {
-    cursor: auto !important;
     line-height: 1.5;
     font-size: 11pt;
-  }
-
-  /* The 3D hero pins inside a 200vh wrapper — collapse to a normal header */
-  #hero {
-    position: static !important;
-    height: auto !important;
   }
 
   a {

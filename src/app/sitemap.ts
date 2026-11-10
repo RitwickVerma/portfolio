@@ -11,6 +11,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/`, changeFrequency: "monthly", priority: 1 },
     { url: `${SITE_URL}/resume/`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE_URL}/notes/`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${SITE_URL}/engine/`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/design/`, changeFrequency: "yearly", priority: 0.5 },
     ...Object.values(apps).map((a) => ({
       url: `${SITE_URL}/apps/${a.slug}/`,
       changeFrequency: "monthly" as const,

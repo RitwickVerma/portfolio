@@ -157,7 +157,7 @@ export default function Crush80() {
             idleSince.current = performance.now();
             demoIndex.current = 0;
           }}
-          className="rounded-xl glass outline-none focus-visible:ring-2 focus-visible:ring-accent/60 overflow-x-auto"
+          className="rounded-md glass outline-none focus-visible:ring-2 focus-visible:ring-accent overflow-x-auto"
         >
           <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto min-w-[600px] select-none" aria-hidden="true">
             {/* For each lit key: the column strobe through it and the row sense line through it. */}
@@ -165,7 +165,7 @@ export default function Crush80() {
               const cx = PAD + (k.x + k.w / 2) * U;
               const cy = PAD + (k.y + (k.h ?? 1) / 2) * U;
               return (
-                <g key={`lines-${keyId(k)}`} stroke="var(--accent)" strokeWidth={1} strokeOpacity={0.35 * a}>
+                <g key={`lines-${keyId(k)}`} stroke="var(--fg)" strokeWidth={1} strokeOpacity={0.45 * a}>
                   <line x1={cx} x2={cx} y1={PAD} y2={H - PAD} />
                   <line x1={PAD} x2={W - PAD} y1={cy} y2={cy} />
                 </g>
@@ -191,8 +191,10 @@ export default function Crush80() {
                     press(k, charForTap(k) ?? code, code);
                   }}
                 >
-                  <rect x={x} y={y} width={w} height={h} rx={5} fill="var(--accent)" fillOpacity={0.04 + a * 0.5} stroke="var(--accent)" strokeOpacity={0.12 + a * 0.6} strokeWidth={1} />
-                  <text x={x + 7} y={y + 15} fontSize={k.label.length > 4 ? 8.5 : 10.5} fontFamily="var(--font-mono)" fill="var(--fg)" fillOpacity={0.55 + a * 0.45}>
+                  <rect x={x} y={y} width={w} height={h} rx={3} fill="var(--bg)" stroke="var(--fg)" strokeOpacity={0.28 + a * 0.72} strokeWidth={1} />
+                  {/* A pressed switch gets the highlighter, like a search match. */}
+                  <rect x={x} y={y} width={w} height={h} rx={3} fill="var(--hit)" fillOpacity={a} />
+                  <text x={x + 7} y={y + 15} fontSize={k.label.length > 4 ? 7.5 : 9.5} fontFamily="var(--font-mono)" fill={a > 0.3 ? "var(--ink)" : "var(--fg)"} fillOpacity={0.7 + a * 0.3}>
                     {k.label}
                   </text>
                 </g>
@@ -201,12 +203,12 @@ export default function Crush80() {
           </svg>
         </div>
         {/* Phones scroll the board sideways; the fade says so. */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-10 rounded-r-xl bg-gradient-to-l from-background to-transparent sm:hidden" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-10 rounded-r-md bg-gradient-to-l from-background to-transparent sm:hidden" />
       </div>
 
-      <p className="mt-3 font-mono text-xs text-muted">
+      <p className="mt-3 wd-narrow text-[0.95rem] text-muted">
         {last
-          ? `${last.codes[0] ?? last.label} · RC(${last.r},${last.c}) · column ${COL_GPIOS[last.c]} strobed, row ${ROW_GPIOS[last.r]} sensed`
+          ? `${last.codes[0] ?? last.label}: matrix position RC(${last.r},${last.c}), column ${COL_GPIOS[last.c]} strobed, row ${ROW_GPIOS[last.r]} sensed`
           : focused
             ? "Type. Backspace deletes, Enter clears the line."
             : "Type on it or tap a key. Each press shows its matrix position and the two GPIO lines the firmware reads it through."}

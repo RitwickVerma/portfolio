@@ -21,29 +21,42 @@ npm run build      # static export -> out/
 **A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
-Vitest 4 + jsdom, pure logic only (no component or browser tests). Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified: 14 files / 93 tests pass.
+Vitest 4 + jsdom, pure logic only (no component or browser tests). Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 14 files / 164 tests pass.
 ```bash
 npm run lint && npm run typecheck && npm test   # exactly what the CI `check` job runs
 npm run test:watch
 ```
 - `src/lib/notes.test.ts` fails if `src/content/notes/*.mdx` and the registry in `src/lib/notes.ts` disagree.
 - `src/lib/status.test.ts` runs `tools/status-from-api.sh` via `sh` against `tools/fixtures/` (env `PVE_FIXTURE_DIR`, `OUT`) and feeds the result through `parseStatus`. No network.
+- `src/lib/search.test.ts` pins the tokenizer, query language (phrases, `-term`, `kind:`, `tech:`), rewriter, spelling fallback, ranking and the score breakdown (the parts must multiply back to the score).
+- `src/lib/corpus.test.ts` checks the corpus against the real data: every note section is a document whose anchor the page renders, and `WORK_HEADLINES` matches the generated `lib/resume.ts` bullets in count.
+- `src/lib/eval.test.ts` is the relevance guard: the judged queries in `lib/eval.ts` must all return a relevant first result under `TREATMENT`, nDCG@5 must stay at 0.9 or better, and `TREATMENT` must beat `CONTROL`. A ranking change that fails this needs either a fix or a conscious edit to the judgments.
+- `src/lib/fit.test.ts` pins the fit check, including that common skills I do not have (Kubernetes, Kafka, Rust, ...) come back `missing`. Never make one pass by loosening that.
+- `src/lib/theme.test.ts` checks both palettes against `globals.css` and for WCAG contrast.
 - No test uses `vi.mock`/`vi.fn`/`vi.spyOn`; tests exercise pure functions and fixtures directly. Keep new logic pure so it stays testable this way.
 - `npm run build` also renders OG cards and must pass; it is not part of CI `check` (verified locally, ~30 s).
 
 ## Source modules
 | Path | Responsibility |
 |---|---|
-| `src/app/(site)/` | Home page, shared layout (nav, footer, backdrop) and `/notes` index + `/notes/[slug]` pages with per-note OG card. |
+| `src/app/(site)/` | Home page, shared layout (nav, footer, command palette), `/notes` index + `/notes/[slug]` pages with per-note OG card, `/engine` (the engine room) and `/design` (the design language). |
+| `src/app/search-index.json/` | Static route: every note split at its `##` headings, as JSON. The client fetches it once idle and rebuilds the index with it. |
 | `src/app/resume/` | Print-optimised `/resume` rendered from `lib/data`, with its own OG card. |
 | `src/app/{og.png,sitemap.ts,robots.ts,manifest.ts}` | Build-time OG image, sitemap, robots and web manifest. |
-| `src/components/` | UI sections plus the three.js/R3F hero (`HeroScene`, `HeroSceneWrapper`, `HeroPoster`), xterm terminal (`Terminal*`), `Crush80`, `SectionReveal`. |
+| `src/components/` | `Search` (the hero), `Palette` (Ctrl K, every page), `FitCheck`, the home sections (`Work`, `Projects`, `Keyboard`, `Notes`, `Homelab`, `Contact`) on the shared `Section` frame, `Timeline`, `Crush80`, `NoteExtras` (contents rail, match highlighting), `Nav`, `Footer`. |
+| `src/components/search/parts.tsx` | Shared by every search surface: result row, plan chips, score breakdown (`Explain`), `CorpusMap`. |
+| `src/components/figures/` | `Ambilight` (canvas simulation; LEDs computed from the pixels), `InfiniteCanvas` (pan and zoom), `LabTopology` (SVG from `lib/data`). |
+| `src/components/engine/`, `design/` | `XRay` and `Benchmark` for `/engine`; `WidthSpecimen` for `/design`. |
 | `src/content/notes/*.mdx` | The engineering notes; each needs an entry in `src/lib/notes.ts` (newest first). |
-| `src/lib/data.ts` | Single source for home, `/resume` and the terminal: projects, experience, education, services, skills, links. |
-| `src/lib/terminal.ts` | Pure terminal command output built from `lib/data`. |
+| `src/lib/data.ts` | Single source for home, `/resume` and the search index: projects, experience, education, services, skills, links. |
+| `src/lib/search.ts` | The search engine, pure and dependency-free: query parser, tokenizer and stemmer, rewriter, prefix and fuzzy expansion, inverted index with per-field counts, BM25 with field boosts and a static-rank prior, per-hit `explain`, highlight and snippet helpers. `TREATMENT` is what the site runs; `CONTROL` is plain BM25. |
+| `src/lib/corpus.ts` | Builds the search documents from `lib/data`, `lib/resume`, `lib/notes` and (when given) the notes' sections; owns `WORK_HEADLINES`, the priors, starting points and example queries. The Work section renders from `workRoles` here. |
+| `src/lib/eval.ts` | The judged query set and the metrics (P@1, MRR, nDCG@5). Read by `/engine` at build and by `eval.test.ts`. |
+| `src/lib/fit.ts`, `lexicon.ts` | The fit check: extract skills from a pasted job description, look each up, classify `direct` / `adjacent` / `missing`. The lexicon is deliberately wider than the record. |
+| `src/lib/useSearchIndex.ts` | Client store: one index per tab, record first, full text after idle. |
+| `src/lib/timeline.ts`, `slug.ts`, `themeSwitch.ts` | Period parser for the career strip; heading slugs shared by MDX and the index; the light/dark switch. |
 | `src/lib/status.ts`, `statusStore.ts` | `/status.json` schema 1, `parseStatus` validation, freshness helpers; the store fetches it once. |
-| `src/lib/motion.ts` | Easing, duration, stagger and spring tokens; framer-motion is the only animation library. |
-| `src/lib/{phaseMachine,labels,gpu,sceneState,shaders}.ts` | Hero phase machine, tooltip placement, WebGL2 and reduced-motion probes, scene state, shaders. |
+| `src/fonts/` | Self-hosted variable fonts (Archivo with width and weight axes, Martian Mono) and their OFL licences; loaded with `next/font/local` in `src/app/layout.tsx`. The build needs no network. |
 | `src/lib/{seo,og,theme,notes,notes.server}.ts*` | SEO helpers, OG rendering, theme tokens, notes registry and its server-side reader. |
 | `tools/status-from-api.sh` | Produces a `/status.json` feed from the Proxmox API for a host that can run cron. Not wired on Cloudflare Pages (`NEXT_PUBLIC_STATUS_URL` unset). Fixtures in `tools/fixtures/`. |
 
@@ -56,8 +69,11 @@ npm run test:watch
 
 ## Code conventions
 - TypeScript (strict config in `tsconfig.json`), ESLint 9 flat config `eslint.config.mjs` (`eslint-config-next` core-web-vitals + typescript); lint currently reports no issues, keep it at zero warnings.
-- Tailwind CSS v4 via `@tailwindcss/postcss`; theme tokens in `src/app/globals.css`.
-- Motion values come only from `src/lib/motion.ts`; do not hard-code curves/durations.
+- Tailwind CSS v4 via `@tailwindcss/postcss`; theme tokens in `src/app/globals.css`, mirrored from `src/lib/theme.ts` (light and dark; the test fails on drift). Use the tokens (`text-fg`, `text-muted`, `text-accent`, `bg-hit`), never a literal colour, so both schemes keep working.
+- The design language is called Index and is documented at `/design` (`src/app/(site)/design/page.tsx`). Its five rules are binding: rows not cards; one typeface at three widths (`.wd-wide` name, `.wd-semi` headings, `.fact` for dates, roles, stacks; mono for code, ids and the query plan only); colour means something (blue = a place to go, yellow = a match, `ok`/`warn` only beside a measured change); headings are claims, never uppercase labels; nothing moves unless the visitor did something. If you add a token or a part, add it to that page.
+- There is no animation library. Motion is CSS in `globals.css` (`rank-in`, `landed`, corpus-map ticks) plus the one-time demo query in `Search.tsx` and the `Ambilight` canvas loop; all stop under reduced motion.
+- A figure must compute what it shows (the ambilight LEDs come from the canvas pixels; bars are drawn to scale from data) and its caption must say where it stops being the real thing.
+- The search box must find what the page says: new content goes in `lib/data`, `lib/notes` or `lib/corpus`, never straight into a component, or it will not be indexed.
 - Every claim on the site must be one the owner can back (comment in `data.ts`); counts and stars are dated snapshots, re-check before editing.
 - Page copy uses no em dashes in titles (`749af94`).
 - Conventional commits (`feat:`, `fix(scope):`, `docs:`, `ci:`, `chore:`, `build(deps):`). No commit-lint job in `.gitlab-ci.yml`.
@@ -66,11 +82,16 @@ npm run test:watch
 ## Pitfalls
 1. Pushing to `master` deploys to production; CI `check` must pass first (`needs: check`).
 2. Never leak private addresses or unverifiable facts in the client bundle or copy (`6bbbe8b`); the private Plutus link was dropped (`ce863eb`).
-3. The hero has one renderer, WebGL2. A WebGPU build once shipped as the default and blanked the hero on GPU Chrome (`eb6023d`); it was removed rather than kept as an unverified opt-in. If one returns, R3F v9 passes the `gl` factory its default props `{ canvas }`, not the bare canvas.
-4. R3F canvases default to `pointer-events: auto` and blocked footer clicks (`18fb280`).
+3. Same-page result links must be plain `<a href="#id">`, not `next/link`: a client-side hash navigation does not update `:target`, so the landing highlight never fires.
+4. `performance.now()` is too coarse to time one query; `timed()` in `useSearchIndex.ts` and `Benchmark.tsx` time a batch and divide. Do not read the clock during render.
 5. Tailwind utilities `text-fg/NN` generated nothing until `--color-fg` was defined in the theme (`37ae49e`).
-6. `SectionReveal` with a 30% intersection threshold never fired for sections taller than a phone viewport; reveal on any intersection (`6753eee`).
+6. `lib/resume.ts` is generated and still says "Present" after the role ends; `lib/corpus.ts` takes the current role's period from `lib/data` instead. Keep it that way.
 7. Next.js 16.3.0 had RCE advisories (incl. `next/og`); stay on >= 16.4.0 (`bb477f4`).
 8. `status.json` written with `mktemp` default mode made nginx return 403; the script sets 0644 before the atomic rename. A privilege-separated Proxmox token needs the role on both user and token (`5c853e8`).
 9. Turbopack cannot take JS functions as MDX plugins; name them as strings in `next.config.ts`.
-10. A banner or terminal output wider than 80 columns wraps on phones (`edfb255`, `e76b5eb`).
+11. Heading ids come from `slugify` in two places that must agree: `mdx-components.tsx` (rendered ids) and `notes.server.ts` (index links, contents rail). A raw `<h2>` written as JSX inside MDX bypasses the first; use markdown `##`.
+13. No regex lookbehind (`(?<=`, `(?<!`) anywhere in `src/`: Safari before 16.4 fails to parse the whole chunk. `copy.test.ts` enforces it.
+14. A figure must not trap the page: `InfiniteCanvas` uses `touch-action: pan-y`, never `none`.
+15. The fit check must not guess: years count only when tied to the word experience (`yearsAsked`), and ordinary verbs are never aliases for skills.
+12. Search results for notes link with `?q=`; `NoteHighlights` reads it and paints matches with the CSS Custom Highlight API. It must never mutate the note's DOM.
+10. Martian Mono is wide: a mono string longer than about 40 characters wraps on phones. Keep mono for short tokens.

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_DESCRIPTION } from "@/lib/seo";
-import { BG } from "@/lib/theme";
+import { BG, HIT } from "@/lib/theme";
 
 // Emitted as /manifest.webmanifest at build. Gives Android and desktop Chrome
 // a proper tile (name, theme, icons) for "add to home screen" and the tab
@@ -15,7 +15,7 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "browser",
     background_color: BG,
-    theme_color: BG,
+    theme_color: HIT,
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },

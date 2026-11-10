@@ -6,15 +6,29 @@ A static site. `next build` with `output: "export"` produces plain HTML, JavaScr
 
 It is served by Cloudflare Pages. It used to be served from my own rack (CT114, behind the same Traefik gateway as everything else I run), and moved in October 2026 so a static site would stop holding 2 GB of homelab RAM just to build itself. That container is gone now. A push to `master` runs lint, typecheck and tests in GitLab CI on my own runner; if those pass, the same job builds the export and deploys it.
 
-## The hero
+## The search box
 
-The data centre is three.js through React Three Fiber, WebGL2. It is a lazy chunk that mounts after the browser goes idle, behind a static SVG poster that paints with the first HTML. If WebGL2 is unavailable, if you have asked your OS for reduced motion, or if the renderer throws, the poster stays and the page keeps working. There was a WebGPU build of the same room for a while; it blanked the hero on a GPU-accelerated Chrome the first time it shipped, lived on as an opt-in nobody saw, and is gone now. One renderer, the one I have watched work.
+I worked on a search engine for five and a half years, so the first thing on the home page is one. It is one file of TypeScript with no dependencies, and it runs in your browser. Nothing you type leaves the page.
 
-The racks are a drawing of my homelab, not a live view of it. The labels are real guest names; the boot logs on the screens are abbreviated from the real services. The Homelab section below the fold shows live guest state when the host publishes a status file and says "static inventory" when it does not; the racks themselves stay a drawing.
+The corpus is every resume bullet, every project, every guest in the lab, and every section of every note as a document of its own, so a result can link to the paragraph that answers the question. All of it is built from the same data that renders the pages; the index cannot say something the site does not. The first paint searches the record alone. The notes' full text is fetched once the browser is idle and the index is rebuilt in a few milliseconds.
 
-## The terminal
+A query goes through five steps. The parser reads `"quoted phrases"`, a leading minus, and `kind:` and `tech:` filters. The tokenizer lowercases what is left, keeps `C++`, `C#` and `.NET` as terms of their own, drops thousands separators so `50,000` is one term, removes stopwords and strips a few suffixes, which is why `caching` finds "cached". The rewriter adds the words this site uses for the word you typed (`infra` adds `homelab`, `proxmox` and a few more) at under half the weight, so an exact match always wins. The word you are still typing also matches as a prefix, and a word that matches nothing falls back to its nearest spelling. Retrieval is an inverted index with a count per field, and ranking is BM25 with the title weighted above the body.
 
-xterm.js, fetched only when the section nears the viewport, so it never ships in the first load. Every command's output is generated from the same data file that renders the cards and the resume, and a unit test checks that the terminal cannot drift from the page.
+There is a static rank as well: the eBay record is multiplied by 1.3, because it is what the site is for, and five documents I would show a stranger first by a further 1.25. Skills lists and one-line lab entries are weighted down, because BM25 rewards short documents and a list of keywords should not outrank the work it summarises. This page is weighted down too. It is full of words like "ranking" and "tokenizer", and it is not evidence of anything except itself.
+
+The strip of ticks under the box is the whole index, one tick per document; the ones that match light up, as tall as their score. The row of boxes under that is the query plan. Click a score and the result shows its arithmetic.
+
+It is not Cassini and has nothing of eBay's in it. It is the textbook version, built so every step can be seen. [The engine room](/engine/) takes a query apart stage by stage, replays a set of judged queries against a plain-BM25 control, and runs a latency benchmark in your tab. The relevance numbers on that page also run as a unit test, so a change that makes the ranking worse fails the build. I wrote the judgments myself, which makes them a regression guard and not a benchmark.
+
+## The fit check
+
+Paste a job description on the home page and the same engine is run once for each skill the posting names. A multi-word skill is looked up as a phrase, so "distributed systems" is not satisfied by a library management system. A skill reached only through the rewriter is reported as adjacent, with the stand-in named. A skill the index lacks is listed as missing. The list of skills it recognises is about three hundred long and deliberately much wider than what I know, and a test checks that most of it comes back missing. The lab's guests are excluded as evidence: Vaultwarden being written in Rust does not mean I write Rust.
+
+## The figures
+
+Three projects have something you can operate. The keyboard is drawn from the matrix in the firmware's board definition. The ambilight frame is a simulation of the idea, not the TV's code: the LEDs are computed from the canvas pixels, zone by zone, at 24 frames a second, but there is no NV12 or PQ in it. The canvas of windows shows the one rule kwin-canvas is built on, that only the camera moves. The timeline and the lab diagram are drawn from the data file and contain nothing typed twice.
+
+The site used to open on a 3D drawing of my server rack, with a terminal emulator further down. Both are gone. They were fun to build and said nothing about the work, and removing them took three.js, React Three Fiber, xterm.js and framer-motion out of the bundle.
 
 ## What is measured, what is a snapshot
 
@@ -24,12 +38,16 @@ The rule for the data file, written at its top, is that every claim in it must b
 
 ## How it was made
 
-I build with an AI pair programmer, and most of the current version's code was written by Claude under my direction: I set the goals, reviewed the diffs, ran the site and pushed back. Commits it wrote carry a co-author line, visible in the public history. The decisions, the content and the verification are mine. Every change was linted, typechecked and unit-tested, then rendered in a headless browser at desktop and phone widths before it was committed, and the resume page was printed to PDF on Letter and A4 to check it holds one page. I made the same disclosure in the upstream issue I opened on [kwin-canvas](https://github.com/aaronsb/kwin-canvas/issues/13). The recent side projects on the home page are built the same way, by directing AI coding agents; ShutUp's first version, the RPG engine and Gesture-Manager-X predate coding agents and are my own typing.
+I build with an AI pair programmer, and most of the current version's code, the search engine included, was written by Claude under my direction: I set the goals, reviewed the diffs, ran the site and pushed back. Commits it wrote carry a co-author line, visible in the public history. The decisions, the content and the verification are mine. Every change was linted, typechecked and unit-tested, then rendered in a headless browser at desktop and phone widths before it was committed, and the resume page was printed to PDF on Letter and A4 to check it holds one page. I made the same disclosure in the upstream issue I opened on [kwin-canvas](https://github.com/aaronsb/kwin-canvas/issues/13). The recent side projects on the home page are built the same way, by directing AI coding agents; ShutUp's first version, the RPG engine and Gesture-Manager-X predate coding agents and are my own typing.
 
-## Motion and accessibility
+## Design, motion and accessibility
 
-One easing system, one set of durations, in a single token file that both the animation library and the CSS read; a test fails if they drift apart. Everything moves less if your OS asks it to: the hero becomes a still, and the backdrop grid is not mounted. Keyboard users get a skip link to the content, a focus ring on everything, and a terminal that gives focus back on Escape. The 3D room is marked decorative to screen readers; nothing it shows is information you cannot get from the text.
+The design language has a name, Index, and [a page of its own](/design/) with the rules, the tokens and live specimens. In short: rows instead of cards, one typeface used at three widths, and colour that means something. Blue is a place you can go, yellow is something the engine found, and green and red appear only beside a number that changed.
+
+Almost nothing moves by itself. On first load the search box types one query to show that it works, unless you got there first or your OS asks for reduced motion, in which case it stays still. Result rows settle in as the ranking changes, and the row you jump to from a result is marked with the highlighter for a moment. The ambilight figure plays until you pause it, stops when it is off screen, and is a still frame under reduced motion.
+
+The page follows your OS between a light and a dark palette, and the switch in the nav overrides it. A test checks both palettes for contrast: body text and links clear WCAG AAA, everything else clears AA. Keyboard users get a skip link, a visible focus ring on everything, `/` to jump to the search box, arrow keys through results, and Ctrl K or Cmd K for search on any page. The result count is announced to screen readers as it changes. Without JavaScript the home page is still complete: the box shows a fixed list of starting points and every section below it is plain HTML.
 
 ## Stack
 
-Next.js 16, React 19, TypeScript, Tailwind 4, three.js and React Three Fiber, framer-motion, xterm.js, Vitest. Geist and Geist Mono. Built with Turbopack in GitLab CI, served by Cloudflare Pages.
+Next.js 16, React 19, TypeScript, Tailwind 4, Vitest. Two typefaces, both self-hosted under the SIL Open Font License: Archivo, a variable family used across its width axis (expanded for names and headings, regular for reading, condensed for dates and roles), and Martian Mono for code. Built with Turbopack in GitLab CI, served by Cloudflare Pages.

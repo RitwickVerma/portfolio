@@ -1,20 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { SITE_URL, hero } from "@/lib/data";
 import { SITE_TITLE, SITE_DESCRIPTION, personJsonLd, jsonLdString } from "@/lib/seo";
-import { BG } from "@/lib/theme";
+import { LIGHT, DARK } from "@/lib/theme";
 import "./globals.css";
 
 const OG_ALT = `${hero.name}. ${hero.line} ${hero.lineTwo}`;
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// Self-hosted variable fonts (OFL, licences beside the files). Archivo carries
+// a width axis as well as weight; globals.css uses it as the type system.
+const archivo = localFont({
+  src: "../fonts/Archivo-latin-wdth-wght.woff2",
+  variable: "--font-archivo",
+  weight: "100 900",
+  display: "swap",
+  declarations: [{ prop: "font-stretch", value: "62% 125%" }],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const martian = localFont({
+  src: "../fonts/MartianMono-latin-wght.woff2",
+  variable: "--font-martian",
+  weight: "100 800",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -40,25 +47,32 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: BG,
-  colorScheme: "dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: LIGHT.BG },
+    { media: "(prefers-color-scheme: dark)", color: DARK.BG },
+  ],
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${archivo.variable} ${martian.variable} h-full antialiased`}
+      // The theme switch sets data-theme before first paint; the server cannot know it.
+      suppressHydrationWarning
     >
       <head>
-        {/* Reveal animations start hidden; without JavaScript they would stay hidden.
-            globals.css shows everything when this class is absent. */}
-        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}",
+          }}
+        />
       </head>
       <body className="min-h-full bg-background text-fg flex flex-col">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-background focus:text-accent focus:border focus:border-accent/40 focus:rounded-lg"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-background focus:text-accent focus:border focus:border-accent/40 focus:rounded"
         >
           Skip to content
         </a>

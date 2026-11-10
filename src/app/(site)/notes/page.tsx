@@ -31,43 +31,34 @@ export const metadata: Metadata = {
 
 export default function NotesIndex() {
   return (
-    <div className="max-w-3xl mx-auto px-6 pt-32 pb-24 sm:pb-32">
-      <h1 className="font-mono text-muted text-sm tracking-widest uppercase mb-3">Notes</h1>
-      <p className="text-fg/80 leading-relaxed max-w-2xl mb-14">
+    <div className="max-w-[var(--page)] mx-auto px-5 sm:px-8 pt-12 sm:pt-16 pb-24 sm:pb-32">
+      <h1 className="wd-wide text-[clamp(3rem,8vw,6.5rem)] font-black leading-[0.9] -ml-[0.04em]">Notes</h1>
+      <p className="mt-5 text-lede leading-[1.25] max-w-[36ch] mb-14">
         How specific things were built, with the numbers and the failures left in.
       </p>
 
-      <ol className="space-y-12">
+      <ol className="max-w-3xl border-b border-border">
         {notes.map((n) => (
-          <li key={n.slug}>
+          <li key={n.slug} className="border-t border-border py-7">
             <article>
-              <p className="font-mono text-xs text-muted mb-2">
+              <p className="wd-narrow text-[0.95rem] text-muted mb-1.5">
                 <time dateTime={n.date}>{formatNoteDate(n.date)}</time>
                 {n.updated && (
                   <>
-                    <span aria-hidden="true"> · </span>
-                    Updated <time dateTime={n.updated}>{formatNoteDate(n.updated)}</time>
+                    <span aria-hidden="true">, </span>
+                    updated <time dateTime={n.updated}>{formatNoteDate(n.updated)}</time>
                   </>
                 )}
-                <span aria-hidden="true"> · </span>
+                <span aria-hidden="true">, </span>
                 {noteReadingMinutes(n.slug)} min read
               </p>
-              <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">
-                <Link href={noteUrl(n)} className="text-fg hover:text-accent transition-colors">
+              <h2 className="text-2xl sm:text-3xl font-bold leading-tight">
+                <Link href={noteUrl(n)} className="link">
                   {n.title}
                 </Link>
               </h2>
-              <p className="mt-3 text-fg/75 leading-relaxed">{n.summary}</p>
-              <ul className="mt-4 flex flex-wrap gap-1.5">
-                {n.tags.map((t) => (
-                  <li
-                    key={t}
-                    className="text-xs font-mono text-fg/70 bg-surface border border-border rounded px-2 py-0.5"
-                  >
-                    {t}
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-3 text-fg/85 max-w-[64ch]">{n.summary}</p>
+              <p className="mt-2 wd-narrow text-[0.95rem] text-muted">{n.tags.join(", ")}</p>
             </article>
           </li>
         ))}
