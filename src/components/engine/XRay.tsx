@@ -186,7 +186,7 @@ export default function XRay() {
           )}
         </Stage>
 
-        <Stage n={3} name="Retrieve" what="One posting list per term. Each strip is the whole index; a dark tick is a document that contains the term.">
+        <Stage n={3} name="Retrieve" what="One posting list per term. Each strip is the whole index; a lit tick is a document that contains the term.">
           {postings.length === 0 ? (
             <p className="fact">{filtered ? "A filter reads each document's kind or stack, not a posting list." : "No posting lists to read."}</p>
           ) : (

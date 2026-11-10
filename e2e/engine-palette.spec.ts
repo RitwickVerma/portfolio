@@ -45,6 +45,7 @@ test.describe("command palette", () => {
     await page.keyboard.press("Control+k");
     const dialog = page.getByRole("dialog", { name: "Search this site" });
     await expect(dialog).toBeVisible();
+    await expect(page.getByRole("combobox")).toBeFocused();
     await page.keyboard.type("cache");
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
@@ -53,6 +54,7 @@ test.describe("command palette", () => {
   test("the box takes at most 120 characters, like the hero", async ({ page }) => {
     await page.goto("/design/");
     await page.keyboard.press("Control+k");
+    await expect(page.getByRole("combobox")).toBeFocused();
     await page.keyboard.type("y".repeat(200));
     await expect(page.getByRole("combobox")).toHaveValue("y".repeat(120));
   });
@@ -63,6 +65,7 @@ test.describe("command palette", () => {
         await page.emulateMedia({ colorScheme: scheme });
         await page.goto("/design/");
         await page.keyboard.press("Control+k");
+        await expect(page.getByRole("combobox")).toBeFocused();
         if (typed) await page.keyboard.type(typed);
         await expect(page.getByRole("dialog", { name: "Search this site" })).toBeVisible();
         const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag22aa", "best-practice"]).analyze();
