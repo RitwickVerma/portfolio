@@ -1,0 +1,31 @@
+import WaveOrReach from "@/components/figures/WaveOrReach";
+
+<WaveOrReach />
+
+## A sensor cannot tell a wave from a reach
+
+ShutUp watches the proximity sensor while a call rings. A wave is FAR then NEAR, and a hand going for Decline crosses the sensor the same way. Until release 2.0.2 a single wave could answer or end a call, so a reach could do it. Three rules now stop that, and the figure runs them.
+
+## Each rule stops a reach the other two miss
+
+A single wave can only silence. Answer and End moved to the double wave, and saved settings were moved with them. Nothing else can catch a single wave that acts at once, and with doubles off, the default, it does.
+
+Waves are ignored for the first second after ringing starts. That covers the hand already reaching when it starts.
+
+When the accelerometer says the phone moved, waves are muted for 0.8 s and a pending single wave is dropped. Moving means a pull more than 1.8 m/s² off gravity or a jump over 3 m/s² between readings. The guard can only drop a wave still pending. Switch the single-wave rule off and the figure answers at 1.20 s, before the grab at 1.35 s.
+
+## The property test checks streams I would not write by hand
+
+`WaveSafetyPropertyTest` feeds the real session random streams of 200 readings from fixed seeds, 1,600 in all. It asserts that no wave counts within 0.8 s of motion or before the arming delay, that a double needs two separate edges and that no setting leaves Answer or End on a single wave.
+
+The button runs them on the port. With every rule on it finds nothing. Switch one off and it finds that rule's violation, so the check can fail.
+
+## Pure detectors are why this runs in a page
+
+The detectors take an injected clock and touch no Android API. The port follows the Kotlin line for line, and the app's gesture unit tests run against it.
+
+The phone did not come across. The reach is a pattern, not a recording. The streams are random numbers, not people. The README warns that some phones ignore a hand above the screen, and this tests none of that.
+
+## The first version is mine and the rewrite is shared
+
+The first version, 2016 to 2019, is my own typing and predates coding agents. The 2026 rewrite was built with Claude under my direction, and the commit that added these rules and their test carries a Claude co-author line. So does this port, as [the colophon](/notes/colophon/) says of the site.

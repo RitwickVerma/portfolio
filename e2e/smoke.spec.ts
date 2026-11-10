@@ -9,6 +9,7 @@ const NOTE = "/notes/tizen-video-plane-ambilight/";
 const SUDO_NOTE = "/notes/sudostamp-refuse-before-asking/";
 /** A note that opens on a figure you operate; it gets every check the other pages get. */
 const FIGURE_NOTE = "/notes/kwin-canvas-frame-classifier/";
+const SHUTUP = "/notes/shutup-wave-or-reach/";
 /** Scanned by axe as well: the home page with a query on it shows facets, plan chips and scores the idle page does not. */
 const WITH_QUERY = { name: "home with a query", path: "/?q=testing" } as const;
 const PAGES = [
@@ -18,6 +19,7 @@ const PAGES = [
   { name: "note", path: NOTE },
   { name: "note with figures", path: SUDO_NOTE },
   { name: "figure note", path: FIGURE_NOTE },
+  { name: "shutup note", path: SHUTUP },
   { name: "resume", path: "/resume/" },
 ] as const;
 const WIDTHS = [320, 390, 768, 1440] as const;
@@ -316,6 +318,83 @@ test.describe("the SudoStamp note's figures", () => {
     await expect(requests(page).nth(3)).toContainText(/cooling down after an unapproved request from this computer/i);
     await expect(page.getByText("Test vector from the app's unit test")).toBeVisible();
     await expect(page.getByRole("group", { name: /^SSH signature blob/ })).toBeVisible();
+test.describe("the ShutUp figure", () => {
+  const figure = (page: Page) => page.getByRole("figure", { name: /ShutUp's wave detector/ });
+
+  test("refuses the reach with the motion guard on and answers the call with it off", async ({ page }) => {
+    const problems = watch(page);
+    await page.goto(SHUTUP);
+    await page.waitForLoadState("networkidle");
+    const fig = figure(page);
+    const status = fig.getByRole("status");
+    const guard = fig.getByRole("switch", { name: "Motion guard" });
+    await expect(guard).toBeChecked();
+    // The reach pattern is loaded, every rule is on: both late waves are refused and the call keeps ringing.
+    await expect(status).toContainText("Nothing fired");
+    await expect(fig.getByText("a wave 0.40 s after the phone moved, muted until 2.15 s")).toBeVisible();
+    await expect(fig.getByText("a wave 0.70 s too early, waves are ignored until 1.00 s")).toBeVisible();
+    // Guard off: the same reach is now a double wave, and a double wave answers.
+    await guard.uncheck();
+    await expect(status).toContainText("The call was answered at 1.75 s");
+    await expect(fig.getByText(/^fired double wave$/)).toBeVisible();
+    await expect(fig.getByText(/the phone moved: waves muted/)).toHaveCount(0);
+    await guard.check();
+    await expect(status).toContainText("Nothing fired");
+    expect(problems).toEqual([]);
+  });
+
+  test("a timeline built by tapping NEAR and FAR runs through the real detectors", async ({ page }) => {
+    await page.goto(SHUTUP);
+    await page.waitForLoadState("networkidle");
+    const fig = figure(page);
+    const status = fig.getByRole("status");
+    await fig.getByRole("button", { name: "Clear" }).click();
+    await expect(status).toContainText("Nothing fired");
+    await fig.getByRole("button", { name: "1 s", exact: true }).click();
+    await fig.getByRole("button", { name: "Hand away" }).click();
+    await fig.getByRole("button", { name: "Hand away" }).click();
+    await fig.getByRole("button", { name: "0.25 s", exact: true }).click();
+    await fig.getByRole("button", { name: "Hand near" }).click();
+    await fig.getByRole("button", { name: "Hand away" }).click();
+    await fig.getByRole("button", { name: "Hand near" }).click();
+    // Two separate waves inside the window, after the arming delay: a double wave, which answers.
+    await expect(status).toContainText("The call was answered at 2.50 s");
+    await fig.getByRole("button", { name: "Undo" }).click();
+    // One wave: the window runs out and it silences. A single wave never answers.
+    await expect(status).toContainText("The ringer was silenced at 3.20 s");
+    // Take the single-wave rule off and the same wave answers the moment it is seen.
+    await fig.getByRole("switch", { name: "Single-wave rule" }).uncheck();
+    await expect(status).toContainText("The call was answered at 2.00 s");
+  });
+
+  test("the randomised check runs in the tab, shows its seed and finds violations when a rule is off", async ({ page }) => {
+    await page.goto(SHUTUP);
+    await page.waitForLoadState("networkidle");
+    const fig = figure(page);
+    await expect(fig.getByText(/Seed 7, 400 streams of 200 readings/)).toBeVisible();
+    await expect(fig.getByText(/No stream broke a rule/)).toBeVisible();
+    await fig.getByLabel("Seed").fill("11");
+    await fig.getByRole("button", { name: "Run 400 streams" }).click();
+    await expect(fig.getByText(/Seed 11, 400 streams of 200 readings/)).toBeVisible();
+    await expect(fig.getByText(/No stream broke a rule/)).toBeVisible();
+    await fig.getByRole("switch", { name: "Motion guard" }).uncheck();
+    await expect(fig.getByText(/The switches have changed since this run/)).toBeVisible();
+    await fig.getByRole("button", { name: "Run 400 streams" }).click();
+    await expect(fig.getByText(/the motion guard off/)).toBeVisible();
+    await expect(fig.getByText(/1 of 4 rules broken by random streams: \d+ of 400 streams/)).toBeVisible();
+    await expect(fig.getByText(/First failure: stream 0, seed \d+/)).toBeVisible();
+  });
+
+  test("without JavaScript it shows the replay and computed results, and no dead controls", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto(SHUTUP);
+    const fig = figure(page);
+    await expect(fig.getByRole("status")).toContainText("Nothing fired");
+    await expect(fig.getByText("a wave 0.40 s after the phone moved, muted until 2.15 s")).toBeVisible();
+    await expect(fig.getByText(/Seed 7, 400 streams of 200 readings/)).toBeVisible();
+    await expect(fig.getByRole("button")).toHaveCount(0);
+    await expect(fig.getByRole("switch")).toHaveCount(0);
     await context.close();
   });
 });
