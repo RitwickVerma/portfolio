@@ -23,7 +23,7 @@ export default function Contact() {
         <p className="mt-10">
           <a
             href={`mailto:${socialLinks.email}?subject=${EMAIL_SUBJECT}`}
-            className="wd-narrow font-black text-[clamp(1.9rem,7.4vw,6rem)] leading-none text-accent underline decoration-[0.06em] underline-offset-[0.14em] decoration-accent/35 hover:decoration-accent break-all"
+            className="inline-block py-2 wd-narrow font-black text-[clamp(1.9rem,7.4vw,6rem)] leading-none text-accent underline decoration-[0.06em] underline-offset-[0.14em] decoration-accent/35 hover:decoration-accent break-all"
           >
             {socialLinks.email}
           </a>
@@ -33,11 +33,11 @@ export default function Contact() {
             {location ? `Based in ${location}. ` : ""}I read everything that comes in and reply within a day. The resume is
             one page; the notes are the long version.
           </p>
-          <ul className="lg:col-span-4 space-y-1">
+          <ul className="lg:col-span-4">
             {profiles.map((p) => (
-              <li key={p.label} className="grid grid-cols-[5rem_1fr]">
+              <li key={p.label} className="grid grid-cols-[5rem_1fr] items-center">
                 <span className="wd-narrow text-muted">{p.label}</span>
-                <a href={p.href} target="_blank" rel="noopener noreferrer" className="link justify-self-start">
+                <a href={p.href} target="_blank" rel="noopener noreferrer" className="link justify-self-start inline-flex items-center min-h-11">
                   {p.text}
                 </a>
               </li>
@@ -47,7 +47,7 @@ export default function Contact() {
             <a
               href="/Ritwick_Verma_Resume.pdf"
               download
-              className="inline-block px-5 py-3 rounded-[4px] bg-fg text-background font-medium hover:bg-accent transition-colors"
+              className="btn min-h-11"
             >
               Download the resume (PDF)
             </a>
