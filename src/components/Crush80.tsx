@@ -56,6 +56,17 @@ export default function Crush80() {
     setLine((l) => applyKey(l, key, code));
   }, [light]);
 
+  /** A key a finger is down on, until it is released (a tap) or cancelled (a scroll). */
+  const touched = useRef<string | null>(null);
+  const tap = useCallback(
+    (k: Key) => {
+      boardRef.current?.focus({ preventScroll: true });
+      const code = k.codes[0] ?? "";
+      press(k, charForTap(k) ?? code, code);
+    },
+    [press],
+  );
+
   useEffect(() => {
     reduce.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const onKey = (e: KeyboardEvent) => {
@@ -185,11 +196,22 @@ export default function Crush80() {
                   className="cursor-pointer"
                   onPointerDown={(e) => {
                     // A tap is a press: Backspace and Enter edit, caps insert their character.
+                    // A finger lands on a key before it is known to be a tap: on a phone the board
+                    // scrolls sideways, and a swipe that starts on a key must not type it. Touch and
+                    // pen therefore press on release; the browser cancels the pointer if it scrolls.
+                    if (e.pointerType !== "mouse") {
+                      touched.current = keyId(k);
+                      return;
+                    }
                     e.preventDefault();
-                    boardRef.current?.focus();
-                    const code = k.codes[0] ?? "";
-                    press(k, charForTap(k) ?? code, code);
+                    tap(k);
                   }}
+                  onPointerUp={(e) => {
+                    if (e.pointerType === "mouse" || touched.current !== keyId(k)) return;
+                    touched.current = null;
+                    tap(k);
+                  }}
+                  onPointerCancel={() => (touched.current = null)}
                 >
                   <rect x={x} y={y} width={w} height={h} rx={3} fill="var(--bg)" stroke="var(--fg)" strokeOpacity={0.28 + a * 0.72} strokeWidth={1} />
                   {/* A pressed switch gets the highlighter, like a search match. */}

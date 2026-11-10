@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 // What TizenAmbilight does, in miniature. A frame plays; every tick the edge
 // of the frame is cut into zones, each zone's pixels are averaged, and the
@@ -69,10 +69,21 @@ function sample(data: Uint8ClampedArray): { top: Rgb[]; bottom: Rgb[]; left: Rgb
   return { top, bottom, left, right };
 }
 
+const REDUCED = "(prefers-reduced-motion: reduce)";
+function subscribeReduced(onChange: () => void) {
+  const mq = window.matchMedia(REDUCED);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+
 export default function Ambilight() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [playing, setPlaying] = useState(true);
+  // The film plays by itself unless the visitor asked their OS for less motion. Whatever they press
+  // afterwards wins, so Play under reduced motion plays: that is the visitor acting.
+  const reduced = useSyncExternalStore(subscribeReduced, () => window.matchMedia(REDUCED).matches, () => false);
+  const [choice, setChoice] = useState<"play" | "pause" | null>(null);
+  const playing = choice ? choice === "play" : !reduced;
   /** Film time in seconds. Kept across pauses so Pause freezes the frame it is on. */
   const filmTime = useRef(7);
   const [zones, setZones] = useState(true);
@@ -83,7 +94,6 @@ export default function Ambilight() {
     const ctx = canvas?.getContext("2d", { willReadFrequently: true });
     if (!canvas || !wrap || !ctx) return;
     const leds = [...wrap.querySelectorAll<HTMLElement>("[data-led]")];
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const paint = (t: number) => {
       drawFilm(ctx, t);
@@ -97,7 +107,7 @@ export default function Ambilight() {
     };
 
     paint(filmTime.current);
-    if (!playing || still) return;
+    if (!playing) return;
 
     let raf = 0;
     let last = 0;
@@ -172,10 +182,10 @@ export default function Ambilight() {
           A simulation of the idea: {TOP * 2 + SIDE * 2} LEDs, each the mean colour of one zone of the frame, at {FPS} frames a second. The real one reads the
           TV&apos;s decoded video plane and holds 20 to 25.
         </span>
-        <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg" onClick={() => setPlaying((p) => !p)}>
+        <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg max-sm:min-h-11 max-sm:min-w-11 max-sm:px-1" onClick={() => setChoice(playing ? "pause" : "play")}>
           {playing ? "Pause" : "Play"}
         </button>
-        <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg" aria-pressed={zones} onClick={() => setZones((z) => !z)}>
+        <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg max-sm:min-h-11 max-sm:min-w-11 max-sm:px-1" onClick={() => setZones((z) => !z)}>
           {zones ? "Hide zones" : "Show zones"}
         </button>
       </figcaption>
