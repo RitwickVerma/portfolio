@@ -53,6 +53,8 @@ export default function Search() {
   const inputRef = useRef<HTMLInputElement>(null);
   /** True once the visitor has touched the box; the demo never types over them. */
   const touched = useRef(false);
+  /** True while the demo has typed only part of its query. */
+  const demoPartial = useRef(false);
   const textRef = useRef("");
 
   const execute = useCallback(
@@ -85,6 +87,19 @@ export default function Search() {
     executeRef.current = execute;
   }, [execute]);
 
+  /**
+   * The visitor takes the box. If the demo was part-way through its query, the
+   * half-typed text and its results go (the URL was never touched), so what
+   * they type is not appended to "fit". A finished demo query stays.
+   */
+  const take = useCallback(() => {
+    touched.current = true;
+    if (demoPartial.current) {
+      demoPartial.current = false;
+      executeRef.current("", { syncUrl: false });
+    }
+  }, []);
+
   // When the notes' full text arrives, the query on screen is run again against it.
   useEffect(() => {
     if (!full || !textRef.current.trim()) return;
@@ -100,10 +115,21 @@ export default function Search() {
       touched.current = true;
       timers.push(window.setTimeout(() => executeRef.current(q.slice(0, 120), { syncUrl: false }), 0));
     } else if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // The keys appear in the box one at a time, but the results are ranked once, on the
+      // last key. Re-ranking on every key re-flowed the list, the facet row and the footer
+      // eight times in the first screenful (CLS 0.21); the box still fills letter by letter.
       for (let i = 1; i <= DEMO_QUERY.length; i++) {
         timers.push(
           window.setTimeout(() => {
-            if (!touched.current) executeRef.current(DEMO_QUERY.slice(0, i), { syncUrl: false });
+            if (touched.current) return;
+            const typed = DEMO_QUERY.slice(0, i);
+            demoPartial.current = i < DEMO_QUERY.length;
+            if (demoPartial.current) {
+              textRef.current = typed;
+              setText(typed);
+            } else {
+              executeRef.current(typed, { syncUrl: false });
+            }
           }, DEMO_START_MS + i * DEMO_KEY_MS),
         );
       }
@@ -134,7 +160,7 @@ export default function Search() {
   const activeKinds = result?.parsed.kinds ?? [];
 
   const setKind = (kind: DocKind | null) => {
-    touched.current = true;
+    take();
     const bare = textRef.current.replace(/(^|\s)(kind|in):\S*/gi, " ").replace(/\s+/g, " ").trim();
     execute(kind ? `${bare} kind:${FACET_FILTER[kind]} `.trimStart() : `${bare} `);
     inputRef.current?.focus();
@@ -177,10 +203,13 @@ export default function Search() {
           type="search"
           value={text}
           onChange={(e) => {
-            touched.current = true;
-            execute(e.target.value);
+            // Typing before focus is seen (assistive tech, autofill) must not append to the demo's partial text.
+            const demoText = demoPartial.current ? textRef.current : "";
+            take();
+            const v = e.target.value;
+            execute(demoText && v.startsWith(demoText) ? v.slice(demoText.length) : v);
           }}
-          onFocus={() => (touched.current = true)}
+          onFocus={take}
           onKeyDown={onKeyDown}
           placeholder="Search my record"
           autoComplete="off"
@@ -195,7 +224,7 @@ export default function Search() {
           <button
             type="button"
             onClick={() => {
-              touched.current = true;
+              take();
               execute("");
               inputRef.current?.focus();
             }}
@@ -217,7 +246,7 @@ export default function Search() {
             key={q}
             type="button"
             onClick={() => {
-              touched.current = true;
+              take();
               execute(q);
             }}
             aria-pressed={text.trim().toLowerCase() === q}
@@ -245,7 +274,7 @@ export default function Search() {
                   type="button"
                   className="font-mono text-xs text-accent underline decoration-accent/40 underline-offset-4"
                   onClick={() => {
-                    touched.current = true;
+                    take();
                     execute(`${q} `);
                   }}
                 >
@@ -275,7 +304,8 @@ export default function Search() {
       </div>
 
       <div className="mt-5">
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pb-3 min-h-11">
+        {/* The height is reserved for the plan and stats line a result puts here (two lines on a phone), so the list does not move when the demo ranks. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pb-3 min-h-11 max-sm:min-h-[5.0625rem]">
           {result ? (
             <>
               <PlanChips plan={result.plan} parsed={result.parsed} />
@@ -317,7 +347,10 @@ export default function Search() {
               </button>
             ))}
           </div>
-        ) : null}
+        ) : result ? null : (
+          // Idle: the room the facet row takes once there is a result, kept empty so the list stays put.
+          <div className="h-11" aria-hidden="true" />
+        )}
 
         {result && hits.length === 0 ? (
           <p className="border-t border-border py-6 max-w-[60ch]">

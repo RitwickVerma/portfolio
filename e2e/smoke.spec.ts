@@ -141,6 +141,32 @@ test.describe("search", () => {
     await expect(page.locator("#q")).toHaveValue("fitment", { timeout: 8000 });
   });
 
+  test("taking the box mid-demo clears the half-typed query", async ({ page }) => {
+    await page.goto("/");
+    const box = page.locator("#q");
+    // Take the box the moment the demo is part-way through its word: the focus happens inside the
+    // page, in the same poll that sees the partial text, so no key can land in between.
+    await page.waitForFunction(
+      () => {
+        const q = document.querySelector<HTMLInputElement>("#q");
+        if (!q || q.value.length < 2 || q.value.length > 4) return false;
+        q.focus();
+        return true;
+      },
+      undefined,
+      { polling: 20, timeout: 8000 },
+    );
+    // The partial text and its results go, and the URL was never touched.
+    await expect(box).toHaveValue("");
+    await expect(page.getByText(/Nothing typed yet/)).toBeVisible();
+    await expect(page).not.toHaveURL(/\?q=/);
+    // The demo's remaining keys never arrive, and typing is not appended to the partial word.
+    await page.waitForTimeout(1500);
+    await expect(box).toHaveValue("");
+    await page.keyboard.type("c++");
+    await expect(box).toHaveValue("c++");
+  });
+
   test("the demo query does not run under reduced motion", async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
     const page = await context.newPage();
