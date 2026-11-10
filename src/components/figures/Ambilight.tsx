@@ -177,8 +177,8 @@ export default function Ambilight({ note = false }: { note?: boolean }) {
 
   const led = "block rounded-[1px]";
   const gap = note ? "gap-px" : "gap-1";
-  const ledT = note ? "h-1" : "h-1.5";
-  const ledS = note ? "w-1" : "w-1.5";
+  const ledT = "h-1.5";
+  const ledS = "w-1.5";
   const pctX = (DX / FW) * 100;
   const pctY = (DY / FH) * 100;
   const stage = (
@@ -222,6 +222,11 @@ export default function Ambilight({ note = false }: { note?: boolean }) {
           </div>
         )}
       </div>
+      {note && (
+        <p className="mt-5 text-center text-[0.8125rem] leading-snug text-white/70">
+          {TOP + BOTTOM + SIDE * 2} LEDs: {TOP} along the top, {SIDE} down each side, {BOTTOM} along the bottom
+        </p>
+      )}
     </div>
   );
 

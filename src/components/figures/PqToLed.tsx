@@ -69,8 +69,8 @@ export default function PqToLed() {
   const title = same
     ? `Read as ordinary colour, this ${name} would come out about the same.`
     : diff > 0
-      ? `Read as ordinary colour, this ${name} would reach the strip ${diff}% darker.`
-      : `Read as ordinary colour, this ${name} would reach the strip ${-diff}% brighter.`;
+      ? `Read as ordinary colour, this ${name} would reach the LED strip ${diff}% darker.`
+      : `Read as ordinary colour, this ${name} would reach the LED strip ${-diff}% brighter.`;
   const clipped = built.toneLuma === 255 && nits > REF_WHITE;
 
   return (
@@ -92,7 +92,7 @@ export default function PqToLed() {
 
       <div>
         <p className="fact mb-2">
-          The picture says {name} at {fmtNits(nits)} nits. On the plane that is PQ code {code} of 255.
+          The picture says {name} at {fmtNits(nits)} nits. The TV stores that as PQ code {code} of 255.
         </p>
         <div className="grid grid-cols-2 gap-3">
           {[
@@ -101,7 +101,7 @@ export default function PqToLed() {
           ].map(({ k, label, v }) => (
             <div key={k}>
               <div className={`h-24 sm:h-28 rounded-[3px] border ${k === "built" ? "border-2 border-fg" : "border-border"}`} style={{ background: css(v as Rgb) }} role="img" aria-label={`${label}: LED value ${rgbText(v)}`} />
-              <p className="mt-1.5 text-[0.95rem] font-semibold leading-tight">{label}</p>
+              <p className="mt-1.5 text-[0.95rem] font-semibold leading-tight sm:min-h-0 min-h-[2.4em]">{label}</p>
               <p className="fact tabular-nums">{rgbText(v)}</p>
             </div>
           ))}

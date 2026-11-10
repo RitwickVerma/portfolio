@@ -66,8 +66,9 @@ export default function Ceiling() {
             const on = i === a || i === a + 1;
             return <circle key={i} cx={x} cy={y} r={on ? 4 : spots > 40 ? 1.7 : 2.6} className={on ? "fill-fg" : "fill-muted"} />;
           })}
-          <text x={RW / 2} y={RH / 2 - 2} textAnchor="middle" className="fill-fg" fontSize="24" fontWeight="800">{hz(now)} Hz</text>
-          <text x={RW / 2} y={RH / 2 + 14} textAnchor="middle" className="fill-muted" fontSize="9.5">each of {spots} spots, re-read every {lap} ms</text>
+          <text x={RW / 2} y={RH / 2 - 4} textAnchor="middle" className="fill-fg" fontSize="24" fontWeight="800">{hz(now)} Hz</text>
+          <text x={RW / 2} y={RH / 2 + 10} textAnchor="middle" className="fill-muted" fontSize="9">each spot, re-read</text>
+          <text x={RW / 2} y={RH / 2 + 21} textAnchor="middle" className="fill-muted" fontSize="9">every {lap} ms</text>
         </svg>
       </div>
 
