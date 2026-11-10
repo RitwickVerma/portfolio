@@ -130,7 +130,7 @@ describe("Limiter (LimiterTest.kt)", () => {
 });
 
 describe("AddressCooldown, the 1.3.0 per-address cooldown (CooldownTest.kt)", () => {
-  // The Kotlin test used 10.0.0.x addresses; these are documentation addresses (RFC 3849).
+  // The Kotlin test used IPv4 host addresses; these are IPv6 documentation addresses (RFC 3849).
   const A9 = "2001:db8::9";
   let t = 1_000;
   const make = () => {
