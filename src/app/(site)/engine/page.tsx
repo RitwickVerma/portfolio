@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cardMetadata, OG_CARDS } from "@/lib/seo";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import XRay from "@/components/engine/XRay";
@@ -12,13 +13,12 @@ import { buildIndex, CONTROL, TREATMENT } from "@/lib/search";
 import { evaluate, JUDGMENTS } from "@/lib/eval";
 
 const DESCRIPTION =
-  "How the search on ritwickverma.dev works: a query taken apart stage by stage, a control-against-treatment replay of judged queries, and a latency benchmark that runs in your browser.";
+  "How the search on ritwickverma.dev works: a query taken apart stage by stage, a control-against-treatment replay of judged queries, and a latency benchmark.";
 
 export const metadata: Metadata = {
   title: "The engine room",
   description: DESCRIPTION,
-  alternates: { canonical: "/engine/" },
-  openGraph: { title: "The engine room · Ritwick Verma", description: DESCRIPTION, url: "/engine/", siteName: "ritwickverma.dev", type: "article", locale: "en_US", images: [{ url: "/og.png", width: 1200, height: 630 }] },
+  ...cardMetadata(OG_CARDS.engine, { socialTitle: "The engine room · Ritwick Verma", description: DESCRIPTION }),
 };
 
 const SOURCE = "https://gitlab.com/ritwick7/portfolio/-/blob/master/src/lib";
