@@ -21,7 +21,7 @@ npm run build      # static export -> out/
 **A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
-Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 13 files / 145 tests pass.
+Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 16 files / 235 tests pass.
 ```bash
 npm run lint && npm run typecheck && npm test   # exactly what the CI `check` job runs
 npm run test:watch
@@ -41,7 +41,7 @@ Playwright (`e2e/smoke.spec.ts`, `playwright.config.ts`) over the built export i
 npm run build && npm run test:e2e                      # needs the browsers: npx playwright install
 docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/playwright:v1.65.0-noble npx playwright test   # what CI runs; WebKit needs this image on Debian
 ```
-- Per page (home, `/engine`, `/design`, one note, `/resume`): no console errors, no failed or third-party requests, no sideways overflow at 320/390/768/1440, complete with JavaScript disabled.
+- Per page (home, `/engine`, `/design`, two notes, `/resume`): no console errors, no failed or third-party requests, no sideways overflow at 320/390/768/1440, complete with JavaScript disabled.
 - Search: the chunk hydrates and ranks, `?q=` links work, Ctrl K opens the palette, the demo query types once and does not run under reduced motion.
 - `/resume` prints to one page on Letter and A4 (Chromium only: `page.pdf()`).
 - axe (WCAG 2.2 AA plus best-practice) on each page in both palettes, and on the home page with a query on it. A violation is fixed in the component, never excluded from the scan.
@@ -57,7 +57,7 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 | `src/app/{og.png,sitemap.ts,robots.ts,manifest.ts}` | Build-time OG image, sitemap, robots and web manifest. |
 | `src/components/` | `Search` (the hero), `Palette` (Ctrl K, every page), the home sections (`Work`, `Projects`, `Keyboard`, `Notes`, `Homelab`, `Contact`) on the shared `Section` frame, `Timeline`, `Crush80`, `NoteExtras` (contents rail, match highlighting), `Nav`, `Footer`. |
 | `src/components/search/parts.tsx` | Shared by every search surface: result row, plan chips, score breakdown (`Explain`), `CorpusMap`. |
-| `src/components/figures/` | `Ambilight` (canvas simulation; LEDs computed from the pixels), `InfiniteCanvas` (pan and zoom), `LabTopology` (SVG from `lib/data`). |
+| `src/components/figures/` | `Ambilight` (canvas simulation; LEDs computed from the pixels), `InfiniteCanvas` (pan and zoom), `LabTopology` (SVG from `lib/data`), `WaveOrReach` (a timeline you build, replayed through the ported ShutUp detectors; the safety check runs in the tab). |
 | `src/components/engine/`, `design/` | `XRay` and `Benchmark` for `/engine`; `WidthSpecimen` for `/design`. |
 | `src/content/notes/*.mdx` | The engineering notes; each needs an entry in `src/lib/notes.ts` (newest first). |
 | `src/lib/data.ts` | Single source for home, `/resume` and the search index: projects, experience, education, services, skills, links. |
@@ -65,6 +65,7 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 | `src/lib/corpus.ts` | Builds the search documents from `lib/data`, `lib/resume`, `lib/notes` and (when given) the notes' sections; owns `WORK_HEADLINES`, the priors, starting points and example queries. The Work section renders from `workRoles` here. |
 | `src/lib/eval.ts` | The judged query set and the metrics (P@1, MRR, nDCG@5). Read by `/engine` at build and by `eval.test.ts`. |
 | `src/lib/useSearchIndex.ts` | Client store: one index per tab, record first, full text after idle. |
+| `src/lib/shutup.ts`, `shutupStreams.ts` | A line-for-line TypeScript port of ShutUp's gesture domain (detectors, motion guard, session, single-wave rule) with an injected clock; the timeline replay and the seeded property check that `WaveOrReach` runs. `shutup.test.ts` replays the app's own unit tests as vectors. |
 | `src/lib/timeline.ts`, `slug.ts`, `themeSwitch.ts` | Period parser for the career strip; heading slugs shared by MDX and the index; the light/dark switch. |
 | `src/lib/status.ts`, `statusStore.ts` | `/status.json` schema 1, `parseStatus` validation, freshness helpers; the store fetches it once. |
 | `src/fonts/` | Self-hosted variable fonts (Archivo with width and weight axes, Martian Mono) and their OFL licences; loaded with `next/font/local` in `src/app/layout.tsx`. The build needs no network. |

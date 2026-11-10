@@ -16,6 +16,14 @@ export interface Note {
 
 export const notes: Note[] = [
   {
+    slug: "shutup-wave-or-reach",
+    title: "Reaching to decline looks like a wave",
+    summary:
+      "A hand reaching for Decline crosses a proximity sensor like a wave does. Three rules and a property test keep ShutUp from answering when you reach.",
+    date: "2026-11-10",
+    tags: ["Android", "Kotlin", "property testing", "sensors"],
+  },
+  {
     slug: "crush80-open-firmware",
     title: "Open firmware for a keyboard that shipped none",
     summary:
