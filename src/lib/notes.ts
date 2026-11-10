@@ -24,6 +24,14 @@ export const notes: Note[] = [
     tags: ["SudoStamp", "Android Keystore", "ssh-agent", "security"],
   },
   {
+    slug: "kwin-canvas-frame-classifier",
+    title: "I undo KWin's moves by their shape",
+    summary:
+      "kwin-canvas parks windows where KWin will not leave them. It undoes a move only when it has the shape of KWin's rule. Drag a window and see the verdict.",
+    date: "2026-11-10",
+    tags: ["KWin", "QML", "compositor", "testing"],
+  },
+  {
     slug: "crush80-open-firmware",
     title: "Open firmware for a keyboard that shipped none",
     summary:
