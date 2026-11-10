@@ -8,6 +8,7 @@ import AxeBuilder from "@axe-core/playwright";
 const NOTE = "/notes/tizen-video-plane-ambilight/";
 const PLUTUS = "/notes/plutus-what-the-backtest-cannot-tell-you/";
 const HOMELAB = "/notes/homelab-git-is-the-truth/";
+const CRUSH_NOTE = "/notes/crush80-open-firmware/";
 /** Scanned by axe as well: the home page with a query on it shows facets, plan chips and scores the idle page does not. */
 const WITH_QUERY = { name: "home with a query", path: "/?q=testing" } as const;
 const PAGES = [
@@ -17,6 +18,7 @@ const PAGES = [
   { name: "note", path: NOTE },
   { name: "plutus note", path: PLUTUS },
   { name: "homelab note", path: HOMELAB },
+  { name: "crush80 note", path: CRUSH_NOTE },
   { name: "resume", path: "/resume/" },
 ] as const;
 const WIDTHS = [320, 390, 768, 1440] as const;
@@ -312,5 +314,67 @@ test.describe("the Tizen note's figures", () => {
     await fig.getByText("More controls").click();
     await fig.getByLabel(/Wait before each reading/).fill("17");
     await expect(fig.locator("[role=status][data-tone]")).toContainText("measured about 1.4 Hz");
+test.describe("crush80 note figures", () => {
+  test("the layer figure resolves keys from the layer that holds them", async ({ page }) => {
+    await page.goto(CRUSH_NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /Hold Fn and the same keys/ });
+    const verdict = fig.locator("[data-tone]");
+    // Server HTML and first paint: Fn held, H is an arrow from layer 2.
+    await expect(fig.getByRole("button", { name: /^← on the H key: Sends ←, from layer 2, Fn/ })).toHaveCount(1);
+    await expect(verdict).toContainText(/\d+ of 88 keys now mean something else/);
+
+    await fig.getByRole("button", { name: "Fn + Space" }).click();
+    await expect(fig.getByRole("button", { name: /^4 on the J key: Sends 4, from layer 4, Num/ })).toHaveCount(1);
+    // Transparent on Num, so H still comes from Fn.
+    await expect(fig.getByRole("button", { name: /^← on the H key: Sends ←, from layer 2, Fn/ })).toHaveCount(1);
+
+    await fig.getByRole("button", { name: "Hold right Win" }).click();
+    await expect(fig.getByRole("button", { name: /^5 on the Home key: Sends 5, from layer 3, MacFn/ })).toHaveCount(1);
+    await expect(verdict).toHaveAttribute("data-tone", "plain");
+
+    // The bug, replayed through the rule: layer 3 turns on and is switched off again.
+    await fig.getByRole("button", { name: "Right Win, before the fix" }).click();
+    await expect(verdict).toHaveAttribute("data-tone", "warn");
+    await expect(verdict).toContainText("Right Win does nothing: layer 3 switched itself off.");
+    await expect(fig.getByRole("button", { name: /^Home on the Home key: Sends Home, from the base layer/ })).toHaveCount(1);
+  });
+
+  test("the layer figure answers to the visitor's own keys and walks with arrows", async ({ page }) => {
+    await page.goto(CRUSH_NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /Hold Fn and the same keys/ });
+    const h = fig.getByRole("button", { name: /on the H key/ });
+    await h.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(fig.getByRole("button", { name: /on the J key/ })).toBeFocused();
+    await fig.getByRole("button", { name: "Hold Fn" }).click();
+    await fig.getByRole("button", { name: /on the J key/ }).focus();
+    await page.keyboard.down("n");
+    await expect(fig.getByRole("button", { name: /^4 on the J key: Sends 4, from layer 4, Num/ })).toHaveCount(1);
+    await page.keyboard.up("n");
+    await expect(fig.getByRole("button", { name: /^↓ on the J key: Sends ↓, from layer 2, Fn/ })).toHaveCount(1);
+    // M is Fn+M: Mac mode swaps Alt and Win.
+    await page.keyboard.press("m");
+    await fig.getByText("More controls").click();
+    await expect(fig.getByRole("radio", { name: "On" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  test("the clock figure shows the rounding and its drift", async ({ page }) => {
+    await page.goto(CRUSH_NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /One rounding error/ });
+    const verdict = fig.locator("[data-tone]");
+    await expect(fig.getByTestId("division")).toHaveText("32,000 ÷ 10,000 = 3.2 cycles per tick, rounded down to 3");
+    await expect(verdict).toHaveAttribute("data-tone", "warn");
+    await expect(verdict).toContainText("64.0: 4.0 seconds fast");
+    await fig.getByRole("button", { name: "8,000 a second, as it is now" }).click();
+    await expect(verdict).toHaveAttribute("data-tone", "ok");
+    await expect(verdict).toContainText("The clock keeps time");
+    await fig.getByText("More controls").click();
+    await fig.getByRole("textbox").fill("20000");
+    await expect(verdict).toContainText("96.0: 36.0 seconds fast");
+    await fig.getByRole("textbox").fill("40000");
+    await expect(verdict).toContainText("cannot make that many ticks");
   });
 });
