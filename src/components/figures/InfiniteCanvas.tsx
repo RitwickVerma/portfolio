@@ -175,13 +175,13 @@ export default function InfiniteCanvas() {
           </span>
           , zoom <span className="font-mono text-[0.7rem]">{cam.zoom.toFixed(2)}</span>.
         </span>
-        <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg" onClick={() => zoomBy(1.25)}>
+        <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg max-sm:min-h-11 max-sm:min-w-11 max-sm:px-1" onClick={() => zoomBy(1.25)}>
           Zoom in
         </button>
-        <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg" onClick={() => zoomBy(1 / 1.25)}>
+        <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg max-sm:min-h-11 max-sm:min-w-11 max-sm:px-1" onClick={() => zoomBy(1 / 1.25)}>
           Zoom out
         </button>
-        <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg" onClick={overview}>
+        <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg max-sm:min-h-11 max-sm:min-w-11 max-sm:px-1" onClick={overview}>
           Overview
         </button>
       </figcaption>

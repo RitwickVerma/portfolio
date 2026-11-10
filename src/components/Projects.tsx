@@ -28,6 +28,11 @@ const CATEGORY_LABEL: Record<ProjectData["category"], string> = {
 
 const meta = "fact";
 
+/** A role line is "Author · GPLv3": keep each dot with the words before it, so a wrap never starts a line with one. */
+function glueDots(text: string) {
+  return text.split(" · ").join("\u00a0· ");
+}
+
 function Links({ project }: { project: ProjectData }) {
   const links = [
     project.links.gitlab && { href: project.links.gitlab, text: "Source on GitLab", external: true },
@@ -39,11 +44,11 @@ function Links({ project }: { project: ProjectData }) {
     <p className="flex flex-wrap gap-x-5 gap-y-1">
       {links.map((l) =>
         l.external ? (
-          <a key={l.href} href={l.href} className="link py-2 -my-2" target="_blank" rel="noopener noreferrer" aria-label={`${project.title}: ${l.text}`}>
+          <a key={l.href} href={l.href} className="link inline-block py-2.5 -my-2.5" target="_blank" rel="noopener noreferrer" aria-label={`${project.title}: ${l.text}`}>
             {l.text}
           </a>
         ) : (
-          <Link key={l.href} href={l.href} className="link py-2 -my-2">
+          <Link key={l.href} href={l.href} className="link inline-block py-2.5 -my-2.5">
             {l.text}
           </Link>
         ),
@@ -67,7 +72,7 @@ function Featured({ project }: { project: ProjectData }) {
       <header className="lg:col-span-3">
         <h3 className="wd-semi text-3xl font-extrabold leading-none">{project.title}</h3>
         <p className={`${meta} mt-2`}>{CATEGORY_LABEL[project.category]}</p>
-        <p className={meta}>{project.role}</p>
+        <p className={meta}>{glueDots(project.role)}</p>
       </header>
       <div className="lg:col-span-6 space-y-3">
         <p className="text-lg leading-snug">{project.description}</p>
@@ -89,7 +94,7 @@ function Compact({ project }: { project: ProjectData }) {
       <header>
         <h3 className="wd-semi text-xl font-bold leading-tight">{project.title}</h3>
         <p className={meta}>
-          {CATEGORY_LABEL[project.category]}. {project.role}
+          {CATEGORY_LABEL[project.category]}. {glueDots(project.role)}
         </p>
       </header>
       <p className="leading-snug">{project.description}</p>
