@@ -16,6 +16,38 @@ export interface Note {
 
 export const notes: Note[] = [
   {
+    slug: "sudostamp-refuse-before-asking",
+    title: "A phone that approves sudo refuses first",
+    summary:
+      "SudoStamp's phone limits requests by computer, not address, and refuses before it asks. One encoding detail decides if a signature verifies.",
+    date: "2026-11-10",
+    tags: ["SudoStamp", "Android Keystore", "ssh-agent", "security"],
+  },
+  {
+    slug: "kwin-canvas-frame-classifier",
+    title: "I undo KWin's moves by their shape",
+    summary:
+      "kwin-canvas parks windows where KWin will not leave them. It undoes a move only when it has the shape of KWin's rule. Drag a window and see the verdict.",
+    date: "2026-11-10",
+    tags: ["KWin", "QML", "compositor", "testing"],
+  },
+  {
+    slug: "shutup-wave-or-reach",
+    title: "Reaching to decline looks like a wave",
+    summary:
+      "A hand reaching for Decline crosses a proximity sensor like a wave does. Three rules and a property test keep ShutUp from answering when you reach.",
+    date: "2026-11-10",
+    tags: ["Android", "Kotlin", "property testing", "sensors"],
+  },
+  {
+    slug: "chordist-chart-alignment",
+    title: "One bad row should not move the rest",
+    summary:
+      "Drop one row from a chord chart and the old greedy matcher loses its place for the rest of the song. Chordist's alignment keeps it. Try it on Amazing Grace.",
+    date: "2026-11-10",
+    tags: ["Chordist", "dynamic programming", "sequence alignment", "Python"],
+  },
+  {
     slug: "crush80-open-firmware",
     title: "Open firmware for a keyboard that shipped none",
     summary:

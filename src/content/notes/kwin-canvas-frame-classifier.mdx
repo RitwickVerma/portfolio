@@ -1,0 +1,29 @@
+import { FrameAuthority } from "@/components/figures/lazy";
+
+<FrameAuthority />
+
+## KWin pulls the windows I park out of its reach
+
+kwin-canvas parks windows beyond every monitor on purpose. KWin keeps a window reachable and applies that whenever it looks at a window again, so it moves them closer. The effect has to tell that move from one the window made itself.
+
+## The rule was measured, and a move is judged against it
+
+It was measured in a nested KWin by writing a frame and reading it back. A window with under 100 px of its width over a monitor goes to exactly 100 px: 1840 and 4000 on a 1920 px screen both ended at 1820. A top in the last 28 px goes to the height minus 28. KWin looks again when focus changes, when the work area changes and when the canvas opens or closes.
+
+## One check on the move replaced three guesses at the cause
+
+I had three detectors, each keyed on a cause. They had about twelve call sites and missed whatever the next cause was, my overview opens included. The classifier does not ask why. A move is KWin's when the window kept its size, moved a pixel or more and went from out of reach to in reach. The canvas writes that back and adopts everything else, because only the hand and the canvas move a window.
+
+## A window that insists is adopted, not fought
+
+A rule or script that forces a place would start a fight. A revert followed by another move within 500 ms continues a chain, and the third move of a chain is adopted. After a pause it is a new cause: a quick open, close and open of the canvas reverts all three of KWin's pulls. Try "A window that insists" above.
+
+## The price is that a script cannot drag a far window in
+
+A script that moves an out-of-reach window onto a monitor is undone. To bring a window here, fly to it or drag it.
+
+## The figure runs the real classifier against a stand-in KWin
+
+The three functions are ported to TypeScript from the project's `logic.js` (GPL-2.0-or-later, as the project is) and the tests reuse its unit cases. KWin is not running: its rule here is my reconstruction of the measurements. Why KWin looks at a window again at every open in my own session is not known; the classifier does not need it.
+
+The code was written with coding agents under my direction, and the classifier's commits carry a Co-Authored-By trailer. The decisions are mine.

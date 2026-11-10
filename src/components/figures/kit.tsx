@@ -35,7 +35,7 @@ export function FigureFrame({
       </p>
       <p className="mt-1.5 text-[0.95rem] text-fg/85 max-w-[60ch]">{how}</p>
       <div className="mt-4 border-2 border-fg rounded-[var(--r-box)] p-3 sm:p-5 space-y-5">{children}</div>
-      <figcaption className="fact mt-3 max-w-[68ch]">{caption}</figcaption>
+      <figcaption className="mt-3 text-[0.95rem] text-fg/75 max-w-[68ch]">{caption}</figcaption>
       {about ? (
         <Fold summary="What this figure is and is not">
           <div className="text-[0.95rem] text-fg/80 max-w-[68ch] space-y-2">{about}</div>

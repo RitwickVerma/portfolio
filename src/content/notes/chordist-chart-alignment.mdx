@@ -1,0 +1,25 @@
+import { ChordAlignment } from "@/components/figures/lazy";
+
+<ChordAlignment />
+
+## A chart and a recording never agree line for line
+
+[Chordist](https://gitlab.com/ritwick7/chordist) is a KDE Plasma widget that shows the chords of whatever is playing. It needs a time for every chart row. Tab sites publish none, so the clock is the timed lyrics from LRCLIB. Charts split, join and repeat sung lines. Each row needs a line, in order, or none.
+
+## Matching row by row loses its place once
+
+The widget's first matcher was greedy: for each recorded line in order, take the best row from a cursor onwards, then move the cursor past it. It cannot take a pairing back. The repo records one failure: a one-word row anchored to any line with a similar word and dragged the rest along. The fix, that a one-word row scores zero, is in both matchers. The version without it is not in the history, so the figure cannot show it.
+
+The figure opens on one I found by running the port: the chart leaves out "'Twas grace that taught my heart to fear". Its line has no row but the next row scores 0.6 against it, exactly the threshold, so the scan takes it. The next line has lost its row behind the cursor and takes the last row, also at 0.6. Six lines find nothing and the last row lands at 0:41 instead of 1:23, on my invented timestamps.
+
+## A table of scores finds the best order
+
+The service uses Needleman-Wunsch; its docstring cites an ISMIR 2005 paper. Words match when equal, when one starts the other or when one edit apart. A row and a line score by their matching words over the shorter side's length, and a one-word row never scores. A pair is worth that minus 0.5, or nothing under it. Cell (i, j) holds the best total for i rows and j lines, from three moves: pair, skip a row or skip a line. Skips are free, which is how a repeated or missing line passes. The traceback starts in the corner.
+
+## Ties go to the later copy
+
+Repeat a row and the readings tie. In all twelve single-row repeats in the site's tests the alignment gives the line to the second copy and the greedy scan to the first.
+
+## What the figure is not
+
+A TypeScript port in your browser, not the service. It matches the Python on 43 cases in the site's tests, and the greedy scan matches the widget's original QML on the same ones. The song is public domain. Chordist and this port were written with coding agents under my direction; 14 of the repo's 16 non-merge commits carry a co-author line.
