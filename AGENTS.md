@@ -21,7 +21,7 @@ npm run build      # static export -> out/
 **A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
-Vitest 4 + jsdom, pure logic only (no component or browser tests). Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 14 files / 164 tests pass.
+Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 14 files / 164 tests pass.
 ```bash
 npm run lint && npm run typecheck && npm test   # exactly what the CI `check` job runs
 npm run test:watch
@@ -34,7 +34,20 @@ npm run test:watch
 - `src/lib/fit.test.ts` pins the fit check, including that common skills I do not have (Kubernetes, Kafka, Rust, ...) come back `missing`. Never make one pass by loosening that.
 - `src/lib/theme.test.ts` checks both palettes against `globals.css` and for WCAG contrast.
 - No test uses `vi.mock`/`vi.fn`/`vi.spyOn`; tests exercise pure functions and fixtures directly. Keep new logic pure so it stays testable this way.
-- `npm run build` also renders OG cards and must pass; it is not part of CI `check` (verified locally, ~30 s).
+- `npm run build` also renders OG cards and must pass; it is not part of CI `check` (verified locally, ~30 s). The `e2e` job runs it.
+
+### Browser smoke tests
+Playwright (`e2e/smoke.spec.ts`, `playwright.config.ts`) over the built export in `out/`, served by `e2e/serve.mjs` (no dependencies). Chromium, Firefox and WebKit. Run `npm run build` first; the suite tests what would deploy, not the dev server.
+```bash
+npm run build && npm run test:e2e                      # needs the browsers: npx playwright install
+docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/playwright:v1.65.0-noble npx playwright test   # what CI runs; WebKit needs this image on Debian
+```
+- Per page (home, `/engine`, `/design`, one note, `/resume`): no console errors, no failed or third-party requests, no sideways overflow at 320/390/768/1440, complete with JavaScript disabled.
+- Search: the chunk hydrates and ranks, `?q=` links work, Ctrl K opens the palette, the demo query types once and does not run under reduced motion.
+- `/resume` prints to one page on Letter and A4 (Chromium only: `page.pdf()`).
+- axe (WCAG 2.2 AA plus best-practice) on each page in both palettes, and on the home page with a query on it. A violation is fixed in the component, never excluded from the scan.
+- The image tag in `.gitlab-ci.yml` and `@playwright/test` in `package.json` are pinned to the same version; bump them together.
+- The container writes `e2e-results/` as root; remove it through the container if a local run then fails with EACCES.
 
 ## Source modules
 | Path | Responsibility |

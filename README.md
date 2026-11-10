@@ -92,7 +92,9 @@ CI variable.
 
 ## Deploy
 
-CI runs `lint + typecheck + test` on every push (the `check` job). A push to
+CI runs `lint + typecheck + test` on every push (the `check` job) and a
+Playwright smoke suite over the built export in Chromium, Firefox and WebKit
+(the `e2e` job). A push to
 `master` then runs `deploy`: `npm run build` on the runner and
 `wrangler pages deploy out` to the Cloudflare Pages project. Response headers
 (immutable hashed assets, frame and content-type protections) come from
