@@ -2,6 +2,14 @@ import Link from "next/link";
 import { projects } from "@/lib/data";
 import { projectAnchor } from "@/lib/corpus";
 import Section from "@/components/Section";
+import Ambilight from "@/components/figures/Ambilight";
+import InfiniteCanvas from "@/components/figures/InfiniteCanvas";
+
+/** Projects whose idea can be run on the page. */
+const FIGURES: Record<string, React.ReactNode> = {
+  "tizen-ambilight": <Ambilight />,
+  "kwin-canvas": <InfiniteCanvas />,
+};
 
 type ProjectData = (typeof projects)[number];
 
@@ -18,7 +26,7 @@ const CATEGORY_LABEL: Record<ProjectData["category"], string> = {
   linux: "Linux desktop",
 };
 
-const meta = "wd-narrow text-[0.95rem] text-muted";
+const meta = "fact";
 
 function Links({ project }: { project: ProjectData }) {
   const links = [
@@ -70,6 +78,7 @@ function Featured({ project }: { project: ProjectData }) {
       <div className="lg:col-span-3 lg:border-l lg:border-border lg:pl-8">
         <Metric project={project} size={project.metric.value.length > 9 ? "text-4xl" : "text-5xl"} />
       </div>
+      {FIGURES[project.slug] ? <div className="lg:col-span-9 lg:col-start-4 mt-2">{FIGURES[project.slug]}</div> : null}
     </article>
   );
 }

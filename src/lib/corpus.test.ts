@@ -4,8 +4,12 @@ import { buildIndex, search } from "./search";
 import { resume } from "./resume";
 import { projects, services, experiences } from "./data";
 import { notes } from "./notes";
+import { noteText, noteHeadings, plainText } from "./notes.server";
+import { slugify } from "./slug";
 
-const corpus = buildCorpus();
+const noteTexts = notes.map((n) => noteText(n.slug));
+const corpus = buildCorpus(noteTexts);
+const record = buildCorpus();
 const index = buildIndex(corpus);
 const top = (q: string, n = 3) => search(index, `${q} `).hits.slice(0, n).map((h) => h.doc.id);
 
@@ -25,13 +29,44 @@ describe("search corpus", () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.filter((i) => i.startsWith("work-"))).toHaveLength(resume.roles.reduce((n, r) => n + r.bullets.length, 0));
     expect(ids.filter((i) => i.startsWith("project-"))).toHaveLength(projects.length);
-    expect(ids.filter((i) => i.startsWith("note-"))).toHaveLength(notes.length);
+    expect(record.map((d) => d.id).filter((i) => i.startsWith("note-"))).toHaveLength(notes.length);
     expect(ids.filter((i) => i.startsWith("lab-"))).toHaveLength(services.length);
   });
 
   it("every result links somewhere on this site", () => {
-    for (const d of corpus) expect(d.href, d.id).toMatch(/^\/(#[a-z0-9-]+|notes\/[a-z0-9-]+\/|resume\/)$/);
+    for (const d of corpus) expect(d.href, d.id).toMatch(/^\/(#[a-z0-9-]+|notes\/[a-z0-9-]+\/(#[a-z0-9-]+)?|resume\/)$/);
     for (const p of projects) expect(corpus.find((d) => d.id === `project-${p.slug}`)!.href).toBe(`/#${projectAnchor(p.slug)}`);
+  });
+
+  it("with the note bodies, every section is a document that links to its own heading", () => {
+    const sections = noteTexts.flatMap((n) => n.sections.map((sec) => ({ n, sec })));
+    expect(sections.length).toBeGreaterThan(20);
+    expect(corpus.length).toBe(record.length + sections.length);
+    for (const { n, sec } of sections) {
+      const d = corpus.find((x) => x.id === `note-${n.slug}--${sec.id}`)!;
+      expect(d.href).toBe(`/notes/${n.slug}/#${sec.id}`);
+      expect(d.text.length, d.id).toBeGreaterThan(100);
+      // The anchor the index links to is one the page renders.
+      expect(noteHeadings(n.slug).map((h) => h.id)).toContain(sec.id);
+    }
+  });
+
+  it("section ids are unique within a note", () => {
+    for (const n of noteTexts) {
+      const ids = noteHeadings(n.slug).map((h) => h.id);
+      expect(new Set(ids).size, n.slug).toBe(ids.length);
+    }
+  });
+
+  it("indexes prose, not markup", () => {
+    expect(plainText("## A `code` [link](https://x.y) and **bold**\n\n```sh\nrm -rf\n```\n| a | b |\n|---|---|\n")).toBe("A code link and bold a b");
+    for (const d of corpus) expect(d.text, d.id).not.toMatch(/```|\]\(|<span|^#/);
+    expect(slugify("Colour: the plane is PQ, the LEDs are not")).toBe("colour-the-plane-is-pq-the-leds-are-not");
+  });
+
+  it("the colophon ranks under the work it describes", () => {
+    const hits = search(index, "ranking ").hits.map((h) => h.doc.id);
+    expect(hits[0]).not.toMatch(/^note-colophon/);
   });
 
   it("the starting points exist and every example query returns results", () => {
@@ -62,7 +97,7 @@ describe("relevance", () => {
 
   it("C++ leads with the eBay engine, then the hand-written C++ project", () => {
     expect(top("c++", 1)[0]).toMatch(/^work-/);
-    expect(top("c++", 6)).toContain("project-rpg-engine");
+    expect(top("c++", 12)).toContain("project-rpg-engine");
   });
 
   it("'reverse engineering' is not answered by the job title 'Software Engineer'", () => {
@@ -91,6 +126,11 @@ describe("relevance", () => {
 
   it("a rewrite reaches the lab: 'infra' finds the homelab", () => {
     expect(top("infra", 4)).toContain("project-homelab");
+  });
+
+  it("a section of a note answers a question the summaries cannot", () => {
+    expect(top("paging", 1)).toEqual(["note-homelab-git-is-the-truth--paging-without-noise"]);
+    expect(top('"tone-mapped"', 3).some((id) => id.includes("tizen"))).toBe(true);
   });
 
   it("resume and contact are findable", () => {

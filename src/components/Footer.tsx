@@ -2,6 +2,8 @@ import Link from "next/link";
 import { socialLinks } from "@/lib/data";
 
 const links = [
+  { label: "Engine room", href: "/engine/", external: false },
+  { label: "Design language", href: "/design/", external: false },
   { label: "Notes", href: "/notes/", external: false },
   { label: "Resume", href: socialLinks.resume, external: false },
   { label: "GitHub", href: socialLinks.github, external: true },
@@ -13,7 +15,7 @@ const links = [
 export default function Footer() {
   return (
     <footer className="border-t border-border">
-      <div className="max-w-[78rem] mx-auto px-5 sm:px-8 py-8 flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 text-sm text-muted">
+      <div className="max-w-[var(--page)] mx-auto px-5 sm:px-8 py-8 flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 text-sm text-muted">
         <p>
           &copy; {new Date().getFullYear()} Ritwick Verma.{" "}
           <Link href="/notes/colophon/" className="underline decoration-fg/30 underline-offset-4 hover:text-fg">

@@ -16,7 +16,7 @@ export default function Contact() {
   const location = experiences[0].location;
   return (
     <section id="contact" aria-labelledby="contact-title" className="landing border-t-2 border-fg">
-      <div className="max-w-[78rem] mx-auto px-5 sm:px-8 pt-8 pb-20 sm:pb-28">
+      <div className="max-w-[var(--page)] mx-auto px-5 sm:px-8 pt-8 pb-20 sm:pb-28">
         <h2 id="contact-title" className="wd-semi text-h2 font-extrabold leading-[1.02] max-w-[18ch]">
           Email is the fastest way to reach me.
         </h2>

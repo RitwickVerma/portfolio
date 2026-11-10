@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 
 export default function NotesIndex() {
   return (
-    <div className="max-w-[78rem] mx-auto px-5 sm:px-8 pt-12 sm:pt-16 pb-24 sm:pb-32">
+    <div className="max-w-[var(--page)] mx-auto px-5 sm:px-8 pt-12 sm:pt-16 pb-24 sm:pb-32">
       <h1 className="wd-wide text-[clamp(3rem,8vw,6.5rem)] font-black leading-[0.9] -ml-[0.04em]">Notes</h1>
       <p className="mt-5 text-lede leading-[1.25] max-w-[36ch] mb-14">
         How specific things were built, with the numbers and the failures left in.

@@ -59,7 +59,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       className={`${archivo.variable} ${martian.variable} h-full antialiased`}
+      // The theme switch sets data-theme before first paint; the server cannot know it.
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}",
+          }}
+        />
+      </head>
       <body className="min-h-full bg-background text-fg flex flex-col">
         <a
           href="#main"

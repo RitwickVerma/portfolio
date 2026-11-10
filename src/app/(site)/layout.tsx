@@ -1,5 +1,6 @@
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import Palette from "@/components/Palette";
 
 // The site shell: nav and footer. /resume and the app pages deliberately sit
 // outside this group so they render as their own documents.
@@ -11,6 +12,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         {children}
       </main>
       <Footer />
+      <Palette />
     </>
   );
 }

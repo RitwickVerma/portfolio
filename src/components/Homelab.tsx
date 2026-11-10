@@ -6,6 +6,7 @@ import { services } from "@/lib/data";
 import { loadStatus, useStatus } from "@/lib/statusStore";
 import { ageMs, formatAge, formatUptime, guestView, runningCount, type GuestView } from "@/lib/status";
 import Section from "@/components/Section";
+import LabTopology from "@/components/figures/LabTopology";
 
 const STATE: Record<GuestView, { label: string; cls: string }> = {
   up: { label: "running", cls: "text-fg" },
@@ -39,7 +40,8 @@ export default function Homelab() {
         </>
       }
     >
-      <p className="wd-narrow text-[0.95rem] text-muted mb-3" aria-live="polite">
+      <LabTopology />
+      <p className="fact mb-3" aria-live="polite">
         {live
           ? `${live.phase === "live" ? "Live" : "Stale"}: ${runningCount(live.status)} of ${services.length} running, checked ${formatAge(ageMs(live.status))}. Guest state and uptime only.`
           : "The inventory, not a live status page."}

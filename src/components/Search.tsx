@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { buildCorpus, EXAMPLE_QUERIES, STARTING_POINTS } from "@/lib/corpus";
-import { buildIndex, search, highlight, snippet, tokenize, type SearchHit, type SearchResult, type PlanTerm } from "@/lib/search";
+import { EXAMPLE_QUERIES, STARTING_POINTS } from "@/lib/corpus";
+import { search, type DocKind, type SearchHit, type SearchResult } from "@/lib/search";
+import { useSearchIndex, timed } from "@/lib/useSearchIndex";
+import { CorpusMap, PlanChips, ResultRow, hrefFor } from "@/components/search/parts";
 
 // The hero. A working search engine over everything on this site: type, and
-// lib/search.ts tokenizes, rewrites, retrieves and ranks in the browser.
-// Before any JavaScript runs the box shows a fixed list of starting points,
-// so the server HTML is already a complete page.
+// lib/search.ts parses, rewrites, retrieves and ranks in the browser. Before
+// any JavaScript runs the box shows a fixed list of starting points, so the
+// server HTML is already a complete page.
 
 const SHOWN = 6;
 /** Phones show fewer before "Show all": the record itself starts right below. */
@@ -17,140 +19,54 @@ const SHOWN_PHONE = 3;
 const DEMO_QUERY = "fitment";
 const DEMO_START_MS = 1500;
 const DEMO_KEY_MS = 95;
-/** A single run is below the clock's resolution; time a batch and divide. */
-const TIMING_RUNS = 20;
 
-type Run = { query: string; result: SearchResult; ms: number } | null;
+/** kind: value that selects exactly this facet. */
+const FACET_FILTER: Record<DocKind, string> = {
+  eBay: "ebay",
+  "Earlier work": "work",
+  Project: "project",
+  Note: "note",
+  Homelab: "lab",
+  Skills: "skills",
+  Education: "education",
+  Page: "page",
+};
 
-function Marked({ text, stems }: { text: string; stems: string[] }) {
-  return (
-    <>
-      {highlight(text, stems).map((seg, i) => (seg.hit ? <mark key={i}>{seg.text}</mark> : seg.text))}
-    </>
-  );
-}
-
-function ResultLink({ href, children }: { href: string; children: React.ReactNode }) {
-  const cls = "link text-lg sm:text-xl font-semibold leading-snug";
-  // Same-page anchors are plain links: only a native navigation updates :target,
-  // which is what flashes the row you land on.
-  if (href.startsWith("/#")) {
-    return (
-      <a href={href.slice(1)} className={cls}>
-        {children}
-      </a>
-    );
-  }
-  return (
-    <Link href={href} className={cls}>
-      {children}
-    </Link>
-  );
-}
-
-function Row({ hit, top, i, collapsed }: { hit: SearchHit; top: number; i: number; collapsed: boolean }) {
-  const { doc, score, matched } = hit;
-  const shown = snippet(doc.text, matched);
-  // A match on something the row does not print (the stack, a tag) is named, so no result looks unexplained.
-  const visible = [doc.title, doc.context, shown].some((t) => highlight(t, matched).some((s) => s.hit));
-  const unseen = visible ? [] : (doc.keywords ?? []).filter((k) => tokenize(k).some((t) => matched.includes(t)));
-  return (
-    <li
-      className={`rank-in ${collapsed ? "max-sm:hidden" : ""} grid grid-cols-[1fr_auto] sm:grid-cols-[7.5rem_1fr_auto] gap-x-6 gap-y-1 py-4 border-t border-border`}
-      style={{ "--i": i } as CSSProperties}
-    >
-      <p className="wd-narrow text-sm text-muted sm:pt-1.5 col-span-2 sm:col-span-1">{doc.kind}</p>
-      <div className="min-w-0">
-        <h3>
-          <ResultLink href={doc.href}>
-            <Marked text={doc.title} stems={matched} />
-          </ResultLink>
-        </h3>
-        <p className="wd-narrow text-sm text-muted mt-0.5">
-          <Marked text={doc.context} stems={matched} />
-        </p>
-        <p className="mt-1.5 text-fg/85 max-w-[68ch]">
-          <Marked text={shown} stems={matched} />
-        </p>
-        {unseen.length > 0 && (
-          <p className="wd-narrow text-sm text-muted mt-1.5">
-            Matches on{" "}
-            {unseen.map((k, n) => (
-              <span key={k}>
-                {n > 0 ? ", " : ""}
-                <mark>{k}</mark>
-              </span>
-            ))}
-          </p>
-        )}
-      </div>
-      {top > 0 && (
-        <div className="hidden sm:block w-16 pt-2" title={`BM25 score ${score.toFixed(3)}`}>
-          <p className="font-mono text-xs text-muted text-right">{score.toFixed(2)}</p>
-          <div className="mt-1.5 h-[3px] bg-fg/10">
-            <div className="h-full bg-fg origin-left" style={{ width: `${Math.max(4, (score / top) * 100)}%` }} />
-          </div>
-        </div>
-      )}
-    </li>
-  );
-}
-
-function Plan({ plan }: { plan: PlanTerm[] }) {
-  const style: Record<PlanTerm["source"], string> = {
-    typed: "border-fg text-fg",
-    rewrite: "border-dashed border-fg/50 text-fg/80",
-    prefix: "border-dotted border-fg/50 text-fg/80",
-  };
-  const how: Record<PlanTerm["source"], (t: PlanTerm) => string> = {
-    typed: () => "from your query",
-    rewrite: (t) => `added by the rewriter for “${t.from}”`,
-    prefix: (t) => `completes “${t.from}”`,
-  };
-  return (
-    <ul className="flex flex-wrap gap-1.5" aria-label="Query plan: the terms searched for">
-      {plan.map((t) => (
-        <li
-          key={t.term}
-          title={`${t.term}: ${how[t.source](t)}, in ${t.df} document${t.df === 1 ? "" : "s"}, weight ${t.weight}`}
-          className={`font-mono text-[0.7rem] leading-none px-1.5 py-1.5 border rounded-[3px] ${style[t.source]} ${t.df === 0 ? "line-through opacity-60" : ""}`}
-        >
-          {t.term}
-          <span className="text-muted ml-1.5">{t.df}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
+type Run = { result: SearchResult; ms: number } | null;
 
 export default function Search() {
-  const index = useMemo(() => buildIndex(buildCorpus()), []);
+  const { index, full, buildMs } = useSearchIndex();
   const starting = useMemo(
     () =>
       STARTING_POINTS.map((id) => index.docs.find((d) => d.id === id))
         .filter((d) => d !== undefined)
-        .map((doc) => ({ doc, score: 0, matched: [] as string[] })),
+        .map((doc): SearchHit => ({ doc, score: 0, matched: [], explain: { terms: [], prior: 1, phrases: 0 } })),
     [index],
   );
 
   const [text, setText] = useState("");
   const [run, setRun] = useState<Run>(null);
   const [all, setAll] = useState(false);
+  const [selected, setSelected] = useState(-1);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [help, setHelp] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   /** True once the visitor has touched the box; the demo never types over them. */
   const touched = useRef(false);
+  const textRef = useRef("");
 
   const execute = useCallback(
     (query: string, { syncUrl = true } = {}) => {
+      textRef.current = query;
       setText(query);
       setAll(false);
+      setSelected(-1);
+      setOpenId(null);
       if (!query.trim()) {
         setRun(null);
       } else {
-        const t0 = performance.now();
-        let result = search(index, query);
-        for (let i = 1; i < TIMING_RUNS; i++) result = search(index, query);
-        setRun({ query, result, ms: (performance.now() - t0) / TIMING_RUNS });
+        const { value, ms } = timed(() => search(index, query));
+        setRun({ result: value, ms });
       }
       if (syncUrl) {
         // A query is a link: /?q=c%2B%2B opens with the results already ranked.
@@ -163,24 +79,37 @@ export default function Search() {
     [index],
   );
 
+  // Timers set on mount must reach the current index, not the one they closed over.
+  const executeRef = useRef(execute);
+  useEffect(() => {
+    executeRef.current = execute;
+  }, [execute]);
+
+  // When the notes' full text arrives, the query on screen is run again against it.
+  useEffect(() => {
+    if (!full || !textRef.current.trim()) return;
+    const t = window.setTimeout(() => execute(textRef.current, { syncUrl: false }), 0);
+    return () => window.clearTimeout(t);
+  }, [full, execute]);
+
   // On load: honour ?q=, otherwise type one query as a demonstration.
   useEffect(() => {
     const timers: number[] = [];
     const q = new URLSearchParams(window.location.search).get("q");
     if (q) {
       touched.current = true;
-      timers.push(window.setTimeout(() => execute(q.slice(0, 80), { syncUrl: false }), 0));
+      timers.push(window.setTimeout(() => executeRef.current(q.slice(0, 120), { syncUrl: false }), 0));
     } else if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       for (let i = 1; i <= DEMO_QUERY.length; i++) {
         timers.push(
           window.setTimeout(() => {
-            if (!touched.current) execute(DEMO_QUERY.slice(0, i), { syncUrl: false });
+            if (!touched.current) executeRef.current(DEMO_QUERY.slice(0, i), { syncUrl: false });
           }, DEMO_START_MS + i * DEMO_KEY_MS),
         );
       }
     }
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [execute]);
+  }, []);
 
   // "/" jumps to the box from anywhere that is not already taking keystrokes.
   useEffect(() => {
@@ -195,19 +124,44 @@ export default function Search() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const hits = run ? run.result.hits : starting;
-  const top = run?.result.hits[0]?.score ?? 0;
+  const result = run?.result ?? null;
+  const hits = result ? result.hits : starting;
+  const top = result?.hits[0]?.score ?? 0;
   const visible = all ? hits : hits.slice(0, SHOWN);
-  const live = run
-    ? `${run.result.hits.length} of ${run.result.total} documents match ${run.query}`
-    : "";
+  const respelled = result?.plan.filter((t) => t.source === "fuzzy") ?? [];
+  const facets = result ? (Object.entries(result.facets) as [DocKind, number][]).sort((a, b) => b[1] - a[1]) : [];
+  const facetTotal = facets.reduce((n, [, c]) => n + c, 0);
+  const activeKinds = result?.parsed.kinds ?? [];
+
+  const setKind = (kind: DocKind | null) => {
+    touched.current = true;
+    const bare = textRef.current.replace(/(^|\s)(kind|in):\S*/gi, " ").replace(/\s+/g, " ").trim();
+    execute(kind ? `${bare} kind:${FACET_FILTER[kind]} `.trimStart() : `${bare} `);
+    inputRef.current?.focus();
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (visible.length === 0) return;
+      e.preventDefault();
+      const next = e.key === "ArrowDown" ? Math.min(selected + 1, visible.length - 1) : Math.max(selected - 1, -1);
+      setSelected(next);
+      if (next >= 0) document.getElementById(`hit-${next}`)?.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter" && selected >= 0 && visible[selected]) {
+      e.preventDefault();
+      window.location.assign(hrefFor(visible[selected].doc, text));
+    } else if (e.key === "Escape" && text) {
+      e.preventDefault();
+      execute("");
+    }
+  };
 
   return (
     <search className="block">
       <form
         role="search"
         onSubmit={(e) => e.preventDefault()}
-        className="flex items-center gap-3 border-2 border-fg bg-background focus-within:border-accent transition-colors rounded-md px-4 sm:px-5"
+        className="flex items-center gap-3 border-2 border-fg bg-background focus-within:border-accent transition-colors rounded-[var(--r-box)] px-4 sm:px-5"
       >
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true" className="shrink-0">
           <circle cx="9.5" cy="9.5" r="6.5" stroke="currentColor" strokeWidth="2" />
@@ -227,12 +181,15 @@ export default function Search() {
             execute(e.target.value);
           }}
           onFocus={() => (touched.current = true)}
+          onKeyDown={onKeyDown}
           placeholder="Search my record"
           autoComplete="off"
           autoCapitalize="none"
           spellCheck={false}
           enterKeyHint="search"
-          maxLength={80}
+          maxLength={120}
+          aria-controls="hits"
+          aria-activedescendant={selected >= 0 ? `hit-${selected}` : undefined}
           className="flex-1 min-w-0 bg-transparent py-4 sm:py-5 text-xl sm:text-2xl font-medium placeholder:text-muted placeholder:font-normal outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {text ? (
@@ -243,19 +200,19 @@ export default function Search() {
               execute("");
               inputRef.current?.focus();
             }}
-            className="wd-narrow text-sm text-muted hover:text-fg px-2 py-2 -mr-2"
+            className="fact hover:text-fg px-2 py-2 -mr-2"
           >
             Clear
           </button>
         ) : (
-          <kbd className="hidden sm:block font-mono text-xs text-muted border border-border rounded-[3px] px-1.5 py-1" title="Press / to search">
+          <kbd className="hidden sm:block" title="Press / to search">
             /
           </kbd>
         )}
       </form>
 
       <div className="mt-3 flex flex-wrap items-baseline gap-x-1 gap-y-1">
-        <span className="wd-narrow text-sm text-muted mr-2">Try</span>
+        <span className="fact mr-2">Try</span>
         {EXAMPLE_QUERIES.map((q) => (
           <button
             key={q}
@@ -265,41 +222,120 @@ export default function Search() {
               execute(q);
             }}
             aria-pressed={text.trim().toLowerCase() === q}
-            className="text-sm px-2 py-1 rounded-[3px] text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent aria-pressed:bg-hit aria-pressed:text-ink aria-pressed:no-underline"
+            className="text-sm px-2 py-1 rounded-[var(--r-chip)] text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent aria-pressed:bg-hit aria-pressed:text-ink aria-pressed:no-underline"
           >
             {q}
           </button>
         ))}
+        <button type="button" onClick={() => setHelp((h) => !h)} aria-expanded={help} className="fact ml-auto underline decoration-fg/30 underline-offset-4 hover:text-fg py-1">
+          Query syntax
+        </button>
       </div>
 
+      {help && (
+        <dl className="mt-3 grid sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-3 border border-border rounded-[var(--r-box)] p-4 bg-surface text-[0.95rem]">
+          {[
+            ['"traffic replay"', "Those words, adjacent and in order."],
+            ["replay -plutus", "Leave out anything that mentions the second word."],
+            ["kind:note hdr", "Only one kind: work, ebay, project, note, lab, skills."],
+            ["tech:kotlin", "Only things whose stack lists it."],
+          ].map(([q, what]) => (
+            <div key={q}>
+              <dt>
+                <button
+                  type="button"
+                  className="font-mono text-xs text-accent underline decoration-accent/40 underline-offset-4"
+                  onClick={() => {
+                    touched.current = true;
+                    execute(`${q} `);
+                  }}
+                >
+                  {q}
+                </button>
+              </dt>
+              <dd className="text-fg/80 mt-0.5">{what}</dd>
+            </div>
+          ))}
+          <p className="fact sm:col-span-2 lg:col-span-4">
+            Arrow keys move through results, Enter opens one, Esc clears. <kbd>/</kbd> focuses this box and <kbd>Ctrl K</kbd> opens search on any page. Click a score to see how it was computed.
+          </p>
+        </dl>
+      )}
+
       <p className="sr-only" role="status" aria-live="polite">
-        {live}
+        {result ? `${result.hits.length} of ${result.total} documents match` : ""}
       </p>
 
-      <div className="mt-8">
+      <div className="mt-6">
+        <CorpusMap index={index} hits={result ? result.hits : []} />
+        <p className="fact !text-xs mt-1 sm:hidden">One tick per document, grouped by kind. Lit ticks match.</p>
+      </div>
+
+      <div className="mt-5">
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pb-3 min-h-11">
-          {run ? (
+          {result ? (
             <>
-              <Plan plan={run.result.plan} />
+              <PlanChips plan={result.plan} parsed={result.parsed} />
               <p className="font-mono text-[0.7rem] text-muted">
-                {run.result.hits.length} of {run.result.total} documents, {run.ms < 0.01 ? "under 0.01" : run.ms.toFixed(2)} ms, ranked by BM25 in
-                your browser
+                {result.hits.length} of {result.total} documents, {run!.ms < 0.01 ? "under 0.01" : run!.ms.toFixed(2)} ms, ranked in your browser
               </p>
             </>
           ) : (
-            <p className="wd-narrow text-sm text-muted">Nothing typed yet. This is where I would start you:</p>
+            <p className="fact">Nothing typed yet. This is where I would start you:</p>
           )}
         </div>
 
-        {run && hits.length === 0 ? (
+        {respelled.length > 0 && (
+          <p className="pb-3 text-[0.95rem]">
+            Nothing here is spelt <span className="font-semibold">{[...new Set(respelled.map((t) => t.from))].join(", ")}</span>. Showing the nearest
+            spelling: <mark>{respelled.map((t) => t.term).join(", ")}</mark>.
+          </p>
+        )}
+        {result && result.parsed.unknownKinds.length > 0 && (
+          <p className="pb-3 text-[0.95rem] text-warn">
+            There is no kind called {result.parsed.unknownKinds.join(", ")}. Try work, ebay, project, note, lab or skills.
+          </p>
+        )}
+
+        {facets.length > 1 || activeKinds.length > 0 ? (
+          <div className="flex flex-wrap gap-x-1 gap-y-1 pb-3" role="group" aria-label="Narrow by kind">
+            <button type="button" onClick={() => setKind(null)} aria-pressed={activeKinds.length === 0} className="fact px-2 py-1 rounded-[var(--r-chip)] hover:text-fg aria-pressed:bg-fg aria-pressed:text-background">
+              All {facetTotal}
+            </button>
+            {facets.map(([kind, count]) => (
+              <button
+                key={kind}
+                type="button"
+                onClick={() => setKind(kind)}
+                aria-pressed={activeKinds.includes(kind)}
+                className="fact px-2 py-1 rounded-[var(--r-chip)] hover:text-fg aria-pressed:bg-fg aria-pressed:text-background"
+              >
+                {kind} {count}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {result && hits.length === 0 ? (
           <p className="border-t border-border py-6 max-w-[60ch]">
-            No document matches <span className="font-semibold">“{run.query.trim()}”</span>. The index holds only what is on this
-            site, and the site holds only what I have done, so that is the honest answer.
+            No document matches <span className="font-semibold">“{text.trim()}”</span>. The index holds only what is on this site, and the site holds
+            only what I have done, so that is the honest answer.
           </p>
         ) : (
-          <ol className="border-b border-border">
+          <ol id="hits" className="border-b border-border">
             {visible.map((hit, i) => (
-              <Row key={hit.doc.id} hit={hit} top={top} i={i} collapsed={!all && i >= SHOWN_PHONE} />
+              <ResultRow
+                key={hit.doc.id}
+                id={`hit-${i}`}
+                hit={hit}
+                top={top}
+                i={i}
+                query={text}
+                selected={i === selected}
+                open={openId === hit.doc.id}
+                onToggle={() => setOpenId((id) => (id === hit.doc.id ? null : hit.doc.id))}
+                collapsed={!all && i >= SHOWN_PHONE}
+              />
             ))}
           </ol>
         )}
@@ -312,9 +348,13 @@ export default function Search() {
           ) : (
             <span />
           )}
-          <Link href="/notes/colophon/#the-search-box" className="wd-narrow text-muted hover:text-fg underline decoration-fg/30 underline-offset-4">
-            How this search works
-          </Link>
+          <p className="fact">
+            {index.docs.length} documents, {index.terms.length.toLocaleString("en-US")} terms
+            {buildMs !== null ? `, indexed in this tab in ${buildMs.toFixed(1)} ms` : ""}.{" "}
+            <Link href="/engine/" className="underline decoration-fg/30 underline-offset-4 hover:text-fg">
+              Open the engine room
+            </Link>
+          </p>
         </div>
       </div>
     </search>

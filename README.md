@@ -8,11 +8,23 @@ own analytics beacon.
 
 ## The idea
 
-I worked on a search engine for 5.5 years, so the home page opens on one: a
-search box over everything on the site. `src/lib/search.ts` is a tokenizer,
-a query rewriter, an inverted index and BM25 ranking in about 250 lines of
-dependency-free TypeScript, running in the browser. The row under the input
-shows the query plan. `/?q=c%2B%2B` links straight to a ranked result list.
+I worked on a search engine for 5.5 years, so the site is one.
+
+- **Search** (`src/lib/search.ts`): a query parser (`"phrases"`, `-term`,
+  `kind:`, `tech:`), tokenizer, query rewriter, prefix and nearest-spelling
+  expansion, an inverted index and BM25 with field weights and a static rank,
+  in one dependency-free file. It indexes every resume bullet, project and
+  lab guest, and every section of every note. Each result can show the
+  arithmetic behind its score. `/?q=c%2B%2B` links to a ranked list;
+  Ctrl K opens search on any page.
+- **Fit check** (`src/lib/fit.ts`): paste a job description and the engine
+  reports which named skills the record covers, which it only comes near,
+  and which are missing. It runs in the browser.
+- **The engine room** (`/engine`): one query taken apart stage by stage, a
+  judged query set replayed against a plain-BM25 control with P@1, MRR and
+  nDCG, and a latency benchmark that runs in the reader's tab.
+- **Index**, the design language (`/design`): five rules, seven colours, one
+  typeface at three widths, with live specimens.
 
 ## Stack
 
@@ -24,11 +36,12 @@ shows the query plan. `/?q=c%2B%2B` links straight to a ranked result list.
 - **MDX** (`@next/mdx`, remark-gfm) — the notes. Add a file under
   `src/content/notes/` and an entry in `src/lib/notes.ts`; a test fails if
   the two disagree.
-- **Vitest** — pure logic only: the search engine and its relevance checks,
-  data integrity, copy guards, theme contrast, SEO helpers, the notes
-  registry, the keyboard matrix, the status feed
-- No animation library, no 3D, no component library. Three client
-  components: the search box, the keyboard, the homelab status reader.
+- **Vitest** — pure logic only: the search engine, a relevance regression
+  guard over judged queries, the fit check, data integrity, copy guards,
+  theme contrast, SEO helpers, the notes registry, the keyboard matrix, the
+  status feed
+- No animation library, no 3D, no component library, no runtime
+  dependencies beyond Next, React and MDX.
 
 ## Layout
 
@@ -38,8 +51,12 @@ src/app/(site)/notes/  /notes index and /notes/[slug] pages, one OG card each
 src/content/notes/     the notes themselves, MDX; registered in lib/notes.ts
 src/app/resume/        /resume — print-optimised, rendered from lib/resume
 src/app/apps/          landing pages for the Android apps, in their own design
+src/app/(site)/engine/ the engine room; src/app/(site)/design/ the design language
 src/lib/search.ts      the search engine
 src/lib/corpus.ts      the documents it indexes, built from the data below
+src/lib/eval.ts        judged queries and relevance metrics
+src/lib/fit.ts         the fit check; lexicon.ts is the skills it recognises
+src/components/figures the ambilight simulation, the infinite canvas, the lab diagram
 src/lib/data.ts        single source for home, /resume and the index
 src/lib/status.ts      /status.json contract (schema 1) + pure helpers
 tools/                 status-from-api.sh (cron on a host) + fixtures + example

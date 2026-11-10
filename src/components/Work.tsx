@@ -1,6 +1,7 @@
 import { experiences, education, skills } from "@/lib/data";
 import { workRoles } from "@/lib/corpus";
 import Section from "@/components/Section";
+import Timeline from "@/components/Timeline";
 
 // The replay bullet's two numbers, drawn to scale. They are read out of the
 // bullet itself so the figure cannot disagree with the sentence beside it.
@@ -27,7 +28,7 @@ function ReplayFigure({ text }: { text: string }) {
   );
 }
 
-const meta = "wd-narrow text-[0.95rem] text-muted";
+const meta = "fact";
 
 export default function Work() {
   const earlier = experiences.filter((e) => e.company !== "eBay");
@@ -42,6 +43,7 @@ export default function Work() {
         </p>
       }
     >
+      <Timeline />
       <div className="space-y-14">
         {workRoles.map((r) => (
           <div key={r.role} className="grid lg:grid-cols-12 gap-x-8 gap-y-4">

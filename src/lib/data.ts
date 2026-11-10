@@ -285,6 +285,9 @@ export const socialLinks = {
   resume: "/resume/",
 };
 
+/** Years on Cassini, as the hero line and the resume state them. data.test.ts ties the three together. */
+export const YEARS_AT_EBAY = 5.5;
+
 export const SITE_URL = "https://www.ritwickverma.dev";
 
 export const hero = {

@@ -57,11 +57,25 @@ export const workRoles: WorkRole[] = resume.roles.map((r, ri) => ({
   })),
 }));
 
+/** A note's body as the index wants it: produced at build by lib/notes.server.ts, served as /search-index.json. */
+export interface NoteText {
+  slug: string;
+  /** The prose before the first heading. */
+  intro: string;
+  sections: { id: string; heading: string; text: string }[];
+}
+
 export function projectAnchor(slug: string): string {
   return `p-${slug}`;
 }
 
-export function buildCorpus(): SearchDoc[] {
+/**
+ * Without `noteTexts` this is the record alone (about fifty documents): what
+ * the first paint searches. With them, every section of every note is a
+ * document of its own that links to its heading.
+ */
+export function buildCorpus(noteTexts: NoteText[] = []): SearchDoc[] {
+  const bodies = new Map(noteTexts.map((n) => [n.slug, n]));
   const work: SearchDoc[] = workRoles.flatMap((r) =>
     r.items.map((item) => ({
       id: item.id,
@@ -101,10 +115,21 @@ export function buildCorpus(): SearchDoc[] {
     kind: "Note" as const,
     title: n.title,
     context: formatNoteDate(n.date),
-    text: n.summary,
+    text: [n.summary, bodies.get(n.slug)?.intro].filter(Boolean).join(" "),
     keywords: n.tags,
     href: noteUrl(n),
   }));
+
+  const passages: SearchDoc[] = notes.flatMap((n) =>
+    (bodies.get(n.slug)?.sections ?? []).map((sec) => ({
+      id: `note-${n.slug}--${sec.id}`,
+      kind: "Note" as const,
+      title: sec.heading,
+      context: `In the note “${n.title}”`,
+      text: sec.text,
+      href: `${noteUrl(n)}#${sec.id}`,
+    })),
+  );
 
   const lab: SearchDoc[] = services.map((s) => ({
     id: `lab-${s.ct}`,
@@ -143,6 +168,16 @@ export function buildCorpus(): SearchDoc[] {
     },
   ];
 
+  // The resume's own skills lines say things the site's lists do not ("query understanding", "embedding retrieval").
+  const resumeSkills: SearchDoc[] = resume.skills.map((s, i) => ({
+    id: `skills-resume-${i}`,
+    kind: "Skills" as const,
+    title: `${s.label}, as the resume lists them`,
+    context: "Skills",
+    text: `${s.value}.`,
+    href: socialLinks.resume,
+  }));
+
   const edu: SearchDoc[] = education.map((e, i) => ({
     id: `education-${i}`,
     kind: "Education" as const,
@@ -175,19 +210,33 @@ export function buildCorpus(): SearchDoc[] {
   ];
 
   const starting = new Set<string>(STARTING_POINTS);
-  return [...work, ...projectDocs, ...noteDocs, ...earlier, ...skillDocs, ...edu, ...lab, ...pages].map((d) => ({
+  const record = [...work, ...projectDocs, ...noteDocs, ...earlier, ...skillDocs, ...resumeSkills, ...edu, ...lab, ...pages].map((d) => ({
     ...d,
-    prior: (KIND_PRIOR[d.kind] ?? 1) * (starting.has(d.id) ? STARTING_PRIOR : 1),
+    prior: (KIND_PRIOR[d.kind] ?? 1) * (starting.has(d.id) ? STARTING_PRIOR : 1) * (isAboutThisSite(d.id) ? SITE_PRIOR : 1),
   }));
+  return [...record, ...passages.map((d) => ({ ...d, prior: PASSAGE_PRIOR * (isAboutThisSite(d.id) ? SITE_PRIOR : 1) }))];
 }
 
 /**
  * Static rank by kind. The eBay record is what this site is for, so it leads
- * when a query matches it about as well as a side project. A skills list or a one-line guest entry is short, and
- * BM25 rewards short documents; these keep a list of keywords from outranking
- * the work it summarises.
+ * when a query matches it about as well as a side project. A skills list or a
+ * one-line guest entry is short, and BM25 rewards short documents; these keep
+ * a list of keywords from outranking the work it summarises.
  */
 const KIND_PRIOR: Partial<Record<SearchDoc["kind"], number>> = { eBay: 1.3, Skills: 0.6, Homelab: 0.6 };
+
+/**
+ * The colophon describes this site, search box included, so it is full of
+ * words like "ranking" and "tokenizer" that are not evidence of the work.
+ * It stays findable and ranks under everything that is.
+ */
+export const SITE_PRIOR = 0.5;
+export function isAboutThisSite(id: string): boolean {
+  return id.startsWith("note-colophon");
+}
+
+/** A section of a note ranks just under the note itself when both match equally. */
+export const PASSAGE_PRIOR = 0.85;
 
 /** Static rank for the starting points: on a near tie, the document I would show first wins. */
 export const STARTING_PRIOR = 1.25;
@@ -202,4 +251,4 @@ export const STARTING_POINTS = [
 ] as const;
 
 /** Queries offered under the box. Each one must return results (corpus.test.ts). */
-export const EXAMPLE_QUERIES = ["fitment", "c++", "testing", "caching", "reverse engineering", "android", "infra"] as const;
+export const EXAMPLE_QUERIES = ["fitment", "c++", "testing", "\"traffic replay\"", "reverse engineering", "kind:note hdr", "infra"] as const;

@@ -1,10 +1,33 @@
 import type { MDXComponents } from "mdx/types";
 import type { ComponentPropsWithoutRef } from "react";
 import Link from "next/link";
+import { Children, isValidElement, type ReactNode } from "react";
+import { slugify } from "@/lib/slug";
 
 // House style for note bodies. One accent, mono for code, generous leading.
 // Block code is styled by `.note pre code` in globals.css so the inline-code
 // treatment below never leaks into fenced blocks.
+
+/** The words of a heading, through any inline code or emphasis inside it. */
+function textOf(node: ReactNode): string {
+  return Children.toArray(node)
+    .map((child) => (typeof child === "string" || typeof child === "number" ? String(child) : isValidElement<{ children?: ReactNode }>(child) ? textOf(child.props.children) : ""))
+    .join("");
+}
+
+// Headings carry the id the search index links to (lib/notes.server.ts derives
+// the same slug from the source), and a link to themselves.
+function Heading({ as: Tag, className, children }: { as: "h2" | "h3"; className: string; children?: ReactNode }) {
+  const id = slugify(textOf(children));
+  return (
+    <Tag id={id} className={`landing group ${className}`}>
+      {children}
+      <a href={`#${id}`} aria-label="Link to this section" className="ml-2 text-muted opacity-0 group-hover:opacity-100 focus:opacity-100 no-underline font-normal">
+        #
+      </a>
+    </Tag>
+  );
+}
 
 function Anchor({ href = "", children, ...rest }: ComponentPropsWithoutRef<"a">) {
   const external = /^https?:\/\//.test(href);
@@ -24,8 +47,8 @@ function Anchor({ href = "", children, ...rest }: ComponentPropsWithoutRef<"a">)
 }
 
 const components: MDXComponents = {
-  h2: (p) => <h2 className="wd-semi mt-14 mb-4 text-[1.75rem] font-extrabold leading-tight text-fg" {...p} />,
-  h3: (p) => <h3 className="mt-10 mb-3 text-xl font-bold text-fg" {...p} />,
+  h2: (p) => <Heading as="h2" className="wd-semi mt-14 mb-4 text-[1.75rem] font-extrabold leading-tight text-fg">{p.children}</Heading>,
+  h3: (p) => <Heading as="h3" className="mt-10 mb-3 text-xl font-bold text-fg">{p.children}</Heading>,
   p: (p) => <p className="my-5 leading-[1.65] text-fg/90" {...p} />,
   a: Anchor,
   ul: (p) => <ul className="my-5 list-disc space-y-2 pl-6 text-fg/90 marker:text-muted" {...p} />,
@@ -39,7 +62,7 @@ const components: MDXComponents = {
   hr: () => <hr className="my-12 border-0 h-px bg-border" />,
   code: (p) => (
     <code
-      className="font-mono text-[0.8em] text-fg bg-surface border border-border rounded-[3px] px-1 py-0.5"
+      className="font-mono text-[0.8em] text-fg bg-surface border border-border rounded-[3px] px-1 py-0.5 [overflow-wrap:anywhere]"
       {...p}
     />
   ),
