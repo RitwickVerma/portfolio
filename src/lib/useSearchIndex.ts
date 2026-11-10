@@ -4,8 +4,8 @@ import { useEffect, useSyncExternalStore } from "react";
 import { buildCorpus, type NoteText } from "./corpus";
 import { buildIndex, type SearchIndex } from "./search";
 
-// One index per tab, shared by the hero box, the command palette, the fit
-// check and the engine room. It starts as the record alone, which is what the
+// One index per tab, shared by the hero box, the command palette and
+// the engine room. It starts as the record alone, which is what the
 // server rendered against, then fetches the notes' full text once the browser
 // is idle and rebuilds. A failed fetch changes nothing: the record still works.
 

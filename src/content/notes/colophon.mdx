@@ -20,10 +20,6 @@ The strip of ticks under the box is the whole index, one tick per document; the 
 
 It is not Cassini and has nothing of eBay's in it. It is the textbook version, built so every step can be seen. [The engine room](/engine/) takes a query apart stage by stage, replays a set of judged queries against a plain-BM25 control, and runs a latency benchmark in your tab. The relevance numbers on that page also run as a unit test, so a change that makes the ranking worse fails the build. I wrote the judgments myself, which makes them a regression guard and not a benchmark.
 
-## The fit check
-
-Paste a job description on the home page and the same engine is run once for each skill the posting names. A multi-word skill is looked up as a phrase, so "distributed systems" is not satisfied by a library management system. A skill reached only through the rewriter is reported as adjacent, with the stand-in named. A skill the index lacks is listed as missing. The list of skills it recognises is about three hundred long and deliberately much wider than what I know, and a test checks that most of it comes back missing. The lab's guests are excluded as evidence: Vaultwarden being written in Rust does not mean I write Rust.
-
 ## The figures
 
 Three projects have something you can operate. The keyboard is drawn from the matrix in the firmware's board definition. The ambilight frame is a simulation of the idea, not the TV's code: the LEDs are computed from the canvas pixels, zone by zone, at 24 frames a second, but there is no NV12 or PQ in it. The canvas of windows shows the one rule kwin-canvas is built on, that only the camera moves. The timeline and the lab diagram are drawn from the data file and contain nothing typed twice.

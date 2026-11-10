@@ -203,10 +203,6 @@ export function rewritesFor(term: string): string[] {
   return REWRITES.get(term) ?? [];
 }
 
-/** Every stem the rewriter can add, back to the word it was written as: "caus" -> "cause". */
-export const REWRITE_SURFACE = new Map<string, string>(
-  Object.values(REWRITES_RAW).flatMap((v) => v.split(" ").map((w) => [stem(w), w] as [string, string])),
-);
 
 // ─── Ranker configuration ───────────────────────────────────────────────────
 
