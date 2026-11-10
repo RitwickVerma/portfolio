@@ -7,6 +7,9 @@ import { sidewaysOverflow } from "./helpers";
 // complete without JavaScript, still under reduced motion, one printed page.
 
 const NOTE = "/notes/tizen-video-plane-ambilight/";
+const PLUTUS = "/notes/plutus-what-the-backtest-cannot-tell-you/";
+const HOMELAB = "/notes/homelab-git-is-the-truth/";
+const CRUSH_NOTE = "/notes/crush80-open-firmware/";
 /** Scanned by axe as well: the home page with a query on it shows facets, plan chips and scores the idle page does not. */
 const WITH_QUERY = { name: "home with a query", path: "/?q=testing" } as const;
 const PAGES = [
@@ -14,6 +17,9 @@ const PAGES = [
   { name: "engine", path: "/engine/" },
   { name: "design", path: "/design/" },
   { name: "note", path: NOTE },
+  { name: "plutus note", path: PLUTUS },
+  { name: "homelab note", path: HOMELAB },
+  { name: "crush80 note", path: CRUSH_NOTE },
   { name: "resume", path: "/resume/" },
 ] as const;
 const WIDTHS = [320, 390, 768, 1440] as const;
@@ -191,4 +197,168 @@ test.describe("accessibility", () => {
       });
     }
   }
+});
+
+test.describe("plutus note figures", () => {
+  test("the universe switch shows the biased number first and the honest one when pressed", async ({ page }) => {
+    await page.goto(PLUTUS);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /Same rule, same prices/ });
+    await expect(fig.getByRole("status")).toContainText("21.3% a year");
+    await fig.getByRole("button", { name: "Members at the time" }).click();
+    await expect(fig.getByRole("button", { name: "Members at the time" })).toHaveAttribute("aria-pressed", "true");
+    await expect(fig.getByRole("status")).toContainText("3.1% a year");
+    await expect(fig.getByRole("status")).toContainText("behind SPY");
+    await expect(fig.getByRole("status")).toContainText("18.2");
+  });
+
+  test("the toy market: survivors beat the market, the whole market does not", async ({ page }) => {
+    await page.goto(PLUTUS);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /no skill only the stocks that survived/ });
+    await fig.scrollIntoViewIfNeeded();
+    const gapOf = async () => {
+      const t = (await fig.getByRole("status").locator("p").first().innerText()).replace(/−/g, "-");
+      const m = t.match(/(-?[\d.]+)% a year, the market (-?[\d.]+)%/);
+      expect(m, t).not.toBeNull();
+      return Number(m![1]) - Number(m![2]);
+    };
+    await expect(fig.getByRole("status")).toContainText("Surviving stocks only");
+    expect(await gapOf()).toBeGreaterThan(1);
+    await fig.getByRole("button", { name: "Everyone who existed then" }).click();
+    await expect(fig.getByRole("status")).toContainText("Everyone who existed");
+    expect(Math.abs(await gapOf())).toBeLessThan(1.5);
+    await fig.getByRole("button", { name: /Draw another world/ }).click();
+    await expect(fig.getByRole("button", { name: /Draw another world \(seed 8\)/ })).toBeVisible();
+    // More controls: with nothing delisted both lists are the same list.
+    await fig.getByText("More controls and the numbers").click();
+    await fig.getByRole("slider").fill("0");
+    await expect(fig.getByText("nobody to leave out")).toBeVisible();
+  });
+
+  test("the bootstrap: a piece length and a number to show", async ({ page }) => {
+    await page.goto(PLUTUS);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /A backtest is one path/ });
+    await fig.scrollIntoViewIfNeeded();
+    await expect(fig.getByRole("status")).toContainText("yearly returns from");
+    const before = await fig.getByRole("status").innerText();
+    await fig.getByRole("button", { name: "6 months" }).click();
+    await expect(fig.getByRole("button", { name: "6 months" })).toHaveAttribute("aria-pressed", "true");
+    await expect.poll(async () => fig.getByRole("status").innerText()).not.toBe(before);
+    await fig.getByRole("radio", { name: "Worst fall" }).click();
+    await expect(fig.getByRole("status")).toContainText("worst falls from");
+    await expect(fig.getByRole("status")).toContainText("The real run got −34.5%");
+    await fig.getByRole("button", { name: /Deal again/ }).click();
+    await expect(fig.getByRole("button", { name: /Deal again \(seed 43\)/ })).toBeVisible();
+  });
+});
+
+test.describe("the Tizen note's figures", () => {
+  test("the sampling figure starts still, and the lazy way makes an edge one colour", async ({ page }) => {
+    await page.goto(NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.locator("figure", { hasText: "average colour of its own patch" });
+    await expect(fig.getByRole("button", { name: "Play the film" })).toBeVisible();
+    await expect(fig.locator("[role=status][data-tone]")).toContainText(/different colours/);
+    await fig.getByRole("button", { name: /lazy way/ }).click();
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("1 colour");
+    await fig.getByRole("button", { name: /its own patch, as built/ }).click();
+    await expect(fig.locator("[role=status][data-tone]")).toContainText(/different colours/);
+  });
+
+  test("the PQ figure: ignoring the curve changes the LED numbers", async ({ page }) => {
+    await page.goto(NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.locator("figure", { hasText: "HDR video stores brightness" });
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("darker");
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("The app sends");
+    const before = await fig.locator("[role=status][data-tone]").innerText();
+    await fig.getByRole("button", { name: /A dark film/ }).click();
+    await expect(fig.getByRole("button", { name: /A dark film/ })).toHaveAttribute("aria-pressed", "true");
+    expect(await fig.locator("[role=status][data-tone]").innerText()).not.toBe(before);
+    await fig.getByText("More controls").click();
+    await fig.getByRole("radio", { name: "Deep green" }).click();
+    await expect(fig.getByRole("radio", { name: "Deep green" })).toHaveAttribute("aria-checked", "true");
+    await fig.getByRole("radio", { name: "Deep green" }).press("ArrowLeft");
+    await expect(fig.getByRole("radio", { name: "Sky blue" })).toBeFocused();
+  });
+
+  test("the ceiling figure recomputes the rate from the spots", async ({ page }) => {
+    await page.goto(NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.locator("figure", { hasText: "about 100 colours a second" });
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("4.2 times a second");
+    await fig.getByRole("button", { name: /One spot per LED/ }).click();
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("1.4 times a second");
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("740 ms");
+    await fig.getByText("More controls").click();
+    await fig.getByLabel(/Wait before each reading/).fill("17");
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("measured about 1.4 Hz");
+  });
+});
+
+test.describe("crush80 note figures", () => {
+  test("the layer figure resolves keys from the layer that holds them", async ({ page }) => {
+    await page.goto(CRUSH_NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /Hold Fn and the same keys/ });
+    const verdict = fig.locator("[data-tone]");
+    // Server HTML and first paint: Fn held, H is an arrow from layer 2.
+    await expect(fig.getByRole("button", { name: /^← on the H key: Sends ←, from layer 2, Fn/ })).toHaveCount(1);
+    await expect(verdict).toContainText(/\d+ of 88 keys now mean something else/);
+
+    await fig.getByRole("button", { name: "Fn + Space" }).click();
+    await expect(fig.getByRole("button", { name: /^4 on the J key: Sends 4, from layer 4, Num/ })).toHaveCount(1);
+    // Transparent on Num, so H still comes from Fn.
+    await expect(fig.getByRole("button", { name: /^← on the H key: Sends ←, from layer 2, Fn/ })).toHaveCount(1);
+
+    await fig.getByRole("button", { name: "Hold right Win" }).click();
+    await expect(fig.getByRole("button", { name: /^5 on the Home key: Sends 5, from layer 3, MacFn/ })).toHaveCount(1);
+    await expect(verdict).toHaveAttribute("data-tone", "plain");
+
+    // The bug, replayed through the rule: layer 3 turns on and is switched off again.
+    await fig.getByRole("button", { name: "Right Win, before the fix" }).click();
+    await expect(verdict).toHaveAttribute("data-tone", "warn");
+    await expect(verdict).toContainText("Right Win does nothing: layer 3 switched itself off.");
+    await expect(fig.getByRole("button", { name: /^Home on the Home key: Sends Home, from the base layer/ })).toHaveCount(1);
+  });
+
+  test("the layer figure answers to the visitor's own keys and walks with arrows", async ({ page }) => {
+    await page.goto(CRUSH_NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /Hold Fn and the same keys/ });
+    const h = fig.getByRole("button", { name: /on the H key/ });
+    await h.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(fig.getByRole("button", { name: /on the J key/ })).toBeFocused();
+    await fig.getByRole("button", { name: "Hold Fn" }).click();
+    await fig.getByRole("button", { name: /on the J key/ }).focus();
+    await page.keyboard.down("n");
+    await expect(fig.getByRole("button", { name: /^4 on the J key: Sends 4, from layer 4, Num/ })).toHaveCount(1);
+    await page.keyboard.up("n");
+    await expect(fig.getByRole("button", { name: /^↓ on the J key: Sends ↓, from layer 2, Fn/ })).toHaveCount(1);
+    // M is Fn+M: Mac mode swaps Alt and Win.
+    await page.keyboard.press("m");
+    await fig.getByText("More controls").click();
+    await expect(fig.getByRole("radio", { name: "On" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  test("the clock figure shows the rounding and its drift", async ({ page }) => {
+    await page.goto(CRUSH_NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /One rounding error/ });
+    const verdict = fig.locator("[data-tone]");
+    await expect(fig.getByTestId("division")).toHaveText("32,000 ÷ 10,000 = 3.2 cycles per tick, rounded down to 3");
+    await expect(verdict).toHaveAttribute("data-tone", "warn");
+    await expect(verdict).toContainText("64.0: 4.0 seconds fast");
+    await fig.getByRole("button", { name: "8,000 a second, as it is now" }).click();
+    await expect(verdict).toHaveAttribute("data-tone", "ok");
+    await expect(verdict).toContainText("The clock keeps time");
+    await fig.getByText("More controls").click();
+    await fig.getByRole("textbox").fill("20000");
+    await expect(verdict).toContainText("96.0: 36.0 seconds fast");
+    await fig.getByRole("textbox").fill("40000");
+    await expect(verdict).toContainText("cannot make that many ticks");
+  });
 });
