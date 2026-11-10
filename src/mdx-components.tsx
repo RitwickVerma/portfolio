@@ -73,13 +73,16 @@ const components: MDXComponents = {
     />
   ),
   table: (p) => (
-    <div className="my-6 overflow-x-auto">
+    // Identifiers in a cell stay whole (the inline-code rule that breaks a long
+    // token anywhere would split `capture_mode` into `capture_m` and `ode` on a
+    // phone); a table too wide for the screen scrolls inside this wrapper.
+    <div className="my-6 overflow-x-auto [&_code]:whitespace-nowrap [&_code]:[overflow-wrap:normal]">
       <table className="w-full text-sm border-collapse" {...p} />
     </div>
   ),
   thead: (p) => <thead className="text-left wd-narrow text-[0.95rem] text-muted" {...p} />,
-  th: (p) => <th className="py-2 pr-4 border-b border-fg font-normal" {...p} />,
-  td: (p) => <td className="py-2 pr-4 border-b border-border align-top text-fg/80" {...p} />,
+  th: (p) => <th className="py-2 pr-3 sm:pr-4 border-b border-fg font-normal" {...p} />,
+  td: (p) => <td className="py-2 pr-3 sm:pr-4 border-b border-border align-top text-fg/80" {...p} />,
 };
 
 export function useMDXComponents(): MDXComponents {
