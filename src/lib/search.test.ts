@@ -287,6 +287,50 @@ describe("highlight and snippet", () => {
   });
 });
 
+describe("diacritics", () => {
+  it("folds accents before splitting, so a word with an accent stays one word", () => {
+    expect(tokenize("résumé")).toEqual(["resum"]);
+    expect(tokenize("résumé")).toEqual(tokenize("resume"));
+    expect(tokenize("naïve")).toEqual(tokenize("naive"));
+    expect(tokenize("Zürich café")).toEqual(["zurich", "cafe"]);
+  });
+
+  it("an accent written as a letter plus a combining mark folds the same way", () => {
+    expect(tokenize("re\u0301sume\u0301")).toEqual(tokenize("resume"));
+  });
+
+  it("a plain query finds an accented document and an accented query finds a plain one", () => {
+    const accents = buildIndex([doc("a", "Résumé", "A naïve approach."), doc("b", "Other", "Nothing here.")]);
+    expect(search(accents, "resume ").hits.map((h) => h.doc.id)).toEqual(["a"]);
+    expect(search(accents, "naive ").hits.map((h) => h.doc.id)).toEqual(["a"]);
+    const plain = buildIndex([doc("c", "Resume", "A naive approach.")]);
+    expect(search(plain, "résumé ").hits.map((h) => h.doc.id)).toEqual(["c"]);
+    expect(search(plain, "naïve ").hits.map((h) => h.doc.id)).toEqual(["c"]);
+  });
+
+  it("a query that ends on an accented letter is still being typed", () => {
+    expect(parseQuery("résu").stillTyping).toBe(true);
+    expect(parseQuery("résu ").stillTyping).toBe(false);
+    expect(planQuery(buildIndex([doc("c", "Resume", "x")]), "résu").some((t) => t.source === "prefix" && t.term === "resum")).toBe(true);
+  });
+
+  it("résumé finds the resume page of the real corpus", () => {
+    const real = buildIndex(buildCorpus());
+    const hits = search(real, "résumé").hits;
+    expect(hits.map((h) => h.doc.id)).toContain("page-resume");
+    expect(hits[0].doc.id).toBe(search(real, "resume").hits[0].doc.id);
+  });
+
+  it("highlights the whole accented word and the segments still add up to the text", () => {
+    const text = "Send a résumé, naïve as it sounds.";
+    const segs = highlight(text, tokenize("resume naive"));
+    expect(segs.filter((s) => s.hit).map((s) => s.text)).toEqual(["résumé", "naïve"]);
+    expect(segs.map((s) => s.text).join("")).toBe(text);
+    const folded = highlight("Resume and naive.", tokenize("résumé naïve"));
+    expect(folded.filter((s) => s.hit).map((s) => s.text)).toEqual(["Resume", "naive"]);
+  });
+});
+
 describe("scoreLine: the arithmetic as displayed", () => {
   /** The numbers on a displayed line, multiplied: what a reader checking it by hand would get. */
   const product = (line: ReturnType<typeof scoreLine>) => [line.base, ...line.factors.map((f) => f.value)].reduce((p, v) => p * Number(v), 1);

@@ -1,12 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { personJsonLd, jsonLdString, cardMetadata, ogAlt, OG_CARDS, TITLE_MAX, DESCRIPTION_MAX, SITE_TITLE, SITE_DESCRIPTION } from "./seo";
+import { personJsonLd, jsonLdString, noteJsonLd, fitDescription, cardMetadata, ogAlt, OG_CARDS, TITLE_MAX, DESCRIPTION_MAX, SITE_TITLE, SITE_DESCRIPTION } from "./seo";
 import { EBAY_ENDED, SITE_URL } from "./data";
 import { notes, noteUrl } from "./notes";
 import { apps } from "./apps";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
+import { metadata as notFoundMetadata } from "@/app/not-found";
+import { generateMetadata as privacyMetadata } from "@/app/apps/[slug]/privacy-policy/page";
 
 const APP_DIR = join(__dirname, "..", "app");
 const read = (...p: string[]) => readFileSync(join(APP_DIR, ...p), "utf8");
@@ -227,5 +229,62 @@ describe("robots.txt", () => {
 
   it("does not disallow the noindex pages: a crawler that cannot fetch them never sees the noindex", () => {
     expect(JSON.stringify(r.rules)).not.toContain("disallow");
+  });
+});
+
+describe("TechArticle JSON-LD", () => {
+  it("gives every note its own og.png as an absolute https image", () => {
+    for (const n of notes) {
+      const ld = noteJsonLd(n);
+      expect(ld["@type"], n.slug).toBe("TechArticle");
+      expect(ld.image, n.slug).toBe(`${SITE_URL}${noteUrl(n)}og.png`);
+      expect(new URL(ld.image).protocol, n.slug).toBe("https:");
+      expect(ld.url, n.slug).toBe(`${SITE_URL}${noteUrl(n)}`);
+      expect(JSON.parse(jsonLdString(ld)).image, n.slug).toBe(ld.image);
+    }
+  });
+
+  it("the note page uses it, and the card image it names is the one in the page's metadata", () => {
+    const page = read("(site)", "notes", "[slug]", "page.tsx");
+    expect(page).toContain("noteJsonLd(note)");
+    expect(page).toContain("`${url}og.png`");
+  });
+});
+
+describe("pages that must not inherit the home page's metadata", () => {
+  const HOME = "/";
+
+  it("the 404 has its own description and no og:url at all", () => {
+    const og = notFoundMetadata.openGraph as { url?: unknown; description?: string; title?: string } | null | undefined;
+    expect(og, "an openGraph of its own, or it inherits the home page's").toBeTruthy();
+    expect(og!.url).toBeUndefined();
+    expect(notFoundMetadata.description).toBeTruthy();
+    expect(notFoundMetadata.description).not.toBe(SITE_DESCRIPTION);
+    expect(og!.description).toBe(notFoundMetadata.description);
+    expect((notFoundMetadata.twitter as { description?: string } | null)?.description).toBe(notFoundMetadata.description);
+    expect(notFoundMetadata.robots).toMatchObject({ index: false });
+  });
+
+  for (const slug of Object.keys(apps)) {
+    it(`/apps/${slug}/privacy-policy/ names itself in og:url, stays noindex,nofollow, and has a description a card can carry`, async () => {
+      const m = await privacyMetadata({ params: Promise.resolve({ slug }) });
+      const og = m.openGraph as { url?: string; description?: string; title?: string } | null | undefined;
+      expect(og?.url).toBe(`/apps/${slug}/privacy-policy/`);
+      expect(og?.url).not.toBe(HOME);
+      expect(m.alternates?.canonical).toBe(og?.url);
+      expect(m.robots).toEqual({ index: false, follow: false });
+      expect(String(m.description).length).toBeGreaterThan(49);
+      expect(String(m.description).length).toBeLessThanOrEqual(DESCRIPTION_MAX);
+      expect(og?.description).toBe(m.description);
+      expect(String(og?.title)).toContain(apps[slug].name);
+    });
+  }
+
+  it("fitDescription keeps whole sentences within the limit, and cuts at a word with an ellipsis only when it must", () => {
+    expect(fitDescription("One. Two. Three.", 10)).toBe("One. Two.");
+    expect(fitDescription("Short.", 159)).toBe("Short.");
+    const cut = fitDescription(`${"word ".repeat(60)}end`, 40);
+    expect(cut.length).toBeLessThanOrEqual(40);
+    expect(cut.endsWith("…")).toBe(true);
   });
 });

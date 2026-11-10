@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { apps, appSlugs, appCssVars, appBaseCss } from "@/lib/apps";
 import { AppHeader, AppFooter } from "@/components/apps/AppChrome";
+import { fitDescription } from "@/lib/seo";
 
 // The privacy policy Google Play (and any other store) points at. Same
 // standalone, per-app-themed document as the landing page above it, but
@@ -21,10 +22,17 @@ export async function generateMetadata({
   const { slug } = await params;
   const app = apps[slug];
   if (!app) return {};
+  const path = `/apps/${slug}/privacy-policy/`;
+  const title = `Privacy Policy \u00b7 ${app.name}`;
+  // The policy's own summary is longer than a description may be; the page's openGraph is its own,
+  // or it would inherit the home page's url and description.
+  const description = fitDescription(app.privacyPolicy.summary);
   return {
-    title: `Privacy Policy \u00b7 ${app.name}`,
-    description: app.privacyPolicy.summary,
-    alternates: { canonical: `/apps/${slug}/privacy-policy/` },
+    title,
+    description,
+    alternates: { canonical: path },
+    openGraph: { title: `${title} \u00b7 Ritwick Verma`, description, url: path, siteName: "ritwickverma.dev", type: "website", locale: "en_US" },
+    twitter: { card: "summary", title: `${title} \u00b7 Ritwick Verma`, description },
     robots: { index: false, follow: false },
     other: { "darkreader-lock": "true" },
   };

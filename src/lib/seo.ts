@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { SITE_URL, socialLinks, EBAY_ENDED } from "./data";
+import { SITE_URL, hero, socialLinks, EBAY_ENDED } from "./data";
+import { noteUrl, type Note } from "./notes";
 
 export const SITE_TITLE = "Ritwick Verma, backend engineer";
 export const SITE_DESCRIPTION =
@@ -27,6 +28,22 @@ export function personJsonLd() {
   };
 }
 
+/** schema.org TechArticle for a note; `image` is the note's own card, as an absolute URL (Google wants one for an article). */
+export function noteJsonLd(note: Note) {
+  const url = `${SITE_URL}${noteUrl(note)}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: note.title,
+    description: note.summary,
+    image: `${url}og.png`,
+    datePublished: note.date,
+    ...(note.updated ? { dateModified: note.updated } : {}),
+    author: { "@type": "Person", name: hero.name, url: SITE_URL },
+    url,
+  };
+}
+
 /** Serialise for a <script type="application/ld+json">; `<` is escaped so a string can never close the tag. */
 export function jsonLdString(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
@@ -35,6 +52,23 @@ export function jsonLdString(data: unknown): string {
 /** Longest <title> and meta description tools/seo-audit.mjs and seo.test.ts accept ("under 60", "under 160"). */
 export const TITLE_MAX = 59;
 export const DESCRIPTION_MAX = 159;
+
+/**
+ * `text` cut to fit a meta description: whole sentences while they fit, otherwise cut at a word
+ * with an ellipsis. For pages whose own summary is longer than a description may be.
+ */
+export function fitDescription(text: string, max = DESCRIPTION_MAX): string {
+  if (text.length <= max) return text;
+  let out = "";
+  for (const sentence of text.match(/[^.!?]+[.!?]+(?=\s|$)/g) ?? []) {
+    const next = out ? `${out} ${sentence.trim()}` : sentence.trim();
+    if (next.length > max) break;
+    out = next;
+  }
+  if (out) return out;
+  const cut = text.slice(0, max - 1);
+  return `${cut.slice(0, cut.lastIndexOf(" ")).replace(/[,;:]$/, "")}…`;
+}
 
 /**
  * What a page-specific social card says. The card route renders these strings

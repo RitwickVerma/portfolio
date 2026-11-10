@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { parseQuery, tokenize } from "@/lib/search";
+import { parseQuery, tokenize, WORD } from "@/lib/search";
 
 // Two things a note gains in the browser. The contents rail follows the
 // section you are reading. And when you arrive from a search result, the
@@ -69,8 +69,6 @@ export function NoteContents({ headings }: { headings: Heading[] }) {
     </nav>
   );
 }
-
-const WORD = /[A-Za-z0-9]+(?:,\d{3})*(?:\+\+|#)?/g;
 
 export function NoteHighlights() {
   const [words, setWords] = useState("");

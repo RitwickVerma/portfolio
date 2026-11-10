@@ -184,6 +184,7 @@ for (const f of files.sort()) {
     try {
       const d = JSON.parse(raw);
       if (/Article|BlogPosting/.test(d["@type"])) {
+        if (d.image !== ogImage) problems.push(`${d["@type"]}.image ${d.image} is not the page's own card ${ogImage}`);
         const want = d.dateModified ?? d.datePublished;
         const got = (inSitemap.get(expected) ?? {}).lastmod ?? "";
         if (got.slice(0, 10) !== String(want).slice(0, 10)) problems.push(`sitemap lastmod ${got || "(none)"} differs from JSON-LD date ${want}`);

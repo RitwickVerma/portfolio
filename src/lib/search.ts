@@ -63,9 +63,18 @@ export function stem(word: string): string {
   return w;
 }
 
-/** Lowercase, keep C++/C#/.NET whole, drop thousands separators, split, drop stopwords, stem. */
+/**
+ * Strip accents: "résumé" -> "resume", "naïve" -> "naive". NFD turns each accented letter into the
+ * letter and a combining mark (U+0300 to U+036F), and the marks go. Letters with no decomposition
+ * (ø, ß) are left alone.
+ */
+export function fold(text: string): string {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+/** Lowercase, fold accents, keep C++/C#/.NET whole, drop thousands separators, split, drop stopwords, stem. */
 export function tokenize(text: string): string[] {
-  let s = text.toLowerCase().replace(/(\d),(?=\d{3})/g, "$1");
+  let s = fold(text).toLowerCase().replace(/(\d),(?=\d{3})/g, "$1");
   for (const [re, to] of LITERALS) s = s.replace(re, to);
   const out: string[] = [];
   for (const raw of s.split(/[^a-z0-9]+/)) {
@@ -140,7 +149,7 @@ export function parseQuery(query: string): ParsedQuery {
   parsed.excluded = [...new Set(parsed.excluded)];
   parsed.tech = [...new Set(parsed.tech)];
   // A query that ends inside a quote, a filter or an exclusion is not growing a free term.
-  parsed.stillTyping = /[a-z0-9+#]$/i.test(rest);
+  parsed.stillTyping = /[a-z0-9+#]$/i.test(fold(rest));
   parsed.kinds = [...new Set(parsed.kinds)];
   return parsed;
 }
@@ -532,8 +541,12 @@ export interface Segment {
   hit: boolean;
 }
 
-// A word, with C++/C# kept whole and thousands separators kept inside numbers.
-const WORD = /[A-Za-z0-9]+(?:,\d{3})*(?:\+\+|#)?/g;
+/**
+ * A word, with C++/C# kept whole and thousands separators kept inside numbers. Accented Latin
+ * letters (and combining marks) belong to the word, so "résumé" is one run of text and the
+ * highlight covers it; `tokenize` folds it when the run is compared with a stem.
+ */
+export const WORD = /[A-Za-z0-9\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u0300-\u036F\u1E00-\u1EFF]+(?:,\d{3})*(?:\+\+|#)?/g;
 
 /** Split text into runs, marking the words whose stem is in `stems`. */
 export function highlight(text: string, stems: Iterable<string>): Segment[] {

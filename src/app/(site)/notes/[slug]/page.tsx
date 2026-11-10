@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { notes, getNote, noteUrl, formatNoteDate } from "@/lib/notes";
 import { noteReadingMinutes, noteHeadings } from "@/lib/notes.server";
 import { NoteContents, NoteHighlights } from "@/components/NoteExtras";
-import { SITE_URL, hero } from "@/lib/data";
-import { jsonLdString } from "@/lib/seo";
+import { hero } from "@/lib/data";
+import { jsonLdString, noteJsonLd } from "@/lib/seo";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -55,22 +55,11 @@ export default async function NotePage({ params }: Params) {
 
   const { default: Body } = await import(`@/content/notes/${slug}.mdx`);
 
-  const articleJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "TechArticle",
-    headline: note.title,
-    description: note.summary,
-    datePublished: note.date,
-    ...(note.updated ? { dateModified: note.updated } : {}),
-    author: { "@type": "Person", name: hero.name, url: SITE_URL },
-    url: `${SITE_URL}${noteUrl(note)}`,
-  };
-
   return (
     <article className="max-w-[var(--page)] mx-auto px-5 sm:px-8 pt-12 sm:pt-16 pb-24 sm:pb-32">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdString(articleJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(noteJsonLd(note)) }}
       />
       <header className="mb-12 pb-10 border-b-2 border-fg">
         <p className="wd-narrow text-[0.95rem] text-muted mb-5">
