@@ -30,7 +30,7 @@ export const notes: Note[] = [
     summary:
       "Sixteen guests with fourteen declared in OpenTofu. A nightly pipeline commits whatever changed on the box. What it caught and where it falls short.",
     date: "2026-10-13",
-    updated: "2026-10-23",
+    updated: "2026-11-10",
     tags: ["Proxmox", "OpenTofu", "GitOps", "on-call"],
   },
   {
