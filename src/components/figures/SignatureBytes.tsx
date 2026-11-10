@@ -16,6 +16,7 @@ import {
   type Field,
   type FieldKey,
 } from "@/lib/sudostamp";
+import { Actions, FigureFrame, Fold, Presets, Segmented, Verdict } from "./kit";
 
 // What SshSig.signatureBlob does, on bytes you can see. A P-256 key is made in
 // this tab with WebCrypto and signs 32 random bytes; the signature is shown as
@@ -43,10 +44,10 @@ interface Signed {
 const ROWS: { key: FieldKey; who: "r" | "s" | null; name: string }[] = [
   { key: "wrap", who: null, name: "Wrapper" },
   { key: "hdr-r", who: "r", name: "Length of r" },
-  { key: "pad-r", who: "r", name: "Sign pad on r" },
+  { key: "pad-r", who: "r", name: "Extra 00 on r (sign pad)" },
   { key: "val-r", who: "r", name: "r" },
   { key: "hdr-s", who: "s", name: "Length of s" },
-  { key: "pad-s", who: "s", name: "Sign pad on s" },
+  { key: "pad-s", who: "s", name: "Extra 00 on s (sign pad)" },
   { key: "val-s", who: "s", name: "s" },
 ];
 
@@ -57,7 +58,16 @@ const NOTE: Record<string, string> = {
   val: "The number itself, big-endian, shortest form.",
 };
 
-const SHORT: Record<string, string> = { wrap: "wrapper", hdr: "len", pad: "pad", val: "" };
+const BUILD: readonly { id: "with" | "without"; label: string }[] = [
+  { id: "with", label: "with the extra byte (the app)" },
+  { id: "without", label: "without it (the bug)" },
+];
+
+type PresetId = "fail" | "until";
+const PRESETS: readonly { id: PresetId; label: string }[] = [
+  { id: "fail", label: "Show it failing" },
+  { id: "until", label: "Keep signing until it needs the extra byte" },
+];
 
 function range(f: Field[] | undefined): string {
   if (!f || f.length === 0) return "none";
@@ -80,11 +90,20 @@ function Hex({ bytes }: { bytes: Uint8Array }) {
   );
 }
 
+function labelOf(f: Field): string {
+  const [kind, who] = f.key.split("-");
+  if (kind === "val") return `${who}, ${f.end - f.start} bytes`;
+  if (kind === "hdr") return `length of ${who}`;
+  if (kind === "pad") return "extra byte";
+  return "wrapper";
+}
+
 function Strip({
   title,
   bytes,
   fields,
   active,
+  missing = [],
   onHover,
   onPin,
 }: {
@@ -92,29 +111,38 @@ function Strip({
   bytes: Uint8Array;
   fields: Field[];
   active: FieldKey | null;
+  /** Numbers that needed an extra 00 and do not have it in this view. */
+  missing?: ("r" | "s")[];
   onHover: (k: FieldKey | null) => void;
   onPin: (k: FieldKey) => void;
 }) {
   return (
-    <div className="pb-3">
+    <div>
       <p className="fact pb-1">{title}</p>
       <div role="group" aria-label={`${title}, hex`} className="flex flex-wrap">
         {fields.map((f) => {
           const on = active === f.key;
-          const [kind, who] = f.key.split("-");
-          const label = kind === "val" ? `${who}, ${f.end - f.start} B` : kind === "hdr" ? `${SHORT.hdr} ${who}` : kind === "pad" ? `pad ${who}` : SHORT.wrap;
+          const pad = f.key.startsWith("pad-");
           return (
-            <span
-              key={`${f.key}-${f.start}`}
-              onMouseEnter={() => onHover(f.key)}
-              onMouseLeave={() => onHover(null)}
-              onClick={() => onPin(f.key)}
-              className={`flex max-w-full flex-col border-l border-fg/40 px-1.5 pt-0.5 pb-1 mb-1 cursor-pointer ${on ? "bg-hit text-ink" : ""}`}
-            >
-              <span aria-hidden="true" className={`fact text-[0.72rem] leading-4 whitespace-nowrap ${on ? "!text-ink" : ""}`}>
-                {label}
+            <span key={`${f.key}-${f.start}`} className="contents">
+              {f.key.startsWith("val-") && missing.includes(f.key.slice(4) as "r" | "s") && (
+                <span data-missing="true" className="flex flex-col border-l border-dashed border-warn px-1.5 pt-0.5 pb-1 mb-1">
+                  <span className="fact text-[0.75rem] leading-4 whitespace-nowrap text-warn">00 missing</span>
+                  <span className="font-mono text-[0.75rem] leading-5 text-warn">··</span>
+                </span>
+              )}
+              <span
+                data-pad={pad ? "true" : undefined}
+                onMouseEnter={() => onHover(f.key)}
+                onMouseLeave={() => onHover(null)}
+                onClick={() => onPin(f.key)}
+                className={`flex max-w-full flex-col border-l border-fg/40 px-1.5 pt-0.5 pb-1 mb-1 cursor-pointer ${on || pad ? "bg-hit text-ink" : ""} ${pad ? "font-semibold" : ""}`}
+              >
+                <span aria-hidden="true" className={`fact text-[0.75rem] leading-4 whitespace-nowrap ${on || pad ? "!text-ink" : ""}`}>
+                  {labelOf(f)}
+                </span>
+                <Hex bytes={bytes.subarray(f.start, f.end)} />
               </span>
-              <Hex bytes={bytes.subarray(f.start, f.end)} />
             </span>
           );
         })}
@@ -131,6 +159,7 @@ export default function SignatureBytes() {
   const [hover, setHover] = useState<FieldKey | null>(null);
   const [focus, setFocus] = useState<FieldKey | null>(null);
   const [pin, setPin] = useState<FieldKey | null>(null);
+  const [preset, setPreset] = useState<PresetId | null>(null);
   const [verdict, setVerdict] = useState<{ blob: string; ok: boolean } | null>(null);
   const keys = useRef<CryptoKeyPair | null>(null);
   const active = hover ?? focus ?? pin;
@@ -209,112 +238,154 @@ export default function SignatureBytes() {
       ]
     : null;
 
-  let result: string;
+  const who = [needs.r ? "r" : null, needs.s ? "s" : null].filter((x): x is string => x !== null);
+  const needText = who.length === 2 ? "Both numbers start with a byte of 0x80 or more" : `${who[0]} starts with a byte of 0x80 or more`;
+
+  // The verdict is a plain sentence; the computed part is the WebCrypto check.
+  let verdictTone: "ok" | "warn" | "plain" = "plain";
+  let verdictTitle: string;
+  let verdictBody: string;
   if (signed.source === "vector") {
-    result = "Not checked: these two numbers come from a unit test and are not a signature over anything.";
+    verdictTitle = "These are example numbers, not a signature";
+    verdictBody = "They come from the app's unit test. Press “Sign another value” to make a real signature in this tab.";
   } else if (!read.ok) {
-    result = `A reader that follows the mpint rules refuses this blob: ${read.error}.`;
+    verdictTone = "warn";
+    verdictTitle = "Without the extra byte, the computer rejects this signature";
+    verdictBody = `A reader that follows the rules refuses the blob: ${read.error}. The 00 is missing in front of ${who.join(" and ")}.`;
   } else if (skipPad && !needs.r && !needs.s) {
-    result = "Leaving the pad out changes nothing for this signature: neither number has its top bit set. Sign again.";
+    verdictTitle = "Nothing was left out: this signature did not need the extra byte";
+    verdictBody = "Sign again, or press “Keep signing until it needs the extra byte”.";
   } else if (verdict?.blob === blobHex) {
-    result = verdict.ok
-      ? "Read back from the blob and checked against this tab's public key with WebCrypto: valid."
-      : "Read back from the blob and checked against this tab's public key with WebCrypto: not valid.";
+    verdictTone = verdict.ok ? "ok" : "warn";
+    verdictTitle = verdict.ok
+      ? who.length > 0
+        ? "This signature needed the extra byte, and it verified"
+        : "This signature did not need the extra byte, and it verified"
+      : "This signature did not verify";
+    verdictBody = `Read back from the blob and checked against this tab's public key with WebCrypto: ${verdict.ok ? "valid" : "not valid"}.${who.length > 0 ? ` ${needText}, so a 00 byte goes in front, or it would read as a negative number.` : ""}`;
   } else {
-    result = "Checking against this tab's public key.";
+    verdictTitle = "Checking the signature";
+    verdictBody = "Checking against this tab's public key with WebCrypto.";
   }
 
-  const padNote = (who: "r" | "s") => {
-    const first = rs[who][0].toString(16).padStart(2, "0");
-    return needs[who] ? ` Here ${who} starts 0x${first}: top bit set, so it needs the pad.` : ` Here ${who} starts 0x${first}: top bit clear, so no pad.`;
+  const padNote = (w: "r" | "s") => {
+    const first = rs[w][0].toString(16).padStart(2, "0");
+    return needs[w] ? ` Here ${w} starts 0x${first}: top bit set, so it needs the pad.` : ` Here ${w} starts 0x${first}: top bit clear, so no pad.`;
   };
 
-  return (
-    <figure className="my-8">
-      <div className="border-2 border-fg rounded-[var(--r-box)]">
-        <div className="p-4 border-b border-border">
-          <p className="fact">
-            {signed.source === "browser"
-              ? "Signed just now in this tab by a P-256 key that was made here."
-              : "Test vector from the app's unit test (SshSigTest.kt), shown until this tab signs something."}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-            <button type="button" className="btn" disabled={busy} onClick={() => void sign(false)}>
-              Sign another 32-byte value
-            </button>
-            <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg" disabled={busy} onClick={() => void sign(true)}>
-              Keep signing until a sign pad is needed
-            </button>
-            <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg" aria-pressed={skipPad} onClick={() => setSkipPad((v) => !v)}>
-              {skipPad ? "Put the sign pad back" : "Leave the sign pad out"}
-            </button>
-          </div>
-          {problem && <p className="mt-3 fact text-warn">{problem}</p>}
-        </div>
+  const pinToggle = (k: FieldKey) => setPin((p) => (p === k ? null : k));
+  const missing = skipPad ? (["r", "s"] as const).filter((w) => needs[w]) : [];
 
-        <div className="p-4 border-b border-border">
+  return (
+    <FigureFrame
+      claim="One missing zero byte and the signature fails"
+      how="Press “Show it failing”: the figure signs until a signature needs an extra 00 byte, leaves that byte out, and the computer rejects it."
+      caption="The key lives in this tab's memory, not the phone's hardware, and “without it” is a bug the app avoids, built here to show what it does."
+      about={
+        <>
+          <p>
+            The key and the signature are made in your browser just now, and the figure checks the blob against the public key. Two differences from the phone: WebCrypto returns r and s as 64 raw bytes, not DER, so the figure encodes the DER the way Java&apos;s Signature does
+            before running the same conversion as the app; and this key lives in memory, not in the Keystore&apos;s hardware.
+          </p>
+          <p>
+            Switching to &ldquo;without it&rdquo; is not in the app: it is the bug the app&apos;s comments warn about. Before JavaScript runs, or without WebCrypto, the figure shows the unit test&apos;s own numbers; they are not a signature.
+          </p>
+        </>
+      }
+    >
+      <Actions>
+        <button type="button" className="btn" disabled={busy} onClick={() => {
+            setPreset(null);
+            void sign(false);
+          }}>
+          Sign another value
+        </button>
+      </Actions>
+      <Presets
+        label="Try"
+        items={PRESETS}
+        active={preset}
+        onPick={(id) => {
+          setPreset(id);
+          setSkipPad(id === "fail");
+          void sign(true);
+        }}
+      />
+      <Segmented<"with" | "without">
+        label="The computer is sent the signature"
+        options={BUILD}
+        value={skipPad ? "without" : "with"}
+        onChange={(v) => {
+          setPreset(null);
+          setSkipPad(v === "without");
+        }}
+      />
+      {problem && <p className="fact text-warn">{problem}</p>}
+
+      <div>
+        <p className="fact pb-2">
+          {signed.source === "browser" ? "Signed just now in this tab by a P-256 key that was made here." : "Test vector from the app's unit test (SshSigTest.kt), shown until this tab signs something."}
+        </p>
+        <div className="grid gap-x-8 gap-y-4 md:grid-cols-2">
+          <Strip title={`What the phone returns (DER): ${signed.der.length} bytes`} bytes={signed.der} fields={derF} active={active} onHover={setHover} onPin={pinToggle} />
+          <Strip
+            title={`What the computer is sent (SSH blob)${skipPad ? ", extra byte left out" : ""}: ${blob.length} bytes`}
+            bytes={blob}
+            fields={sshF}
+            active={active}
+            missing={[...missing]}
+            onHover={setHover}
+            onPin={pinToggle}
+          />
+        </div>
+      </div>
+
+      <Verdict tone={verdictTone} title={verdictTitle}>
+        {verdictBody}
+      </Verdict>
+
+      <Fold summary="Every field, and what WebCrypto returned">
+        <div className="space-y-4">
           {signed.message && (
-            <div className="pb-3">
+            <div>
               <p className="fact">Signed value, 32 random bytes like a pam_rssh challenge</p>
               <p className="font-mono text-[0.75rem] leading-5 break-all">{toHex(signed.message)}</p>
             </div>
           )}
-          <div>
-            {rawFields && signed.raw && (
-              <Strip title={`What WebCrypto returned: ${signed.raw.length} bytes, r then s`} bytes={signed.raw} fields={rawFields} active={active} onHover={setHover} onPin={(k) => setPin((p) => (p === k ? null : k))} />
-            )}
-            <Strip title={`DER, as Android Keystore returns it: ${signed.der.length} bytes`} bytes={signed.der} fields={derF} active={active} onHover={setHover} onPin={(k) => setPin((p) => (p === k ? null : k))} />
-            <Strip
-              title={`SSH signature blob, as the agent sends it${skipPad ? " (sign pad left out)" : ""}: ${blob.length} bytes`}
-              bytes={blob}
-              fields={sshF}
-              active={active}
-              onHover={setHover}
-              onPin={(k) => setPin((p) => (p === k ? null : k))}
-            />
-          </div>
-          <p role="status" className={`mt-1 text-[0.95rem] ${!read.ok && signed.source === "browser" ? "text-warn" : verdict?.blob === blobHex && verdict.ok && read.ok ? "text-ok" : "text-fg/90"}`}>
-            {result}
-          </p>
+          {rawFields && signed.raw && <Strip title={`What WebCrypto returned: ${signed.raw.length} bytes, r then s`} bytes={signed.raw} fields={rawFields} active={active} onHover={setHover} onPin={pinToggle} />}
+          <ul className="divide-y divide-border" aria-label="Fields of the signature">
+            {ROWS.map(({ key, who: w, name }) => {
+              const d = derF.filter((f) => f.key === key);
+              const s = sshF.filter((f) => f.key === key);
+              const kind = key.split("-")[0];
+              const on = active === key;
+              return (
+                <li key={key} onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)} className={`py-2.5 ${on ? "bg-hit text-ink" : ""}`}>
+                  <p className="flex flex-wrap items-baseline gap-x-4 gap-y-0.5">
+                    <button
+                      type="button"
+                      aria-pressed={pin === key}
+                      onFocus={() => setFocus(key)}
+                      onBlur={() => setFocus(null)}
+                      onClick={() => pinToggle(key)}
+                      className="font-semibold text-left underline decoration-current/40 underline-offset-4 min-h-11 sm:min-h-9"
+                    >
+                      {name}
+                    </button>
+                    <span className={`fact ${on ? "!text-ink" : ""}`}>
+                      DER bytes {range(d)}, SSH bytes {range(s)}
+                    </span>
+                  </p>
+                  <p className={`fact mt-0.5 ${on ? "!text-ink" : ""}`}>
+                    {NOTE[kind]}
+                    {kind === "pad" && w ? padNote(w) : ""}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
         </div>
-
-        <ul className="divide-y divide-border" aria-label="Fields of the signature">
-          {ROWS.map(({ key, who, name }) => {
-            const d = derF.filter((f) => f.key === key);
-            const s = sshF.filter((f) => f.key === key);
-            const kind = key.split("-")[0];
-            const on = active === key;
-            return (
-              <li key={key} onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)} className={`px-4 py-2.5 ${on ? "bg-hit text-ink" : ""}`}>
-                <p className="flex flex-wrap items-baseline gap-x-4 gap-y-0.5">
-                  <button
-                    type="button"
-                    aria-pressed={pin === key}
-                    onFocus={() => setFocus(key)}
-                    onBlur={() => setFocus(null)}
-                    onClick={() => setPin((p) => (p === key ? null : key))}
-                    className="font-semibold text-left underline decoration-current/40 underline-offset-4"
-                  >
-                    {name}
-                  </button>
-                  <span className={`fact ${on ? "!text-ink" : ""}`}>
-                    DER bytes {range(d)}, SSH bytes {range(s)}
-                  </span>
-                </p>
-                <p className={`fact mt-0.5 ${on ? "!text-ink" : ""}`}>
-                  {NOTE[kind]}
-                  {kind === "pad" && who ? padNote(who) : ""}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-      <figcaption className="mt-3 fact">
-        The key and the signature are made in your browser just now, and the figure checks the blob against the public key. Two differences from the phone: WebCrypto returns r and s as 64 raw bytes, not DER, so the figure encodes the DER the way Java&apos;s
-        Signature does before running the same conversion as the app; and this key lives in memory, not in the Keystore&apos;s hardware. &ldquo;Leave the sign pad out&rdquo; is not in the app: it is the bug the app&apos;s comments warn about,
-        built here to show what it does.
-      </figcaption>
-    </figure>
+      </Fold>
+    </FigureFrame>
   );
 }

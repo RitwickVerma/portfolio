@@ -1,10 +1,9 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GLOBAL_LIMIT } from "@/lib/sudostamp";
 import {
   COMPUTER_NAME,
-  EXAMPLE,
   GAPS_MS,
   clockText,
   gapText,
@@ -16,81 +15,47 @@ import {
   type RequestInput,
   type Row,
 } from "@/lib/sudostampSim";
+import { Actions, FigureFrame, Fold, Presets, QuietAction, Segmented, Verdict } from "./kit";
 
 // The phone's rate limiter, driven by what you send. Every row is the real
-// Limiter (SudoStamp's Limiter.kt, ported with its tests) or, under "per
+// Limiter (SudoStamp's Limiter.kt, ported with its tests) or, under "by
 // address", the cooldown that shipped in 1.3.0, replayed on the figure's own
-// clock. The figure only feeds requests in and reads the state out.
-//
-// It is not the app: no phone, no pam_rssh, no network. The clock is the
-// figure's, and an answer takes two seconds because the figure says so.
+// clock. The figure only feeds requests in and reads the state out; the
+// presets below are lists of requests, not rules.
 
 const MAX_REQUESTS = 24;
 
-function Choice<T extends string | number>({
-  label,
-  value,
-  options,
-  onChange,
-  className = "",
-}: {
-  label: string;
-  value: T;
-  options: { value: T; text: string }[];
-  onChange: (v: T) => void;
-  className?: string;
-}) {
-  const id = useId();
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const go = (from: number, step: number) => {
-    const n = (from + step + options.length) % options.length;
-    onChange(options[n].value);
-    refs.current[n]?.focus();
-  };
-  return (
-    <div className={className}>
-      <span id={id} className="fact block pb-1">
-        {label}
-      </span>
-      <div role="radiogroup" aria-labelledby={id} className="flex flex-wrap gap-1">
-        {options.map((o, i) => {
-          const on = o.value === value;
-          return (
-            <button
-              key={String(o.value)}
-              ref={(el) => {
-                refs.current[i] = el;
-              }}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              tabIndex={on ? 0 : -1}
-              onClick={() => onChange(o.value)}
-              onKeyDown={(e) => {
-                if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                  e.preventDefault();
-                  go(i, 1);
-                } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                  e.preventDefault();
-                  go(i, -1);
-                } else if (e.key === "Home") {
-                  e.preventDefault();
-                  go(0, 0);
-                } else if (e.key === "End") {
-                  e.preventDefault();
-                  go(options.length - 1, 0);
-                }
-              }}
-              className={`wd-narrow min-h-8 px-3 rounded-[var(--r-chip)] border text-[0.95rem] leading-none ${on ? "bg-fg text-background border-fg" : "border-border text-fg hover:border-fg"}`}
-            >
-              {o.text}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+type PresetId = "rotate" | "quick" | "big";
+
+const req = (from: Computer, answer: Answer, gapMs: number, extra: Partial<RequestInput> = {}): RequestInput => ({
+  from,
+  fresh: false,
+  payload: 32,
+  answer,
+  gapMs,
+  ...extra,
+});
+
+/** Each one-tap scenario is a list of requests fed to the same replay. */
+const SCENARIOS: Record<PresetId, RequestInput[]> = {
+  // A computer you denied retries from a new address every time. The figure opens on the first request alone.
+  rotate: [req("b", "deny", 0, { fresh: true }), req("b", "deny", 5_000, { fresh: true }), req("b", "deny", 5_000, { fresh: true }), req("b", "deny", 5_000, { fresh: true })],
+  // You approve, and the next two arrive straight behind it.
+  quick: [req("a", "approve", 0), req("a", "approve", 0), req("a", "approve", 0)],
+  // Something that is not a 32-byte challenge.
+  big: [req("a", "approve", 0, { payload: 100 })],
+};
+
+const PRESETS: readonly { id: PresetId; label: string }[] = [
+  { id: "rotate", label: "Rotate the address" },
+  { id: "quick", label: "Ask again right after a yes" },
+  { id: "big", label: "Send 100 bytes" },
+];
+
+const KEYING: readonly { id: Keying; label: string }[] = [
+  { id: "computer", label: "by computer (now)" },
+  { id: "address", label: "by address (before)" },
+];
 
 function stateText(r: Row, keying: Keying): string {
   const parts: string[] = [];
@@ -101,190 +66,239 @@ function stateText(r: Row, keying: Keying): string {
   return parts.join("; ");
 }
 
-function outcomeText(r: Row): { head: string; rest: string } {
+/** What happened to a request, in plain words. `tone` is for the computed outcome only. */
+function outcomeOf(r: Row): { word: string; tone: "ok" | "plain" } {
   switch (r.outcome) {
     case "refused":
-      const why = r.reason ?? "";
-      return { head: r.rule === "payload" ? "Refused before you were asked." : "Refused. You were not asked.", rest: `${why.charAt(0).toUpperCase()}${why.slice(1)}.` };
+      return { word: "Refused, phone stayed silent", tone: "ok" };
     case "approved":
-      return { head: "You were asked.", rest: "You approved." };
+      return { word: "Asked, you approved", tone: "plain" };
     case "denied":
-      return { head: "You were asked.", rest: "You denied." };
+      return { word: "Asked, you denied", tone: "plain" };
     case "ignored":
-      return { head: "You were asked.", rest: "No answer for 60 s, so it timed out." };
+      return { word: "Asked, no answer for 60 s", tone: "plain" };
   }
 }
 
-function announce(r: Row): string {
-  const o = outcomeText(r);
-  return `Request ${r.n}, ${COMPUTER_NAME[r.from]}, at ${clockText(r.atMs)}: ${o.head} ${o.rest}`;
+const upper = (s: string) => `${s.charAt(0).toUpperCase()}${s.slice(1)}`;
+const times = (n: number) => (n === 1 ? "1 time" : `${n} times`);
+
+const COLS = "grid-cols-[2.75rem_2.75rem_1fr] sm:grid-cols-[3rem_6.5rem_1fr]";
+
+function Log({ rows, keying }: { rows: Row[]; keying: Keying }) {
+  const other = keying === "computer" ? "Old way" : "New way";
+  return (
+    <div>
+      <div aria-hidden="true" className={`fact grid ${COLS} gap-x-2 pl-3 pb-1 border-b border-border`}>
+        <span>Time</span>
+        <span>
+          <span className="sm:hidden">From</span>
+          <span className="hidden sm:inline">Computer</span>
+        </span>
+        <span>What the phone did</span>
+      </div>
+      <ol aria-label="Requests, oldest first" className="divide-y divide-border">
+        {rows.map((r) => {
+          const o = outcomeOf(r);
+          const differs = r.asked !== r.askedUnderOther;
+          // Asked here but the other counting would have stayed silent: the cost of the old way.
+          const costly = differs && r.asked;
+          const rule = o.tone === "ok" ? "border-ok" : costly ? "border-warn" : "border-fg/30";
+          return (
+            <li key={r.n} data-outcome={r.outcome} className={`border-l-4 ${rule} pl-2 py-2 grid ${COLS} gap-x-2 items-baseline`}>
+              <span className="fact tabular-nums">{clockText(r.atMs)}</span>
+              <span className="font-semibold">
+                <span className="sm:hidden" aria-hidden="true">
+                  {r.from.toUpperCase()}
+                </span>
+                <span className="sr-only sm:not-sr-only">{COMPUTER_NAME[r.from]}</span>
+              </span>
+              <span className={`font-semibold leading-snug ${o.tone === "ok" ? "text-ok" : ""}`}>{o.word}</span>
+              <span className="col-start-3 fact leading-snug">
+                address <span className="font-mono text-[0.75rem] text-fg">{r.address}</span>
+                {r.payload !== 32 ? `, ${r.payload} bytes` : ""}
+                {r.reason ? `. ${upper(r.reason)}.` : ""}
+              </span>
+              {differs && (
+                <span className={`col-start-3 fact leading-snug ${costly ? "text-warn" : "text-ok"}`}>
+                  {costly ? `${other}: the phone would stay silent here.` : `${other}: you would be asked here.`}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
 }
 
 export default function LimiterTimeline() {
   const [keying, setKeying] = useState<Keying>("computer");
-  const [inputs, setInputs] = useState<RequestInput[]>(EXAMPLE);
+  const [inputs, setInputs] = useState<RequestInput[]>(SCENARIOS.rotate.slice(0, 1));
+  const [preset, setPreset] = useState<PresetId | null>(null);
   const [from, setFrom] = useState<Computer>("b");
   const [fresh, setFresh] = useState(true);
   const [payload, setPayload] = useState(32);
   const [answer, setAnswer] = useState<Answer>("deny");
   const [gapMs, setGapMs] = useState<number>(5_000);
-  const [said, setSaid] = useState("");
+  const logRef = useRef<HTMLDivElement>(null);
+  const verdictRef = useRef<HTMLDivElement>(null);
+  const sent = useRef(false);
 
   const rows = timeline(inputs, keying);
   const full = inputs.length >= MAX_REQUESTS;
 
+  // A request sent from the fold below puts its row and the verdict out of
+  // sight; bring both back. Only after the visitor's own Send, never on load.
+  useEffect(() => {
+    if (!sent.current) return;
+    sent.current = false;
+    const last = logRef.current?.querySelector("li:last-child");
+    const v = verdictRef.current;
+    if (!last || !v) return;
+    const H = window.innerHeight;
+    const rowTop = last.getBoundingClientRect().top;
+    const vBottom = v.getBoundingClientRect().bottom;
+    let dy = Math.max(0, vBottom - (H - 8));
+    if (rowTop - dy < 72) dy = rowTop - 72;
+    if (Math.abs(dy) > 1) window.scrollBy({ top: dy, behavior: "auto" });
+  }, [inputs]);
+
   const send = () => {
     if (full) return;
-    const next = [...inputs, { from, fresh, payload, answer, gapMs }];
-    setInputs(next);
-    const rows2 = timeline(next, keying);
-    const last = rows2[rows2.length - 1];
-    if (last) setSaid(announce(last));
+    sent.current = true;
+    setPreset(null);
+    setInputs([...inputs, { from, fresh, payload, answer, gapMs }]);
   };
 
-  const other = keying === "computer" ? "1.3" : "1.4";
+  const askedNow = rows.filter((r) => r.asked).length;
+  const askedOther = rows.filter((r) => r.askedUnderOther).length;
+  const last = rows[rows.length - 1];
+
+  let verdict: { tone: "ok" | "warn" | "plain"; title: string };
+  if (!last) {
+    verdict = { tone: "plain", title: "Nothing sent yet" };
+  } else if (askedNow === askedOther) {
+    verdict = { tone: "plain", title: askedNow === 0 ? "Either way of counting, the phone never asks you here." : `Either way of counting, the phone asks you ${times(askedNow)} here.` };
+  } else if (keying === "computer") {
+    verdict = { tone: "ok", title: `Counting by computer, the phone asks you ${times(askedNow)}. Counting by address, it would have asked ${askedOther}.` };
+  } else {
+    verdict = { tone: "warn", title: `Counting by address, the phone asks you ${times(askedNow)}. Counting by computer, it would ask only ${askedOther}.` };
+  }
+
+  const set = (id: PresetId) => {
+    setInputs(SCENARIOS[id]);
+    setPreset(id);
+  };
 
   return (
-    <figure className="my-8">
-      <div className="border-2 border-fg rounded-[var(--r-box)]">
-        <div className="p-4 border-b border-border">
-          <Choice<Keying>
-            label="The phone counts requests by"
-            value={keying}
-            onChange={(k) => {
-              setKeying(k);
-              setSaid(k === "computer" ? "Counting by computer, as in 1.4." : "Counting by address, as in 1.3.");
-            }}
-            options={[
-              { value: "computer", text: "computer (1.4)" },
-              { value: "address", text: "address (1.3)" },
-            ]}
-          />
-        </div>
+    <FigureFrame
+      claim="Changing address does not get a second prompt"
+      how="Your phone asks you to approve each admin command (sudo) a computer runs. You denied this computer once. Press “Rotate the address” to watch it retry from new network addresses."
+      caption="This replays the app's own limiter code on the figure's clock; there is no phone and no network."
+      about={
+        <>
+          <p>
+            Each row is the app&apos;s own limiter, ported to TypeScript with its constants and messages. Counted by address, it is the per-address cooldown from 1.3, which had no quiet period and no overall cap. Counted by computer, it is the limiter from 1.4.
+          </p>
+          <p>The clock is the figure&apos;s, an answer takes two seconds by assumption, and the addresses are from the documentation range. No phone, no pam_rssh and no network are involved.</p>
+        </>
+      }
+    >
+      <Presets label="Try" items={PRESETS} active={preset} onPick={set} />
+      <Segmented<Keying> label="The phone counts requests" options={KEYING} value={keying} onChange={setKeying} />
 
-        {rows.length === 0 ? (
-          <p className="fact p-4 border-b border-border">Nothing sent yet. Send a request below.</p>
-        ) : (
-          <ol aria-label="Requests, oldest first" className="divide-y divide-border border-b border-border">
-            {rows.map((r) => {
-              const o = outcomeText(r);
-              const differs = r.asked !== r.askedUnderOther;
-              return (
-                <li key={r.n} className="px-4 py-3">
-                  <p className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                    <span className="fact tabular-nums">{clockText(r.atMs)}</span>
-                    <span className="font-semibold">{COMPUTER_NAME[r.from]}</span>
-                    <span className="fact">
-                      from <span className="font-mono text-[0.75rem]">{r.address}</span>, {r.payload} bytes
-                    </span>
-                  </p>
-                  <p className="mt-0.5 leading-snug">
-                    <strong className="font-semibold">{o.head}</strong> {o.rest}
-                  </p>
-                  <p className="fact mt-0.5">Now: {stateText(r, keying)}.</p>
-                  {differs && (
-                    <p className="fact mt-0.5">
-                      {r.asked ? (
-                        <span className="text-warn">Under {other}, the same requests would have refused this one.</span>
-                      ) : (
-                        <span className="text-ok">Under {other}, the same requests would have asked you here.</span>
-                      )}
-                    </p>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-        )}
+      <div ref={logRef}>{rows.length === 0 ? <p className="fact">Pick a scenario above, or send your own request below.</p> : <Log rows={rows} keying={keying} />}</div>
 
+      <div ref={verdictRef}>
+        <Verdict tone={verdict.tone} title={verdict.title}>
+          {last ? (
+            <>
+              Latest, request {last.n} from {COMPUTER_NAME[last.from]} at {clockText(last.atMs)}: {outcomeOf(last).word.toLowerCase()}.
+            </>
+          ) : null}
+        </Verdict>
+      </div>
+
+      <Fold summary="Send your own request">
         <form
-          className="p-4"
+          className="space-y-3"
           onSubmit={(e) => {
             e.preventDefault();
             send();
           }}
         >
-          <div className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
-            <Choice<Computer>
-              label="Request from"
-              value={from}
-              onChange={setFrom}
-              options={[
-                { value: "a", text: "Computer A" },
-                { value: "b", text: "Computer B" },
-              ]}
-            />
-            <Choice<string>
-              label="Source address"
-              value={fresh ? "new" : "same"}
-              onChange={(v) => setFresh(v === "new")}
-              options={[
-                { value: "same", text: "the same one" },
-                { value: "new", text: "a new one each time" },
-              ]}
-            />
-            <Choice<number>
-              label="It asks the phone to sign"
-              value={payload}
-              onChange={setPayload}
-              options={[
-                { value: 32, text: "32 bytes, a challenge" },
-                { value: 100, text: "100 bytes, something else" },
-              ]}
-            />
-            <Choice<Answer>
-              label="If the phone asks, you"
-              value={answer}
-              onChange={setAnswer}
-              options={[
-                { value: "approve", text: "approve" },
-                { value: "deny", text: "deny" },
-                { value: "ignore", text: "ignore it" },
-              ]}
-            />
-            <Choice<number>
-              className="sm:col-span-2"
-              label="It arrives after the previous request is over"
-              value={gapMs}
-              onChange={setGapMs}
-              options={GAPS_MS.map((g) => ({ value: g, text: gapText(g) }))}
-            />
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <Segmented<Computer>
+            label="Request from"
+            value={from}
+            onChange={setFrom}
+            options={[
+              { id: "a", label: "Computer A" },
+              { id: "b", label: "Computer B" },
+            ]}
+          />
+          <Segmented<string>
+            label="Source address"
+            value={fresh ? "new" : "same"}
+            onChange={(v) => setFresh(v === "new")}
+            options={[
+              { id: "same", label: "the same one" },
+              { id: "new", label: "a new one each time" },
+            ]}
+          />
+          <Segmented<string>
+            label="It asks the phone to sign"
+            value={String(payload)}
+            onChange={(v) => setPayload(Number(v))}
+            options={[
+              { id: "32", label: "32 bytes, a challenge" },
+              { id: "100", label: "100 bytes, something else" },
+            ]}
+          />
+          <Segmented<Answer>
+            label="If the phone asks, you"
+            value={answer}
+            onChange={setAnswer}
+            options={[
+              { id: "approve", label: "approve" },
+              { id: "deny", label: "deny" },
+              { id: "ignore", label: "ignore it" },
+            ]}
+          />
+          <Segmented<string>
+            label="It arrives after the previous request is over"
+            value={String(gapMs)}
+            onChange={(v) => setGapMs(Number(v))}
+            options={GAPS_MS.map((g) => ({ id: String(g), label: gapText(g) }))}
+          />
+          <Actions>
             <button type="submit" className="btn" disabled={full}>
               Send request
             </button>
-            <button
-              type="button"
-              className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg"
+            <QuietAction
               onClick={() => {
                 setInputs([]);
-                setSaid("Cleared.");
+                setPreset(null);
               }}
             >
               Start over
-            </button>
-            <button
-              type="button"
-              className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg"
-              onClick={() => {
-                setInputs(EXAMPLE);
-                setSaid("Example restored.");
-              }}
-            >
-              Replay the example
-            </button>
-          </div>
-          {full && <p className="fact mt-3">That is {MAX_REQUESTS} requests. Start over to send more.</p>}
+            </QuietAction>
+          </Actions>
+          {full && <p className="fact">That is {MAX_REQUESTS} requests. Start over to send more.</p>}
         </form>
-      </div>
-      <div role="status" className="sr-only">
-        {said}
-      </div>
-      <figcaption className="mt-3 fact">
-        Each row is the app&apos;s own limiter, ported to TypeScript with its constants and messages, replaying what you send. Under &ldquo;address&rdquo; it is the per-address cooldown from 1.3, which had no quiet period and no overall cap. The clock is the
-        figure&apos;s, an answer takes two seconds by assumption, and the addresses are from the documentation range. No phone, no pam_rssh and no network are involved.
-      </figcaption>
-    </figure>
+      </Fold>
+
+      {rows.length > 0 && (
+        <Fold summary="What the phone remembers after each request">
+          <ol aria-label="State after each request" className="divide-y divide-border">
+            {rows.map((r) => (
+              <li key={r.n} className="py-1.5 fact">
+                <span className="tabular-nums">{r.n}.</span> {stateText(r, keying)}.
+              </li>
+            ))}
+          </ol>
+        </Fold>
+      )}
+    </FigureFrame>
   );
 }
