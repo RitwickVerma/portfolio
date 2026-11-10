@@ -19,9 +19,9 @@ export const notes: Note[] = [
     slug: "crush80-open-firmware",
     title: "Open firmware for a keyboard that shipped none",
     summary:
-      "The Crush 80's chip carries only a batch code. I got it wrong twice, then read the board. What is inside, and how ZMK installs over the stock updater.",
+      "Hold Fn on the real keymap. A rounding error made its clock run 6.7% fast, and I got the chip wrong twice before I read the board.",
     date: "2026-10-21",
-    updated: "2026-10-23",
+    updated: "2026-11-10",
     tags: ["ZMK", "RISC-V", "reverse engineering", "firmware"],
   },
   {
