@@ -103,6 +103,8 @@ test.describe("search", () => {
   test("the search chunk hydrates and ranks in the browser", async ({ page }) => {
     const problems = watch(page);
     const full = page.waitForResponse((r) => r.url().endsWith("/search-index.json") && r.ok());
+    // No demo query here: on a slow runner it starts typing before the click below and the two interleave.
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     const box = page.locator("#q");
     await box.click();
