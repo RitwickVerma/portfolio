@@ -68,7 +68,8 @@ test.describe("command palette", () => {
   for (const scheme of ["light", "dark"] as const) {
     for (const typed of ["", "cache", LONG_WORD]) {
       test(`passes axe in ${scheme} with ${typed ? `“${typed.slice(0, 8)}”` : "nothing"} typed`, async ({ page }) => {
-        await page.emulateMedia({ colorScheme: scheme });
+        // Reduced motion: the palette settles open, and a scan taken mid-fade reads the half-faded text as low contrast.
+        await page.emulateMedia({ colorScheme: scheme, reducedMotion: "reduce" });
         await page.goto("/design/");
         await page.waitForLoadState("networkidle"); // the key handlers exist only after hydration
         await page.keyboard.press("Control+k");
