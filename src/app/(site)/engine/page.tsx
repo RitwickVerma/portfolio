@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { cardMetadata, OG_CARDS } from "@/lib/seo";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import Link from "next/link";
 import XRay from "@/components/engine/XRay";
 import Benchmark from "@/components/engine/Benchmark";
+import ReplayLink from "@/components/engine/ReplayLink";
 import Section from "@/components/Section";
 import { buildCorpus } from "@/lib/corpus";
 import { notes } from "@/lib/notes";
@@ -12,13 +13,12 @@ import { buildIndex, CONTROL, TREATMENT } from "@/lib/search";
 import { evaluate, JUDGMENTS } from "@/lib/eval";
 
 const DESCRIPTION =
-  "How the search on ritwickverma.dev works: a query taken apart stage by stage, a control-against-treatment replay of judged queries, and a latency benchmark that runs in your browser.";
+  "How the search on ritwickverma.dev works: a query taken apart stage by stage, a control-against-treatment replay of judged queries, and a latency benchmark.";
 
 export const metadata: Metadata = {
   title: "The engine room",
   description: DESCRIPTION,
-  alternates: { canonical: "/engine/" },
-  openGraph: { title: "The engine room · Ritwick Verma", description: DESCRIPTION, url: "/engine/", siteName: "ritwickverma.dev", type: "article", locale: "en_US", images: [{ url: "/og.png", width: 1200, height: 630 }] },
+  ...cardMetadata(OG_CARDS.engine, { socialTitle: "The engine room · Ritwick Verma", description: DESCRIPTION }),
 };
 
 const SOURCE = "https://gitlab.com/ritwick7/portfolio/-/blob/master/src/lib";
@@ -106,9 +106,7 @@ export default function EnginePage() {
                 return (
                   <tr key={t.query} className="border-b border-border">
                     <td className="py-1.5 pr-4">
-                      <Link href={`/engine/?q=${encodeURIComponent(t.query)}#xray`} className="font-mono text-xs link">
-                        {t.query}
-                      </Link>
+                      <ReplayLink query={t.query} />
                     </td>
                     <td className={`py-1.5 pr-4 ${c.firstRelevant === 0 ? "text-warn" : ""}`}>{rank(c.firstRelevant)}</td>
                     <td className={`py-1.5 pr-4 ${better ? "text-ok font-semibold" : ""}`}>{rank(t.firstRelevant)}</td>

@@ -21,7 +21,7 @@ export default function WidthSpecimen() {
             <span>Width</span>
             <span className="font-mono text-[0.7rem]">{width}%</span>
           </span>
-          <input type="range" min={62} max={125} value={width} onChange={(e) => setWidth(Number(e.target.value))} className="w-full accent-[var(--fg)]" />
+          <input type="range" min={62} max={125} value={width} aria-valuetext={`${width}%`} onChange={(e) => setWidth(Number(e.target.value))} className="w-full accent-[var(--fg)]" />
         </label>
         <label className="block">
           <span className="fact flex justify-between">

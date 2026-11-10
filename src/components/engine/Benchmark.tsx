@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { search } from "@/lib/search";
 import { JUDGMENTS } from "@/lib/eval";
 import { useSearchIndex } from "@/lib/useSearchIndex";
@@ -8,7 +8,8 @@ import { useSearchIndex } from "@/lib/useSearchIndex";
 // A latency benchmark that runs in the reader's own tab. The judged queries
 // are run in batches; each batch is timed as a whole and divided, because one
 // query is shorter than the browser clock's resolution. What is plotted is
-// the distribution of those per-batch means.
+// the distribution of those per-batch means. One batch runs first and is
+// thrown away: the first calls are the engine being compiled, not searching.
 
 const BATCH = 100;
 const BATCHES = 60;
@@ -16,7 +17,8 @@ const BINS = 24;
 
 interface Outcome {
   samples: number[]; // microseconds per query, one per batch
-  totalMs: number;
+  /** Time spent inside search(), summed over the timed batches. */
+  searchMs: number;
 }
 
 const percentile = (sorted: number[], p: number) => sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))];
@@ -27,17 +29,28 @@ export default function Benchmark() {
   const [progress, setProgress] = useState<number | null>(null);
   const cancelled = useRef(false);
 
-  const run = () => {
+  // Leaving the page stops a run in progress instead of letting it finish unseen.
+  useEffect(() => {
     cancelled.current = false;
+    return () => {
+      cancelled.current = true;
+    };
+  }, []);
+
+  const run = () => {
     setOutcome(null);
     setProgress(0);
     const queries = JUDGMENTS.map((j) => `${j.query} `);
     const samples: number[] = [];
-    const started = performance.now();
     let q = 0;
+    let warmed = false;
 
     const step = () => {
       if (cancelled.current) return;
+      if (!warmed) {
+        for (let i = 0; i < BATCH; i++) search(index, queries[q++ % queries.length]);
+        warmed = true;
+      }
       // A few batches per turn, then yield so the page stays responsive.
       for (let n = 0; n < 6 && samples.length < BATCHES; n++) {
         const t0 = performance.now();
@@ -47,7 +60,7 @@ export default function Benchmark() {
       setProgress(samples.length / BATCHES);
       if (samples.length < BATCHES) window.setTimeout(step, 0);
       else {
-        setOutcome({ samples, totalMs: performance.now() - started });
+        setOutcome({ samples, searchMs: (samples.reduce((a, b) => a + b, 0) * BATCH) / 1000 });
         setProgress(null);
       }
     };
@@ -113,9 +126,11 @@ export default function Benchmark() {
               <span>{hi.toFixed(1)} µs</span>
             </p>
             <p className="mt-4 text-fg/85 max-w-[60ch]">
-              {(BATCH * BATCHES).toLocaleString("en-US")} queries in {outcome.totalMs.toFixed(0)} ms: about{" "}
-              {(Math.round((BATCH * BATCHES) / (outcome.totalMs / 1000) / 100) * 100).toLocaleString("en-US")} a second on one thread. Each sample is a mean over a batch, so
-              a single slow query hides inside it; this shows the shape, not the worst case.
+              {(BATCH * BATCHES).toLocaleString("en-US")} queries in {outcome.searchMs.toFixed(0)} ms of search time
+              {outcome.searchMs > 0 ? `: about ${(Math.round((BATCH * BATCHES) / (outcome.searchMs / 1000) / 100) * 100).toLocaleString("en-US")} a second on one thread` : ", too quick for this browser's clock to resolve"}
+              . Each sample is a mean over a batch, so
+              a single slow query hides inside it; this shows the shape, not the worst case. The queries run as finished words, so completing a half-typed word is not in
+              these numbers.
             </p>
           </>
         )}

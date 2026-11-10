@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { search, parseQuery, CONTROL, TREATMENT, type SearchHit } from "@/lib/search";
+import { search, parseQuery, CONTROL, TREATMENT, FUZZY_WEIGHT, PHRASE_BONUS, PREFIX_WEIGHT, REWRITE_WEIGHT, type SearchHit } from "@/lib/search";
 import { useSearchIndex } from "@/lib/useSearchIndex";
 import { CorpusMap, PlanChips } from "@/components/search/parts";
 
@@ -27,18 +27,47 @@ function Stage({ n, name, what, children }: { n: number; name: string; what: str
 }
 
 const TOP = 5;
+/** Posting lists drawn in stage 3. */
+const POSTINGS = 8;
+/** A multiplier as a reader would write it: 1.625, not 1.63, so the line multiplies back. */
+const factor = (n: number) => String(+n.toFixed(3));
 const short = (s: string, n = 46) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+
+/** What is in the box is what the address says: ?q= follows the query, and goes when the box is empty. */
+function writeUrl(query: string) {
+  const url = new URL(window.location.href);
+  if (query.trim()) url.searchParams.set("q", query);
+  else url.searchParams.delete("q");
+  window.history.replaceState(window.history.state, "", url);
+}
+
+/** Fired by a link in the replay table: take this query apart, here, without leaving the page. */
+export const XRAY_EVENT = "xray:query";
 
 export default function XRay() {
   const { index } = useSearchIndex();
   const [text, setText] = useState(PRESETS[0]);
 
-  // /engine/?q=... opens on that query.
+  // The query is a link: /engine/?q=... opens on it.
+  const choose = (query: string) => {
+    setText(query);
+    writeUrl(query);
+  };
+
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("q");
-    if (!q) return;
-    const t = window.setTimeout(() => setText(q.slice(0, 120)), 0);
-    return () => window.clearTimeout(t);
+    const t = q ? window.setTimeout(() => setText(q.slice(0, 120)), 0) : undefined;
+    // A link in the replay table sits on this same page, so nothing remounts: it tells us instead.
+    const onQuery = (e: Event) => {
+      const query = String((e as CustomEvent<string>).detail ?? "").slice(0, 120);
+      setText(query);
+      writeUrl(query);
+    };
+    window.addEventListener(XRAY_EVENT, onQuery);
+    return () => {
+      if (t) window.clearTimeout(t);
+      window.removeEventListener(XRAY_EVENT, onQuery);
+    };
   }, []);
 
   const treatment = useMemo(() => search(index, text, TREATMENT), [index, text]);
@@ -60,7 +89,7 @@ export default function XRay() {
     [text],
   );
 
-  const postings = treatment.plan.slice(0, 8).map((t) => {
+  const postings = treatment.plan.slice(0, POSTINGS).map((t) => {
     const posting = index.postings.get(t.term);
     const hits: SearchHit[] = posting
       ? [...posting.keys()].map((i) => ({ doc: index.docs[i], score: 0, matched: [], explain: { terms: [], prior: 1, phrases: 0 } }))
@@ -70,6 +99,7 @@ export default function XRay() {
 
   const controlRank = new Map(control.hits.map((h, i) => [h.doc.id, i + 1]));
   const best = treatment.hits[0]?.score ?? 1;
+  const filtered = parsed.excluded.length > 0 || parsed.kinds.length > 0 || parsed.tech.length > 0;
 
   return (
     <div>
@@ -80,7 +110,7 @@ export default function XRay() {
         id="xray-q"
         type="search"
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => choose(e.target.value)}
         autoComplete="off"
         autoCapitalize="none"
         spellCheck={false}
@@ -93,7 +123,7 @@ export default function XRay() {
           <button
             key={q}
             type="button"
-            onClick={() => setText(q)}
+            onClick={() => choose(q)}
             aria-pressed={text === q}
             className="font-mono text-xs px-2 py-1.5 rounded-[var(--r-chip)] text-accent underline decoration-accent/40 underline-offset-4 aria-pressed:bg-hit aria-pressed:text-ink aria-pressed:no-underline"
           >
@@ -109,7 +139,7 @@ export default function XRay() {
           ) : (
             <ul className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs">
               {words.map((w, i) => (
-                <li key={`${w.raw}${i}`} className={w.dropped ? "text-muted line-through" : ""} title={w.dropped ? "A stopword: dropped" : undefined}>
+                <li key={`${w.raw}${i}`} className={`max-w-full [overflow-wrap:anywhere] ${w.dropped ? "text-muted line-through" : ""}`} title={w.dropped ? "Dropped: a stopword or punctuation" : undefined}>
                   {w.raw}
                   {!w.dropped && (
                     <>
@@ -138,12 +168,15 @@ export default function XRay() {
           )}
         </Stage>
 
-        <Stage n={2} name="Rewrite and expand" what="Add the site's words for yours at 0.45, complete the word still being typed at 0.5, respell a word nothing matched at 0.7.">
-          {treatment.plan.length === 0 ? (
+        <Stage n={2} name="Rewrite and expand" what={`Add the site's words for yours at ${REWRITE_WEIGHT}, complete the word still being typed at ${PREFIX_WEIGHT}, respell a word nothing matched at ${FUZZY_WEIGHT}.`}>
+          {treatment.plan.length === 0 && !filtered ? (
             <p className="fact">No terms.</p>
           ) : (
             <>
-              <PlanChips plan={treatment.plan} parsed={parsed} />
+              {/* A long unbroken word makes a long chip; it scrolls here instead of widening the page. */}
+              <div className="max-w-full overflow-x-auto">
+                <PlanChips plan={treatment.plan} parsed={parsed} />
+              </div>
               <p className="fact mt-3">
                 {treatment.plan.filter((t) => t.source === "typed" || t.source === "phrase").length} from the query,{" "}
                 {treatment.plan.filter((t) => t.source === "rewrite").length} from the rewriter, {treatment.plan.filter((t) => t.source === "prefix").length}{" "}
@@ -153,10 +186,11 @@ export default function XRay() {
           )}
         </Stage>
 
-        <Stage n={3} name="Retrieve" what="One posting list per term. Each strip is the whole index; a dark tick is a document that contains the term.">
+        <Stage n={3} name="Retrieve" what="One posting list per term. Each strip is the whole index; a lit tick is a document that contains the term.">
           {postings.length === 0 ? (
-            <p className="fact">No posting lists to read.</p>
+            <p className="fact">{filtered ? "A filter reads each document's kind or stack, not a posting list." : "No posting lists to read."}</p>
           ) : (
+            <>
             <ul className="space-y-2.5 [--map-h:1.1rem]">
               {postings.map(({ term, hits }) => (
                 <li key={term.term} className="grid grid-cols-[minmax(0,1fr)_2rem] sm:grid-cols-[10rem_minmax(0,1fr)_2.5rem] items-end gap-x-3 gap-y-1">
@@ -170,6 +204,8 @@ export default function XRay() {
                 </li>
               ))}
             </ul>
+            {treatment.plan.length > POSTINGS && <p className="fact mt-3">The first {POSTINGS} of {treatment.plan.length} terms.</p>}
+            </>
           )}
         </Stage>
 
@@ -188,21 +224,23 @@ export default function XRay() {
                         {h.doc.title} <span className="fact font-normal">{h.doc.kind}</span>
                       </p>
                       <div className="mt-1.5 flex h-5 gap-px" style={{ width: `${Math.max(8, (h.score / best) * 100)}%` }}>
+                        {/* Ink on paper never drops below 70%, or the label on it fails 4.5 : 1 in one of the two themes. */}
                         {h.explain.terms.map((t, k) => (
                           <span
                             key={t.term}
                             title={`${t.term}: ${t.score.toFixed(2)}`}
-                            className="h-full overflow-hidden font-mono text-[0.6rem] leading-5 px-1 whitespace-nowrap text-background"
-                            style={{ flex: `${t.score / sum} 1 0`, background: `rgb(var(--fg-rgb) / ${Math.max(0.35, 1 - k * 0.18)})` }}
+                            className="h-full overflow-hidden font-mono text-[0.7rem] leading-5 px-1 whitespace-nowrap text-background"
+                            style={{ flex: `${t.score / sum} 1 0`, background: `rgb(var(--fg-rgb) / ${Math.max(0.7, 1 - k * 0.1)})` }}
                           >
                             {t.term}
                           </span>
                         ))}
+                        {h.explain.terms.length === 0 && <span className="h-full flex-1 bg-fg" title="Listed because it matches the filter" />}
                       </div>
-                      <p className="font-mono text-[0.65rem] text-muted mt-1">
-                        {sum.toFixed(2)}
-                        {h.explain.prior !== 1 ? ` × ${h.explain.prior.toFixed(2)}` : ""}
-                        {h.explain.phrases > 0 ? ` × 1.5 phrase` : ""}
+                      <p className="font-mono text-[0.7rem] text-muted mt-1">
+                        {h.explain.terms.length === 0 ? "filter only, base 1" : sum.toFixed(3)}
+                        {h.explain.prior !== 1 ? ` × ${factor(h.explain.prior)} static rank` : ""}
+                        {h.explain.phrases > 0 ? ` × ${factor(PHRASE_BONUS ** h.explain.phrases)} phrase` : ""}
                       </p>
                     </div>
                     <span className="font-mono text-xs text-right">{h.score.toFixed(2)}</span>
@@ -213,7 +251,7 @@ export default function XRay() {
           )}
         </Stage>
 
-        <Stage n={5} name="Control against treatment" what="The same query through plain BM25 with nothing added, beside what the site runs. One request, both rankers.">
+        <Stage n={5} name="Control against treatment" what="The same query through plain BM25 with nothing added, beside what the site runs. One query, both rankers.">
           <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6">
             <div>
               <p className="fact mb-1.5">Control: BM25 only, {control.hits.length} match{control.hits.length === 1 ? "" : "es"}</p>

@@ -16,18 +16,18 @@ export default function Footer() {
   return (
     <footer className="border-t border-border">
       <div className="max-w-[var(--page)] mx-auto px-5 sm:px-8 py-8 flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 text-sm text-muted">
-        <p>
+        <p className="py-1">
           &copy; {new Date().getFullYear()} Ritwick Verma.{" "}
-          <Link href="/notes/colophon/" className="underline decoration-fg/30 underline-offset-4 hover:text-fg">
+          <Link href="/notes/colophon/" className="inline-block py-3 -my-3 underline decoration-fg/30 underline-offset-4 hover:text-fg">
             How this site is built
           </Link>
         </p>
-        <ul className="flex flex-wrap gap-x-5 gap-y-1">
+        <ul className="flex flex-wrap gap-x-5">
           {links.map((l) => (
             <li key={l.label}>
               <a
                 href={l.href}
-                className="inline-block py-2 -my-2 hover:text-fg hover:underline underline-offset-4"
+                className="inline-flex items-center justify-center min-h-11 min-w-11 hover:text-fg hover:underline underline-offset-4"
                 {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               >
                 {l.label}

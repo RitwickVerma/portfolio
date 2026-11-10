@@ -3,8 +3,7 @@
 Personal portfolio — [www.ritwickverma.dev](https://www.ritwickverma.dev)
 
 A static site (`output: "export"`): pure HTML/JS/CSS on Cloudflare Pages. No
-server runtime; the only third-party request at view time is Cloudflare's
-own analytics beacon.
+server runtime and no third-party request at view time.
 
 ## The idea
 

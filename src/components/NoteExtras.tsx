@@ -20,15 +20,34 @@ export function NoteContents({ headings }: { headings: Heading[] }) {
   useEffect(() => {
     const targets = headings.map((h) => document.getElementById(h.id)).filter((el) => el !== null);
     if (targets.length === 0) return;
-    // The section whose heading most recently crossed the top third of the window.
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) if (e.isIntersecting) setActive(e.target.id);
-      },
-      { rootMargin: "-10% 0px -65% 0px" },
-    );
-    targets.forEach((t) => io.observe(t));
-    return () => io.disconnect();
+    // The section whose heading is the last one at or above a line just under
+    // the sticky nav, so a link that lands a heading there marks that heading.
+    // (An observer band marked the wrong one when two short sections sat in it.)
+    // At the very end of the page the last headings cannot reach the line, so
+    // the line drops to mid-window and the final section can be the current one.
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      const line = atEnd ? window.innerHeight * 0.5 : 120;
+      let current: string | null = null;
+      for (const t of targets) {
+        if (t.getBoundingClientRect().top > line) break;
+        current = t.id;
+      }
+      setActive(current);
+    };
+    const schedule = () => {
+      if (frame === 0) frame = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      if (frame !== 0) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
   }, [headings]);
 
   return (

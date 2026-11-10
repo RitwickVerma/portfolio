@@ -92,7 +92,13 @@ export default function Palette() {
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    // Enter that confirms an IME candidate (Japanese, Chinese, Korean) is not a choice.
+    if (e.nativeEvent.isComposing) return;
+    if (e.key === "Escape") {
+      // A search field clears itself on Esc before anything else; here Esc closes, always.
+      e.preventDefault();
+      close();
+    } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       if (count === 0) return;
       const next = (selected + (e.key === "ArrowDown" ? 1 : -1) + count) % count;
@@ -132,6 +138,7 @@ export default function Palette() {
           onKeyDown={onKeyDown}
           placeholder="Search the record, the notes, or type a command"
           aria-label="Search the record, the notes, or type a command"
+          maxLength={120}
           role="combobox"
           aria-expanded={count > 0}
           aria-autocomplete="list"
@@ -145,10 +152,10 @@ export default function Palette() {
         <kbd>Esc</kbd>
       </div>
 
-      <ul id="palette-list" role="listbox" aria-label="Results" className="overflow-y-auto -mt-px">
+      <ul id="palette-list" role="listbox" aria-label="Results" hidden={count === 0} className="overflow-y-auto -mt-px">
         {hits.map((hit, i) => (
           <li key={hit.doc.id} role="option" id={`palette-${i}`} aria-selected={i === selected} className={`${row} group cursor-pointer`} onClick={() => choose(i)} onMouseMove={() => setSelected(i)}>
-            <span className="fact group-aria-selected:text-background/70 pt-0.5">{hit.doc.kind}</span>
+            <span className="fact group-aria-selected:!text-background/70 pt-0.5">{hit.doc.kind}</span>
             <span className="min-w-0">
               <span className="block font-semibold leading-snug">
                 <Marked text={hit.doc.title} stems={hit.matched} />
@@ -163,13 +170,16 @@ export default function Palette() {
           const i = hits.length + n;
           return (
             <li key={a.label} role="option" id={`palette-${i}`} aria-selected={i === selected} className={`${row} group cursor-pointer`} onClick={() => choose(i)} onMouseMove={() => setSelected(i)}>
-              <span className="fact group-aria-selected:text-background/70">{a.hint}</span>
+              <span className="fact group-aria-selected:!text-background/70">{a.hint}</span>
               <span>{a.label}</span>
             </li>
           );
         })}
-        {count === 0 && <li className="px-4 py-6 border-t border-border">Nothing on this site matches “{text.trim()}”.</li>}
       </ul>
+      {count === 0 && <p className="px-4 py-6 border-t border-border break-words">Nothing on this site matches “{text.trim()}”.</p>}
+      <p className="sr-only" role="status">
+        {text.trim() ? `${hits.length} ${hits.length === 1 ? "result" : "results"}, ${actions.length} ${actions.length === 1 ? "command" : "commands"}` : ""}
+      </p>
 
       <p className="fact !text-xs px-4 py-2 border-t border-border flex flex-wrap gap-x-4 gap-y-1 mt-auto">
         <span>

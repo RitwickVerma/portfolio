@@ -10,7 +10,7 @@ export default function ThemeToggle() {
       onClick={() => toggleTheme()}
       aria-label="Switch between light and dark"
       title="Switch between light and dark"
-      className="p-2 text-fg/70 hover:text-fg"
+      className="p-2 min-[360px]:max-[389px]:p-[13px] min-[420px]:p-[13px] text-fg/70 hover:text-fg"
     >
       <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
         <circle cx="9" cy="9" r="7.25" fill="none" stroke="currentColor" strokeWidth="1.5" />

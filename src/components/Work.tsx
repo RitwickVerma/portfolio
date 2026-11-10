@@ -15,11 +15,15 @@ function ReplayFigure({ text }: { text: string }) {
   ];
   return (
     <figure className="mt-4 max-w-md" aria-label={`New errors in the replay: ${before} before the fix, ${after} after`}>
+      {/* The bar sits in its own grid cell so its width is exactly value / before of the track: as a flex
+          sibling of the number it shrank, and the two bars stopped being to scale (22:1 on a phone, not 27.8:1). */}
       {rows.map((r) => (
-        <div key={r.label} className="grid grid-cols-[11.5rem_1fr] items-center gap-3 py-1">
+        <div key={r.label} className="grid sm:grid-cols-[11.5rem_1fr] items-center gap-x-3 gap-y-0.5 py-1.5">
           <span className="wd-narrow text-sm text-muted">{r.label}</span>
-          <span className="flex items-center gap-2">
-            <span className="h-3 bg-fg" style={{ width: `${Math.max(1.5, (r.value / before) * 100)}%` }} />
+          <span className="grid grid-cols-[minmax(0,1fr)_2.5rem] items-center gap-2">
+            <span className="block h-3">
+              <span className="block h-full bg-fg" style={{ width: `${(r.value / before) * 100}%` }} />
+            </span>
             <span className="font-mono text-xs">{r.value}</span>
           </span>
         </div>
