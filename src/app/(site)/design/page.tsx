@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
+import { cardMetadata, OG_CARDS } from "@/lib/seo";
 import Section from "@/components/Section";
 import WidthSpecimen from "@/components/design/WidthSpecimen";
 import { LIGHT, DARK, INK, contrast, type Palette } from "@/lib/theme";
 
 const DESCRIPTION =
-  "Index, the design language of ritwickverma.dev: five rules, the colour and type tokens with their contrast ratios, the components, and the three things that are allowed to move.";
+  "Index, the design language of ritwickverma.dev: five rules, the colour and type tokens, the components, and the three things that are allowed to move.";
 
 export const metadata: Metadata = {
   title: "The design language",
   description: DESCRIPTION,
-  alternates: { canonical: "/design/" },
-  openGraph: { title: "The design language · Ritwick Verma", description: DESCRIPTION, url: "/design/", siteName: "ritwickverma.dev", type: "article", locale: "en_US", images: [{ url: "/og.png", width: 1200, height: 630 }] },
+  ...cardMetadata(OG_CARDS.design, { socialTitle: "The design language · Ritwick Verma", description: DESCRIPTION }),
 };
 
 const ROLES: { key: keyof Palette; name: string; token: string; use: string; on: "BG" | "HIT" }[] = [
