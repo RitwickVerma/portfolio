@@ -273,6 +273,9 @@ test.describe("plutus note figures", () => {
     await expect(fig.getByRole("status")).toContainText("The real run got −34.5%");
     await fig.getByRole("button", { name: /Deal again/ }).click();
     await expect(fig.getByRole("button", { name: /Deal again \(seed 43\)/ })).toBeVisible();
+  });
+});
+
 test.describe("the Tizen note's figures", () => {
   test("the sampling figure starts still, and the lazy way makes an edge one colour", async ({ page }) => {
     await page.goto(NOTE);
@@ -314,6 +317,9 @@ test.describe("the Tizen note's figures", () => {
     await fig.getByText("More controls").click();
     await fig.getByLabel(/Wait before each reading/).fill("17");
     await expect(fig.locator("[role=status][data-tone]")).toContainText("measured about 1.4 Hz");
+  });
+});
+
 test.describe("crush80 note figures", () => {
   test("the layer figure resolves keys from the layer that holds them", async ({ page }) => {
     await page.goto(CRUSH_NOTE);

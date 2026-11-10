@@ -29,11 +29,11 @@ export function FigureFrame({
 }) {
   const id = useId();
   return (
-    <figure aria-labelledby={`${id}-claim`} className="my-8">
+    <figure aria-labelledby={`${id}-claim`} className="my-8 first:mt-0">
       <p id={`${id}-claim`} className="wd-semi text-xl sm:text-2xl font-extrabold leading-[1.1] max-w-[30ch]">
         {claim}
       </p>
-      <p className="fact mt-1.5 max-w-[60ch]">{how}</p>
+      <p className="mt-1.5 text-[0.95rem] text-fg/85 max-w-[60ch]">{how}</p>
       <div className="mt-4 border-2 border-fg rounded-[var(--r-box)] p-3 sm:p-5 space-y-5">{children}</div>
       <figcaption className="fact mt-3 max-w-[68ch]">{caption}</figcaption>
       {about ? (
@@ -49,16 +49,16 @@ export function FigureFrame({
 export function Fold({ summary, children, open }: { summary: string; children: ReactNode; open?: boolean }) {
   return (
     <details className="group" open={open}>
-      <summary className="fact inline-flex items-center min-h-11 sm:min-h-9 cursor-pointer underline decoration-fg/30 underline-offset-4 hover:text-fg list-none [&::-webkit-details-marker]:hidden">
-        <span aria-hidden="true" className="mr-1.5 font-mono text-xs group-open:hidden">
+      <summary className="flex items-center min-h-11 border-t border-border text-[0.95rem] text-fg/85 cursor-pointer hover:text-fg list-none [&::-webkit-details-marker]:hidden">
+        <span aria-hidden="true" className="mr-2 w-3 font-mono text-xs group-open:hidden">
           +
         </span>
-        <span aria-hidden="true" className="mr-1.5 font-mono text-xs hidden group-open:inline">
+        <span aria-hidden="true" className="mr-2 w-3 font-mono text-xs hidden group-open:inline">
           −
         </span>
         {summary}
       </summary>
-      <div className="mt-2">{children}</div>
+      <div className="pt-1 pb-3">{children}</div>
     </details>
   );
 }
@@ -66,7 +66,11 @@ export function Fold({ summary, children, open }: { summary: string; children: R
 const chip =
   "inline-flex items-center justify-center min-h-11 sm:min-h-9 px-3 rounded-[var(--r-chip)] border text-[0.95rem] leading-tight transition-colors duration-[var(--dur-tap)]";
 
-/** One-tap scenarios. The first is the one to try; the pressed one is marked like a search match. */
+/**
+ * One-tap scenarios. The first is the one to try. They are choices, not places
+ * to go and not matches, so they are ink, never blue or yellow: the pressed one
+ * is filled. Two to a row on a phone, so four scenarios take two rows, not four.
+ */
 export function Presets<T extends string>({
   label = "Try",
   items,
@@ -79,15 +83,15 @@ export function Presets<T extends string>({
   onPick: (id: T) => void;
 }) {
   return (
-    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-2">
-      <span className="fact mr-1">{label}</span>
+    <div role="group" aria-label={label} className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+      <span className="fact col-span-2 sm:mr-1">{label}</span>
       {items.map((p) => (
         <button
           key={p.id}
           type="button"
           aria-pressed={active === p.id}
           onClick={() => onPick(p.id)}
-          className={`${chip} border-border text-accent hover:border-fg aria-pressed:bg-hit aria-pressed:text-ink aria-pressed:border-hit`}
+          className={`${chip} text-left sm:text-center border-fg/40 hover:border-fg aria-pressed:bg-fg aria-pressed:text-background aria-pressed:border-fg`}
         >
           {p.label}
         </button>
