@@ -534,19 +534,44 @@ test.describe("the ShutUp figure", () => {
 });
 
 test.describe("alignment figure", () => {
-  const summary = (page: Page, method: "Alignment" | "Greedy scan") => page.getByRole("row", { name: new RegExp(`^${method}`) });
-  const method = (page: Page, name: "Alignment" | "Greedy scan") => page.getByRole("button", { name, exact: true });
+  const drawing = (page: Page) => page.getByRole("table", { name: /^Each chart row/ });
+  const rowOf = (page: Page, text: string) => drawing(page).getByRole("row").filter({ hasText: text });
+  const verdict = (page: Page) => page.locator("[data-tone]");
+  const lostCells = (page: Page) => drawing(page).getByRole("cell").filter({ hasText: /^lost/ });
   const preset = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
+  const fold = (page: Page, name: string) => page.locator("summary").filter({ hasText: name });
+  const openFold = async (page: Page, name: string) => {
+    await fold(page, name).click();
+  };
 
-  test("opens on the failure, and is meaningful before it hydrates: both methods, the rows and the matrix are in the HTML", async ({ browser }) => {
+  test("opens on the failure, and is meaningful before it hydrates: the claim, both methods, the verdict, the rows and the matrix are in the HTML", async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto(ALIGN_NOTE);
-    await expect(summary(page, "Alignment")).toContainText("11 of 11");
-    await expect(summary(page, "Greedy scan")).toContainText("6 of 11");
-    await expect(page.getByRole("grid")).toBeVisible();
+    await expect(page.getByText("Leave one row out and the greedy matcher loses the rest of the song")).toBeVisible();
+    await expect(verdict(page)).toContainText("Alignment places 11 of 11 rows; the greedy scan places 6 and ends 42 seconds early");
+    await expect(verdict(page)).toHaveAttribute("data-tone", "warn");
+    await expect(drawing(page)).toContainText("11 of 11");
+    await expect(drawing(page)).toContainText("6 of 11");
+    await expect(lostCells(page)).toHaveCount(5);
+    // The chart's gap is drawn: the lyric line nothing in the chart matches.
+    await expect(drawing(page)).toContainText("No chart row for this lyric");
+    await expect(page.getByRole("grid", { includeHidden: true })).toBeAttached();
     await expect(page.getByLabel("Chart row 11")).toHaveValue("And grace will lead me home");
     await context.close();
+  });
+
+  test("the first screen is the claim, one thing to press, both columns and the verdict; the matrix and the editing controls are folded", async ({ page }) => {
+    await page.goto(ALIGN_NOTE);
+    await page.waitForLoadState("networkidle");
+    await expect(preset(page, "A line missing")).toHaveAttribute("aria-pressed", "true");
+    await expect(drawing(page).getByRole("columnheader", { name: /^Alignment/ })).toBeVisible();
+    await expect(drawing(page).getByRole("columnheader", { name: /^Greedy scan/ })).toBeVisible();
+    await expect(verdict(page)).toBeVisible();
+    await expect(page.getByRole("grid")).toBeHidden();
+    await expect(page.getByLabel("Chart row 1", { exact: true })).toBeHidden();
+    // Each lyric is printed once in the drawing.
+    await expect(drawing(page).getByText("And grace will lead me home")).toHaveCount(1);
   });
 
   test("deleting a row recomputes the alignment, and the greedy scan loses its place", async ({ page }) => {
@@ -554,63 +579,114 @@ test.describe("alignment figure", () => {
     await page.goto(ALIGN_NOTE);
     await page.waitForLoadState("networkidle");
     await preset(page, "Full chart").click();
-    await expect(summary(page, "Alignment")).toContainText("12 of 12");
-    await expect(summary(page, "Greedy scan")).toContainText("12 of 12");
-    await expect(page.getByLabel("Chart row 5")).toHaveValue("'Twas grace that taught my heart to fear");
+    await expect(preset(page, "Full chart")).toHaveAttribute("aria-pressed", "true");
+    await expect(verdict(page)).toContainText("Both methods give all 12 rows the same lines.");
+    await expect(verdict(page)).toHaveAttribute("data-tone", "ok");
+    await expect(drawing(page)).toContainText("12 of 12");
+    await expect(lostCells(page)).toHaveCount(0);
+    await expect(drawing(page)).not.toContainText("No chart row for this lyric");
 
-    await page.getByRole("button", { name: "Delete row 5" }).click();
+    await openFold(page, "Edit the chart");
+    await expect(page.getByLabel("Chart row 5")).toHaveValue("'Twas grace that taught my heart to fear");
+    await page.getByRole("button", { name: "Delete row 5", exact: true }).click();
 
     await expect(page.getByLabel("Chart row 5")).toHaveValue("And grace my fears relieved");
-    await expect(summary(page, "Alignment")).toContainText("11 of 11");
-    await expect(summary(page, "Alignment")).toContainText("1:23");
-    await expect(summary(page, "Greedy scan")).toContainText("6 of 11");
-    await expect(summary(page, "Greedy scan")).toContainText("0:41");
-    // Row 5 is now "And grace my fears relieved": the alignment puts it on its own line (0:41, line 6)
+    await expect(verdict(page)).toContainText("Alignment places 11 of 11 rows; the greedy scan places 6 and ends 42 seconds early");
+    await expect(verdict(page)).toHaveAttribute("data-tone", "warn");
+    await expect(verdict(page)).toContainText("The greedy scan lost rows");
+    await expect(verdict(page)).toContainText("on a different line from the alignment");
+    await expect(drawing(page)).toContainText("No chart row for this lyric");
+    await expect(drawing(page)).toContainText("11 of 11");
+    await expect(drawing(page)).toContainText("6 of 11");
+    // Row 5 is now "And grace my fears relieved": the alignment puts it on its own line (0:41)
     // and the greedy scan on the dropped row's line (0:34).
-    const rowFive = page.getByRole("listitem").filter({ has: page.getByLabel("Chart row 5") });
-    await expect(rowFive).toContainText("Alignment: 0:41");
-    await expect(rowFive).toContainText("greedy: 0:34, line 5");
-    await method(page, "Greedy scan").click();
-    await expect(method(page, "Greedy scan")).toHaveAttribute("aria-pressed", "true");
-    await expect(rowFive).toContainText("0:34");
-    await expect(rowFive).toContainText("alignment: 0:41, line 6");
+    const rowFive = rowOf(page, "And grace my fears relieved");
+    await expect(rowFive.getByRole("cell").nth(0)).toHaveText("0:41");
+    await expect(rowFive.getByRole("cell").nth(1)).toContainText("0:34");
+    // The last row: 1:23 by the alignment; the greedy scan puts it at 0:41. Rows between are lost.
+    const last = rowOf(page, "And grace will lead me home");
+    await expect(last.getByRole("cell").nth(0)).toHaveText("1:23");
+    await expect(last.getByRole("cell").nth(1)).toContainText("0:41");
+    const lostRow = rowOf(page, "How precious did that grace appear");
+    await expect(lostRow.getByRole("cell").nth(0)).toHaveText("0:48");
+    await expect(lostRow.getByRole("cell").nth(1)).toContainText("lost");
+    await expect(lostCells(page)).toHaveCount(5);
     expect(problems).toEqual([]);
   });
 
-  test("editing a row to one word takes it off its line; duplicating one adds a row", async ({ page }) => {
+  test("editing a row to one word takes it off its line; copying one adds a row; every edit moves both columns", async ({ page }) => {
     await page.goto(ALIGN_NOTE);
     await page.waitForLoadState("networkidle");
     await preset(page, "Full chart").click();
+    await openFold(page, "Edit the chart");
     await page.getByLabel("Chart row 4").fill("amen");
-    await expect(summary(page, "Alignment")).toContainText("11 of 12");
+    await expect(verdict(page)).toContainText("Both methods agree: 11 of 12 rows get a line");
+    await expect(rowOf(page, "amen").getByRole("cell").nth(0)).toContainText("none");
+    await expect(rowOf(page, "amen").getByRole("cell").nth(1)).toContainText("none");
     await preset(page, "Full chart").click();
-    await expect(summary(page, "Alignment")).toContainText("12 of 12");
-    await page.getByRole("button", { name: "Duplicate row 1", exact: true }).click();
+    await expect(verdict(page)).toContainText("Both methods give all 12 rows the same lines.");
+    await page.getByRole("button", { name: "Copy row 1", exact: true }).click();
     await expect(page.getByLabel("Chart row 13")).toBeVisible();
-    await expect(summary(page, "Alignment")).toContainText("12 of 13");
+    await expect(verdict(page)).toContainText("Alignment places 12 of 13 rows");
     await preset(page, "A line missing").click();
-    await expect(summary(page, "Alignment")).toContainText("11 of 11");
+    await expect(verdict(page)).toContainText("Alignment places 11 of 11 rows");
   });
 
-  test("the matrix is a keyboard grid and a cell shows its arithmetic", async ({ page }) => {
+  test("the row buttons are 44 px targets with names, and the two result columns fit a 390 px phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(ALIGN_NOTE);
     await page.waitForLoadState("networkidle");
+    for (const name of ["Alignment", "Greedy scan"]) {
+      const box = await drawing(page).getByRole("columnheader", { name: new RegExp(`^${name}`) }).boundingBox();
+      expect(box, name).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+    }
+    await openFold(page, "Edit the chart");
+    for (const name of ["Copy row 5", "Delete row 5"]) {
+      const box = await page.getByRole("button", { name, exact: true }).boundingBox();
+      expect(box!.width, name).toBeGreaterThanOrEqual(44);
+      expect(box!.height, name).toBeGreaterThanOrEqual(44);
+    }
+  });
+
+  test("the table of scores draws the path, takes a method and a cell mode, is a keyboard grid and a cell shows three numbers", async ({ page }) => {
+    await page.goto(ALIGN_NOTE);
+    await page.waitForLoadState("networkidle");
+    await openFold(page, "The table of scores");
     const readout = page.getByRole("group", { name: "Selected matrix cell" });
     await expect(readout).toContainText("Row 11 against line 12");
+    // The traceback is a connected run of cells (11 pairs and the skipped line), not three dots.
+    expect(await page.getByRole("gridcell", { name: /a pair in the alignment/ }).count()).toBe(11);
+    expect(await page.getByRole("gridcell", { name: /on the traceback: skip the line/ }).count()).toBe(1);
     await page.getByRole("gridcell", { name: /^Row 11, line 12:/ }).focus();
     await page.keyboard.press("ArrowUp");
     await expect(readout).toContainText("Row 10 against line 12");
     await page.keyboard.press("ArrowLeft");
     await expect(readout).toContainText("Row 10 against line 11");
-    await expect(readout).toContainText("worth 1.00 - 0.5 = 0.50");
+    // Pair, skip the row, skip the line: three numbers side by side, the taken one marked.
+    await expect(readout.getByRole("listitem")).toHaveCount(3);
+    await expect(readout).toContainText("similarity 1.00 \u2212 0.5");
+    await expect(readout.getByRole("listitem").first()).toContainText("0.50");
+    await expect(readout.locator('[data-taken="true"]')).toHaveCount(1);
     // A single tab stop: the focused cell is the only one in the tab order.
     expect(await page.locator('[role="gridcell"][tabindex="0"]').count()).toBe(1);
+
+    await page.getByRole("radio", { name: "Greedy scan" }).click();
+    await expect(page.getByRole("radio", { name: "Greedy scan" })).toHaveAttribute("aria-checked", "true");
+    expect(await page.getByRole("gridcell", { name: /a pair in the greedy scan/ }).count()).toBe(6);
+    expect(await page.getByRole("gridcell", { name: /on the traceback/ }).count()).toBe(0);
+    await page.getByRole("radio", { name: "Value" }).click();
+    await expect(page.getByRole("gridcell", { name: /^Row 1, line 1:/ })).toHaveText(/^\d\.\d\d$/);
+    // The legend sits at the matrix.
+    await expect(page.getByRole("list", { name: "What the colours mean" })).toContainText("A pair the greedy scan chose");
   });
 
   test("it works in a 320 px column and the matrix scrolls inside itself", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 800 });
     await page.goto(ALIGN_NOTE);
     await page.waitForLoadState("networkidle");
+    await openFold(page, "The table of scores");
     const scroller = page.locator('[id$="-matrix"]');
     const { sw, cw } = await scroller.evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth }));
     expect(sw, "the matrix is wider than its container, so it scrolls there").toBeGreaterThan(cw);
