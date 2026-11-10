@@ -1,20 +1,30 @@
 // Public Android apps: one landing page at /apps/<slug>/ and one privacy
 // policy at /apps/<slug>/privacy-policy/. Both routes sit outside the (site)
-// group (same reason /resume does) and wear the app's own palette, taken from
-// the app's real source. Adding an app is one entry here; the routes are
-// generic. The policy text is the source of truth in each app's repository
+// group (same reason /resume does) and wear the app's own design system,
+// taken from the app's real source, not the portfolio's. Shared facts live
+// here; each landing page body is its own component under
+// src/components/apps/ because the two apps share nothing visually. The
+// policy text is the source of truth in each app's repository
 // (docs/PRIVACY_POLICY.md); the Play Console points at the nested URL.
 
-export type AppTheme = {
+/**
+ * The app's colours as CSS custom properties (`--<key>`). The privacy page
+ * and the shared chrome read only the core keys; each landing page may use
+ * the extras its own design system defines.
+ */
+export type Palette = {
   bg: string;
+  surface: string;
+  surfaceHi: string;
+  outline: string;
   fg: string;
   muted: string;
   accent: string;
-  accentFg: string;
-  border: string;
-  /** Optional tonal surface (icon badge, quiet fills). Falls back to bg. */
-  surface?: string;
-  scheme: "dark" | "light";
+  onAccent: string;
+  /** Tinted fill behind accent-coloured content (chips, icon wells). */
+  accentSoft: string;
+  onAccentSoft: string;
+  [extra: string]: string;
 };
 
 export type PrivacyPolicy = {
@@ -33,26 +43,27 @@ export type PrivacyPolicy = {
 export type PublicApp = {
   slug: string;
   name: string;
-  /** One line. */
+  /** One line: meta description and share text. */
   tagline: string;
   packageId: string;
   license: string;
   repoUrl: string;
+  releasesUrl: string;
+  issuesUrl: string;
   /** null until the app is live on Google Play: no button, never a dead link. */
   playUrl: string | null;
   /** Path under /public. */
   iconSrc: string;
-  /** Optional layer under iconSrc (adaptive-icon background), stacked in the page. */
+  /** Optional layer under iconSrc (adaptive-icon background), stacked in the badge. */
   iconBackdropSrc?: string;
   /** Behind the backdrop layer; the legacy icon blue, used only for the badge. */
   iconBadgeBg?: string;
-  theme: AppTheme;
-  /** Type and geometry the app's own UI uses. */
-  look: "terminal" | "material";
-  /** 3-5 short bullets of what it does, from the app's README. */
-  highlights: string[];
-  /** One honest caveat from the README, shown quietly under the highlights. */
-  caveat?: string;
+  /** The Play feature graphic, reused as the share card. */
+  ogImage: { src: string; width: number; height: number; alt: string };
+  scheme: "dark" | "light";
+  palette: Palette;
+  /** Corner radius of cards and of buttons in the app's own UI. */
+  shape: { card: string; button: string; icon: string };
   privacyPolicy: PrivacyPolicy;
 };
 
@@ -60,33 +71,49 @@ export const apps: Record<string, PublicApp> = {
   shutup: {
     slug: "shutup",
     name: "ShutUp!",
-    tagline: "Control phone calls without touching the screen.",
+    tagline: "Control phone calls without touching the screen. Wave to silence, flip to end, and calls that place themselves.",
     packageId: "com.laughingstock.ritwick.shutup",
     license: "GPLv3",
     repoUrl: "https://gitlab.com/ritwick7/shutup",
+    releasesUrl: "https://gitlab.com/ritwick7/shutup/-/releases",
+    issuesUrl: "https://gitlab.com/ritwick7/shutup/-/issues",
     playUrl: "https://play.google.com/store/apps/details?id=com.laughingstock.ritwick.shutup",
     iconSrc: "/apps/shutup/icon-fg.png",
     iconBackdropSrc: "/apps/shutup/icon-bg.png",
     iconBadgeBg: "#5D9CEC",
-    // Material 3, tonal spot from seed #2C3E50, light scheme.
-    theme: {
+    ogImage: {
+      src: "/apps/shutup/og.png",
+      width: 1024,
+      height: 500,
+      alt: "ShutUp! on three phones: the gesture playground, an incoming call with the watcher listening for a wave, and scheduled calls",
+    },
+    scheme: "light",
+    // Material 3, tonal spot from the legacy seed #2C3E50, light scheme
+    // (ui/theme/Color.kt, ShutUpLightColors).
+    palette: {
       bg: "#F7F9FF",
+      surface: "#ECEEF4", // surfaceContainer
+      surfaceHi: "#E0E2E8", // surfaceContainerHighest
+      surfaceLow: "#F1F3F9", // surfaceContainerLow
+      surfaceLowest: "#FFFFFF",
+      outline: "#C2C7CF", // outlineVariant
+      outlineStrong: "#72777F",
       fg: "#181C20",
       muted: "#42474E",
       accent: "#30628C",
-      accentFg: "#FFFFFF",
-      border: "#C2C7CF",
-      surface: "#ECEEF4",
-      scheme: "light",
+      onAccent: "#FFFFFF",
+      accentSoft: "#CEE5FF", // primaryContainer
+      onAccentSoft: "#104A73",
+      secondarySoft: "#D5E4F7",
+      onSecondarySoft: "#3A4857",
+      tertiarySoft: "#EFDBFF",
+      onTertiarySoft: "#504061",
+      inverse: "#2D3135",
+      onInverse: "#EFF1F6",
+      inversePrimary: "#9CCBFB",
+      brand: "#5D9CEC", // launcher and splash blue
     },
-    look: "material",
-    highlights: [
-      "Wave over the phone to silence it. Wave twice to answer or end a ringing call.",
-      "Pick it up from a flat surface to hush it. Put it face down, or fold it shut, to hang up.",
-      "Scheduled calls: it buzzes, says the name out loud and dials on the minute, on the SIM you pick.",
-      "A gesture playground to rehearse every gesture and tune the double-wave window to your pace.",
-      "Nothing leaves the phone: no analytics, no crash reporters, no ads and no network use.",
-    ],
+    shape: { card: "28px", button: "9999px", icon: "26%" },
     privacyPolicy: {
       effectiveDate: "15 October 2026 (applies to ShutUp! 2.0 and later)",
       summary:
@@ -155,32 +182,41 @@ export const apps: Record<string, PublicApp> = {
   sudostamp: {
     slug: "sudostamp",
     name: "SudoStamp",
-    tagline: "Approve sudo on your Linux computer with your phone's fingerprint sensor.",
+    tagline: "Approve sudo on your Linux computer by touching your Android phone's fingerprint sensor. No password typed, nothing in the cloud.",
     packageId: "com.ritwick.sudostamp",
     license: "MIT",
     repoUrl: "https://gitlab.com/ritwick7/sudostamp",
+    releasesUrl: "https://gitlab.com/ritwick7/sudostamp/-/releases",
+    issuesUrl: "https://gitlab.com/ritwick7/sudostamp/-/issues",
     playUrl: null,
     iconSrc: "/apps/sudostamp/icon.png",
-    // The app's single dark scheme. Green is the only accent.
-    theme: {
-      bg: "#0B0D12",
-      fg: "#E6E8EE",
-      muted: "#8B93A7",
-      accent: "#4ADE80",
-      accentFg: "#0B0D12",
-      border: "rgba(74,222,128,0.22)",
-      scheme: "dark",
+    ogImage: {
+      src: "/apps/sudostamp/og.png",
+      width: 1024,
+      height: 500,
+      alt: "SudoStamp: a terminal running sudo next to a phone asking Approve sudo? and then showing Approved",
     },
-    look: "terminal",
-    highlights: [
-      "Type sudo, your phone buzzes, you touch the sensor and the command runs. No password typed.",
-      "The phone answers over your local network. Nothing goes through the cloud.",
-      "The fingerprint is enforced by the phone's secure hardware, and the signing key cannot be exported.",
-      "One key per computer, made inside the phone's secure hardware when you pair.",
-      "If anything goes wrong (phone off, out of range, you tap Deny or 60 seconds pass), sudo falls back to your ordinary password prompt.",
-    ],
-    caveat:
-      "Review status: written with an AI assistant and put through an AI-run security audit. No human security professional has reviewed it yet. It sits in front of sudo, so read the security notes in the repository before you rely on it.",
+    scheme: "dark",
+    // The app's one dark scheme (Ui.kt). Green is the only accent; amber and
+    // red carry meaning (warnings, Deny) and nothing else.
+    palette: {
+      bg: "#0B0D12",
+      surface: "#141821",
+      surfaceHi: "#1C2230",
+      outline: "#252C3B",
+      fg: "#E7EDF7",
+      muted: "#8A97AD",
+      faint: "#5B6577",
+      accent: "#4ADE80",
+      onAccent: "#06210F",
+      accentSoft: "rgba(74,222,128,0.15)",
+      onAccentSoft: "#4ADE80",
+      warn: "#FBBF24",
+      warnSoft: "rgba(251,191,36,0.15)",
+      danger: "#F87171",
+      dangerSoft: "rgba(248,113,113,0.15)",
+    },
+    shape: { card: "20px", button: "14px", icon: "22%" },
     privacyPolicy: {
       effectiveDate: "24 October 2026 (applies to SudoStamp 1.4 and later)",
       summary:
@@ -247,33 +283,30 @@ export function appSlugs(): string[] {
   return Object.keys(apps);
 }
 
-/**
- * The app's palette and type as CSS custom properties, set on the page's root
- * wrapper. Everything below it styles off var(--app-*), so the two apps share
- * markup and share nothing visually.
- */
-export function appCssVars(app: PublicApp): Record<`--app-${string}`, string> {
-  const t = app.theme;
-  const terminal = app.look === "terminal";
-  return {
-    "--app-bg": t.bg,
-    "--app-fg": t.fg,
-    "--app-muted": t.muted,
-    "--app-accent": t.accent,
-    "--app-accent-fg": t.accentFg,
-    "--app-border": t.border,
-    "--app-surface": t.surface ?? t.bg,
-    "--app-font": terminal ? "var(--font-geist-mono), ui-monospace, monospace" : "var(--font-geist-sans), system-ui, sans-serif",
-    "--app-radius": terminal ? "2px" : "9999px",
-    "--app-icon-radius": terminal ? "22%" : "26%",
-  };
+/** `--bg`, `--accent`, ... plus the shape tokens, set on the page's root wrapper. */
+export function appCssVars(app: PublicApp): Record<`--${string}`, string> {
+  const vars: Record<`--${string}`, string> = {};
+  for (const [k, v] of Object.entries(app.palette)) {
+    vars[`--${k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`] = v;
+  }
+  vars["--r-card"] = app.shape.card;
+  vars["--r-button"] = app.shape.button;
+  vars["--r-icon"] = app.shape.icon;
+  return vars;
 }
 
 /**
- * Unlayered, so it can beat globals.css: the page canvas (overscroll shows it),
- * the focus ring and the scrollbar all take the app's colours, not amber.
+ * Unlayered, so it beats globals.css: the page canvas (overscroll shows it),
+ * the text selection, the focus ring and the scrollbar all take the app's
+ * colours, not the portfolio's amber.
  */
 export function appBaseCss(app: PublicApp): string {
-  const t = app.theme;
-  return `html,body{background:${t.bg}}html{scrollbar-color:${t.muted} transparent}.app-root *:focus-visible{outline-color:${t.accent}}`;
+  const p = app.palette;
+  return [
+    `html,body{background:${p.bg};color-scheme:${app.scheme}}`,
+    `html{scrollbar-color:${p.outline} ${p.bg};scroll-behavior:smooth}`,
+    `@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}`,
+    `.app-root ::selection{background:${p.accent};color:${p.onAccent}}`,
+    `.app-root :focus-visible{outline:2px solid ${p.accent};outline-offset:3px}`,
+  ].join("");
 }
