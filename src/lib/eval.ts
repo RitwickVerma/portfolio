@@ -45,7 +45,7 @@ export const JUDGMENTS: Judgment[] = [
   { query: "performance", relevant: { "work-0-3": 2, "work-1-1": 2, "work-1-2": 1 } },
   { query: "keyboard", relevant: { "project-crush80-firmware": 2, "note-crush80-open-firmware": 2, "note-crush80-open-firmware--*": 1 } },
   { query: "survivorship bias", relevant: { "project-plutus": 2, "note-plutus-what-the-backtest-cannot-tell-you--what-the-number-cannot-say": 2, "note-plutus-what-the-backtest-cannot-tell-you": 1 } },
-  { query: "sudo", relevant: { "project-sudostamp": 2 } },
+  { query: "sudo", relevant: { "project-sudostamp": 2, "note-sudostamp-refuse-before-asking": 2, "note-sudostamp-refuse-before-asking--*": 1 } },
   { query: "samsung tv", relevant: { "project-tizen-ambilight": 2, "note-tizen-video-plane-ambilight": 2, "note-tizen-video-plane-ambilight--*": 1 } },
   { query: "paging", relevant: { "note-homelab-git-is-the-truth--paging-without-noise": 2, "project-homelab": 1 } },
   { query: "query transforms", relevant: { "work-0-4": 2, "work-0-1": 2, "work-0-5": 1 } },
@@ -53,7 +53,7 @@ export const JUDGMENTS: Judgment[] = [
   { query: "backups", relevant: { "note-homelab-git-is-the-truth--backups-both-kinds": 2, "lab-CT108": 2 } },
   { query: "internship", relevant: { "earlier-*": 2, "page-resume": 1 } },
   { query: "mobile", relevant: { "project-shutup": 2, "earlier-0": 2, "project-sudostamp": 1, "project-kaeru": 1 } },
-  { query: "ai", relevant: { "note-colophon--how-it-was-made": 2, "project-shutup": 1, "project-tizen-ambilight": 1, "project-kwin-canvas": 1, "lab-CT101": 1, "note-colophon": 1 } },
+  { query: "ai", relevant: { "note-colophon--how-it-was-made": 2, "project-shutup": 1, "project-tizen-ambilight": 1, "project-kwin-canvas": 1, "lab-CT101": 1, "note-colophon": 1, "note-sudostamp-refuse-before-asking--what-i-can-vouch-for": 1 } },
 ];
 
 /** The grade a document earns for a judgment: an exact key first, then the longest matching prefix key. */

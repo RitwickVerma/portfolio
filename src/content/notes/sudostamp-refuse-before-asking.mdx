@@ -1,0 +1,30 @@
+import LimiterTimeline from "@/components/figures/LimiterTimeline";
+import SignatureBytes from "@/components/figures/SignatureBytes";
+
+<LimiterTimeline />
+
+## The limiter counts computers because addresses are free
+
+[SudoStamp](/apps/sudostamp/) approves `sudo` on Linux computers with a fingerprint on my phone. What I worry about is a tired tap: anything that makes the phone ask again and again, or right after a real approval.
+
+Version 1.3 cooled an address down for 30 seconds after a denial, and only addresses I had never approved. A comment in the code says rotating through IPv6 addresses beat it. Version 1.4 keys the limiter by the computer instead. After an approval, every request is refused for 3 seconds. After a denial, that computer waits 5 seconds if I have approved it before and 60 if I have not. After four unapproved requests in ten minutes, everything is refused. The password always works, so refusing never locks me out.
+
+Switch the figure to address and the example changes: the second prompt and the rotated address both reach you. The figure runs a TypeScript port of the app's limiter, with the app's own tests as vectors.
+
+## The signer refuses before it asks you
+
+The agent signs one thing: exactly 32 bytes, the size of a pam_rssh challenge. Any other size is refused before a prompt exists, and so is a key the phone did not make for a paired computer. Otherwise the key would be a signing oracle: an SSH login or a git signature could be put in front of me as a sudo. A refusal like that costs the limiter nothing. Send the 100-byte request.
+
+A 32-byte request can still be one I should not approve: the prompt names the computer, not the command.
+
+## A signature can look right and still fail to verify
+
+Android Keystore returns an ECDSA signature as DER, a sequence of two integers. The ssh-agent protocol wants a string holding two mpints. Both are two's complement, so a number with its top bit set needs a 0x00 in front, making it 33 bytes instead of 32. Leave it out and nothing crashes: the phone signs, and the computer rejects it when you need sudo.
+
+<SignatureBytes />
+
+The app's test signs 400 times to see both widths. A script checks the key blob with ssh-keygen and the signature with an independent library. I checked my port against signatures OpenSSH made with throwaway keys.
+
+## What I can vouch for
+
+The code was written with AI coding agents under my direction: 20 of the repo's 22 non-merge commits carry a Claude co-author line. The README says no human security professional has reviewed it. SECURITY.md lists what the design does not protect against.
