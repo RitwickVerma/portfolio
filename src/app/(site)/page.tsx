@@ -1,6 +1,5 @@
 import Search from "@/components/Search";
 import Work from "@/components/Work";
-import FitCheck from "@/components/FitCheck";
 import Projects from "@/components/Projects";
 import Keyboard from "@/components/Keyboard";
 import Notes from "@/components/Notes";
@@ -21,7 +20,6 @@ export default function Home() {
         </div>
       </header>
       <Work />
-      <FitCheck />
       <Projects />
       <Keyboard />
       <Notes />

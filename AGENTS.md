@@ -21,7 +21,7 @@ npm run build      # static export -> out/
 **A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
-Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 14 files / 164 tests pass.
+Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 13 files / 145 tests pass.
 ```bash
 npm run lint && npm run typecheck && npm test   # exactly what the CI `check` job runs
 npm run test:watch
@@ -31,7 +31,6 @@ npm run test:watch
 - `src/lib/search.test.ts` pins the tokenizer, query language (phrases, `-term`, `kind:`, `tech:`), rewriter, spelling fallback, ranking and the score breakdown (the parts must multiply back to the score).
 - `src/lib/corpus.test.ts` checks the corpus against the real data: every note section is a document whose anchor the page renders, and `WORK_HEADLINES` matches the generated `lib/resume.ts` bullets in count.
 - `src/lib/eval.test.ts` is the relevance guard: the judged queries in `lib/eval.ts` must all return a relevant first result under `TREATMENT`, nDCG@5 must stay at 0.9 or better, and `TREATMENT` must beat `CONTROL`. A ranking change that fails this needs either a fix or a conscious edit to the judgments.
-- `src/lib/fit.test.ts` pins the fit check, including that common skills I do not have (Kubernetes, Kafka, Rust, ...) come back `missing`. Never make one pass by loosening that.
 - `src/lib/theme.test.ts` checks both palettes against `globals.css` and for WCAG contrast.
 - No test uses `vi.mock`/`vi.fn`/`vi.spyOn`; tests exercise pure functions and fixtures directly. Keep new logic pure so it stays testable this way.
 - `npm run build` also renders OG cards and must pass; it is not part of CI `check` (verified locally, ~30 s). The `e2e` job runs it.
@@ -56,7 +55,7 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 | `src/app/search-index.json/` | Static route: every note split at its `##` headings, as JSON. The client fetches it once idle and rebuilds the index with it. |
 | `src/app/resume/` | Print-optimised `/resume` rendered from `lib/data`, with its own OG card. |
 | `src/app/{og.png,sitemap.ts,robots.ts,manifest.ts}` | Build-time OG image, sitemap, robots and web manifest. |
-| `src/components/` | `Search` (the hero), `Palette` (Ctrl K, every page), `FitCheck`, the home sections (`Work`, `Projects`, `Keyboard`, `Notes`, `Homelab`, `Contact`) on the shared `Section` frame, `Timeline`, `Crush80`, `NoteExtras` (contents rail, match highlighting), `Nav`, `Footer`. |
+| `src/components/` | `Search` (the hero), `Palette` (Ctrl K, every page), the home sections (`Work`, `Projects`, `Keyboard`, `Notes`, `Homelab`, `Contact`) on the shared `Section` frame, `Timeline`, `Crush80`, `NoteExtras` (contents rail, match highlighting), `Nav`, `Footer`. |
 | `src/components/search/parts.tsx` | Shared by every search surface: result row, plan chips, score breakdown (`Explain`), `CorpusMap`. |
 | `src/components/figures/` | `Ambilight` (canvas simulation; LEDs computed from the pixels), `InfiniteCanvas` (pan and zoom), `LabTopology` (SVG from `lib/data`). |
 | `src/components/engine/`, `design/` | `XRay` and `Benchmark` for `/engine`; `WidthSpecimen` for `/design`. |
@@ -65,7 +64,6 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 | `src/lib/search.ts` | The search engine, pure and dependency-free: query parser, tokenizer and stemmer, rewriter, prefix and fuzzy expansion, inverted index with per-field counts, BM25 with field boosts and a static-rank prior, per-hit `explain`, highlight and snippet helpers. `TREATMENT` is what the site runs; `CONTROL` is plain BM25. |
 | `src/lib/corpus.ts` | Builds the search documents from `lib/data`, `lib/resume`, `lib/notes` and (when given) the notes' sections; owns `WORK_HEADLINES`, the priors, starting points and example queries. The Work section renders from `workRoles` here. |
 | `src/lib/eval.ts` | The judged query set and the metrics (P@1, MRR, nDCG@5). Read by `/engine` at build and by `eval.test.ts`. |
-| `src/lib/fit.ts`, `lexicon.ts` | The fit check: extract skills from a pasted job description, look each up, classify `direct` / `adjacent` / `missing`. The lexicon is deliberately wider than the record. |
 | `src/lib/useSearchIndex.ts` | Client store: one index per tab, record first, full text after idle. |
 | `src/lib/timeline.ts`, `slug.ts`, `themeSwitch.ts` | Period parser for the career strip; heading slugs shared by MDX and the index; the light/dark switch. |
 | `src/lib/status.ts`, `statusStore.ts` | `/status.json` schema 1, `parseStatus` validation, freshness helpers; the store fetches it once. |
@@ -105,6 +103,5 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 11. Heading ids come from `slugify` in two places that must agree: `mdx-components.tsx` (rendered ids) and `notes.server.ts` (index links, contents rail). A raw `<h2>` written as JSX inside MDX bypasses the first; use markdown `##`.
 13. No regex lookbehind (`(?<=`, `(?<!`) anywhere in `src/`: Safari before 16.4 fails to parse the whole chunk. `copy.test.ts` enforces it.
 14. A figure must not trap the page: `InfiniteCanvas` uses `touch-action: pan-y`, never `none`.
-15. The fit check must not guess: years count only when tied to the word experience (`yearsAsked`), and ordinary verbs are never aliases for skills.
 12. Search results for notes link with `?q=`; `NoteHighlights` reads it and paints matches with the CSS Custom Highlight API. It must never mutate the note's DOM.
 10. Martian Mono is wide: a mono string longer than about 40 characters wraps on phones. Keep mono for short tokens.

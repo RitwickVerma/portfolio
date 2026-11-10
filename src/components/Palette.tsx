@@ -29,7 +29,6 @@ const go = (href: string) => () => window.location.assign(href);
 const ACTIONS: Action[] = [
   { label: "Work at eBay", hint: "Go to", run: go("/#work") },
   { label: "Projects", hint: "Go to", run: go("/#projects") },
-  { label: "Check my fit against a job description", hint: "Go to", run: go("/#fit") },
   { label: "Notes", hint: "Go to", run: go("/notes/") },
   { label: "Resume", hint: "Go to", run: go(socialLinks.resume) },
   { label: "The engine room: how this search works", hint: "Go to", run: go("/engine/") },

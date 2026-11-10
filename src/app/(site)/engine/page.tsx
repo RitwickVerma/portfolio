@@ -149,8 +149,7 @@ export default function EnginePage() {
             ["search.ts", "Tokenizer, query language, rewriter, spelling, inverted index, BM25, the score breakdown."],
             ["corpus.ts", "The documents: built from the same data that renders the pages, plus every section of every note."],
             ["eval.ts", "The judged queries and the metrics: first-result relevance, reciprocal rank, nDCG."],
-            ["fit.ts", "The fit check: skills in a job description, looked up one by one."],
-            ["search.test.ts", "What the engine must do. The other three have tests beside them too."],
+            ["search.test.ts", "What the engine must do. The other two have tests beside them too."],
           ].map(([file, what]) => (
             <li key={file} className="border-t border-border py-3 grid sm:grid-cols-[14rem_1fr] gap-x-8">
               <a href={`${SOURCE}/${file}`} target="_blank" rel="noopener noreferrer" className="font-mono text-sm link justify-self-start">

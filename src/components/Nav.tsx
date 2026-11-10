@@ -9,7 +9,6 @@ import ThemeToggle from "@/components/ThemeToggle";
 const links = [
   { href: "/#work", label: "Work", always: false },
   { href: "/#projects", label: "Projects", always: false },
-  { href: "/#fit", label: "Fit check", always: false },
   { href: "/notes/", label: "Notes", always: false },
   { href: socialLinks.resume, label: "Resume", always: true },
 ];

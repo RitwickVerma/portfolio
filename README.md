@@ -17,9 +17,6 @@ I worked on a search engine for 5.5 years, so the site is one.
   lab guest, and every section of every note. Each result can show the
   arithmetic behind its score. `/?q=c%2B%2B` links to a ranked list;
   Ctrl K opens search on any page.
-- **Fit check** (`src/lib/fit.ts`): paste a job description and the engine
-  reports which named skills the record covers, which it only comes near,
-  and which are missing. It runs in the browser.
 - **The engine room** (`/engine`): one query taken apart stage by stage, a
   judged query set replayed against a plain-BM25 control with P@1, MRR and
   nDCG, and a latency benchmark that runs in the reader's tab.
@@ -37,7 +34,7 @@ I worked on a search engine for 5.5 years, so the site is one.
   `src/content/notes/` and an entry in `src/lib/notes.ts`; a test fails if
   the two disagree.
 - **Vitest** — pure logic only: the search engine, a relevance regression
-  guard over judged queries, the fit check, data integrity, copy guards,
+  guard over judged queries, data integrity, copy guards,
   theme contrast, SEO helpers, the notes registry, the keyboard matrix, the
   status feed
 - No animation library, no 3D, no component library, no runtime
@@ -55,7 +52,6 @@ src/app/(site)/engine/ the engine room; src/app/(site)/design/ the design langua
 src/lib/search.ts      the search engine
 src/lib/corpus.ts      the documents it indexes, built from the data below
 src/lib/eval.ts        judged queries and relevance metrics
-src/lib/fit.ts         the fit check; lexicon.ts is the skills it recognises
 src/components/figures the ambilight simulation, the infinite canvas, the lab diagram
 src/lib/data.ts        single source for home, /resume and the index
 src/lib/status.ts      /status.json contract (schema 1) + pure helpers

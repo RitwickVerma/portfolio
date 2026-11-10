@@ -19,7 +19,7 @@ const ROLES: { key: keyof Palette; name: string; token: string; use: string; on:
   { key: "MUTED", name: "Graphite", token: "--muted", use: "Facts about a thing: dates, roles, stacks, units.", on: "BG" },
   { key: "ACCENT", name: "Link", token: "--accent", use: "Somewhere you can go. Never decoration.", on: "BG" },
   { key: "HIT", name: "Highlighter", token: "--hit", use: "Something the engine found. Always carries ink.", on: "HIT" },
-  { key: "OK", name: "Better", token: "--ok", use: "Only beside a measurement: a rank that rose, a skill that is met.", on: "BG" },
+  { key: "OK", name: "Better", token: "--ok", use: "Only beside a measurement: a rank that rose.", on: "BG" },
   { key: "WARN", name: "Fault", token: "--warn", use: "Only beside a measurement: a rank that fell, a guest that is down.", on: "BG" },
 ];
 
@@ -192,11 +192,10 @@ export default function DesignPage() {
             },
             {
               name: "Buttons",
-              what: "Solid is the one thing to do here. Quiet is everything else. Text actions are underlined facts.",
+              what: "Solid is the one thing to do here. Text actions are underlined facts.",
               demo: (
                 <p className="flex flex-wrap items-center gap-3">
                   <span className="btn">Email me</span>
-                  <span className="btn-quiet">Try a sample posting</span>
                   <span className="fact underline decoration-fg/30 underline-offset-4">Clear</span>
                   <kbd>Ctrl K</kbd>
                 </p>
