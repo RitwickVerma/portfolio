@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { COPIES, LOSSES, lostPlaces, verdict, type Loss } from "./restore";
+import { COPIES, LOSSES, headline, lostPlaces, verdict, type Loss } from "./restore";
 
 describe("restore lookup", () => {
   it("a file or a guest comes back from either backup copy", () => {
@@ -35,5 +35,11 @@ describe("restore lookup", () => {
 
   it("is deterministic", () => {
     expect(verdict("host")).toEqual(verdict("host"));
+  });
+
+  it("the headline is a plain sentence built from the verdict", () => {
+    expect(headline("host")).toBe("The nightly backup on the host went with it. The copy on the other machine and Git bring it back.");
+    expect(headline("file")).toBe("The nightly backup on the host and the copy on the other machine bring it back.");
+    expect(headline("other")).toBe("No data is lost, but only the copy on the host is left.");
   });
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { services } from "./data";
-import { CALM, DRIFT_GUESTS, INITIAL, UNDECLARED, plan, sameLive, toggleId } from "./drift";
+import { CALM, DRIFT_GUESTS, INITIAL, SCENARIOS, UNDECLARED, guestState, headline, jobFor, plan, sameLive, setGuest, toggleId } from "./drift";
 
 describe("drift model", () => {
   it("declares fourteen of the sixteen guests, as the note says", () => {
@@ -64,7 +64,7 @@ describe("drift model", () => {
   });
 
   it("every finding belongs to exactly the stage that sees it", () => {
-    const all = plan({ edited: ["VM100", "CT118"], gone: ["CT104"], added: true, compose: true, secret: true, inside: true });
+    const all = plan({ edited: ["VM100", "CT118"], gone: ["VM110"], added: true, compose: true, secret: true, inside: true });
     for (const f of all.findings) {
       if (f.outcome === "reported") expect(f.step).toBe("tofu-plan");
       if (f.outcome === "committed") expect(f.step).toBe("sync-live");
@@ -78,5 +78,43 @@ describe("drift model", () => {
     expect(toggleId(["a", "b"], "a")).toEqual(["b"]);
     expect(sameLive({ ...CALM, edited: ["a", "b"] }, { ...CALM, edited: ["b", "a"] })).toBe(true);
     expect(sameLive(CALM, { ...CALM, inside: true })).toBe(false);
+  });
+
+  it("the figure opens on a calm night", () => {
+    expect(plan(INITIAL).findings).toEqual([]);
+  });
+
+  it("guest state and setGuest round-trip, and gone wins over edited", () => {
+    const a = setGuest(CALM, "VM110", "edited");
+    expect(guestState(a, "VM110")).toBe("edited");
+    const b = setGuest(a, "VM110", "gone");
+    expect(guestState(b, "VM110")).toBe("gone");
+    expect(b.edited).toEqual([]);
+    expect(guestState(setGuest(b, "VM110", "as it was"), "VM110")).toBe("as it was");
+  });
+
+  it("each scenario says what the note says happens", () => {
+    const by = (id: string) => plan(SCENARIOS.find((s) => s.id === id)!.live);
+    expect(by("gateway").findings.map((f) => f.outcome)).toEqual(["reported"]);
+    expect(by("devbox").findings.map((f) => f.outcome)).toEqual(["not seen"]);
+    expect(by("config").findings.map((f) => f.outcome)).toEqual(["committed"]);
+    expect(by("secret").findings.map((f) => f.outcome)).toEqual(["committed"]);
+    expect(by("inside").findings.map((f) => f.outcome)).toEqual(["not seen"]);
+  });
+
+  it("the headline counts what the report holds, in plain words", () => {
+    expect(headline(plan(CALM)).tone).toBe("ok");
+    const h = headline(plan({ ...CALM, edited: ["VM110"], compose: true, inside: true }));
+    expect(h.title).toBe("The job reports 1 difference and saves 1 changed file to the repository. It cannot see 1 change.");
+    expect(h.tone).toBe("warn");
+    expect(h.details).toEqual(["Reported: Gateway.", "What is inside a container is the backup's job, not Git's."]);
+    expect(headline(plan({ ...CALM, edited: ["VM100", "VM110"] })).title).toBe("The job reports 2 differences.");
+    expect(headline(plan({ ...CALM, edited: ["VM110"] })).tone).toBe("ok");
+  });
+
+  it("jobFor looks a subject up", () => {
+    const r = plan({ ...CALM, edited: ["VM110"] });
+    expect(jobFor(r, "Gateway")).toBe("reported");
+    expect(jobFor(r, "Home Assistant")).toBe("nothing");
   });
 });

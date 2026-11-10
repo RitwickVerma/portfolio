@@ -13,7 +13,7 @@ import { services } from "./data";
 export const UNDECLARED: readonly string[] = ["CT118", "CT119"];
 
 /** The few guests the figure draws, by id from lib/data. */
-export const DRIFT_IDS: readonly string[] = ["VM100", "CT104", "VM110", "CT102", "CT118", "CT119"];
+export const DRIFT_IDS: readonly string[] = ["VM100", "VM110", "CT118", "CT119"];
 
 export interface DriftGuest {
   id: string;
@@ -45,8 +45,8 @@ export interface Live {
 
 export const CALM: Live = { edited: [], gone: [], added: false, compose: false, secret: false, inside: false };
 
-/** The night the figure opens on: one guest edited by hand, one compose file changed. */
-export const INITIAL: Live = { ...CALM, edited: ["VM110"], compose: true };
+/** The figure opens on a calm night; the first scenario is one press away. */
+export const INITIAL: Live = CALM;
 
 export type Step = "sync-live" | "tofu-plan" | "unseen";
 export type Outcome = "reported" | "committed" | "not seen";
@@ -119,4 +119,69 @@ export function sameLive(a: Live, b: Live): boolean {
     a.secret === b.secret &&
     a.inside === b.inside
   );
+}
+
+export type GuestState = "as it was" | "edited" | "gone";
+
+export function guestState(live: Live, id: string): GuestState {
+  return live.gone.includes(id) ? "gone" : live.edited.includes(id) ? "edited" : "as it was";
+}
+
+export function setGuest(live: Live, id: string, state: GuestState): Live {
+  const rest = (l: string[]) => l.filter((x) => x !== id);
+  return {
+    ...live,
+    edited: state === "edited" ? [...rest(live.edited), id] : rest(live.edited),
+    gone: state === "gone" ? [...rest(live.gone), id] : rest(live.gone),
+  };
+}
+
+export type ScenarioId = "gateway" | "devbox" | "config" | "secret" | "inside";
+
+/** One-tap nights. The first is the one to try. */
+export const SCENARIOS: { id: ScenarioId; label: string; live: Live }[] = [
+  { id: "gateway", label: "Edit the gateway", live: { ...CALM, edited: ["VM110"] } },
+  { id: "devbox", label: "Edit the dev box", live: { ...CALM, edited: ["CT118"] } },
+  { id: "config", label: "Edit a config", live: { ...CALM, compose: true } },
+  { id: "secret", label: "Leave a password in a config", live: { ...CALM, secret: true } },
+  { id: "inside", label: "Edit inside a container", live: { ...CALM, inside: true } },
+];
+
+export interface Headline {
+  tone: "ok" | "warn" | "plain";
+  title: string;
+  details: string[];
+}
+
+/** The report as plain sentences. */
+export function headline(report: Report): Headline {
+  const count = (o: Outcome) => report.findings.filter((f) => f.outcome === o).length;
+  const reported = count("reported");
+  const committed = count("committed");
+  const unseen = count("not seen");
+  if (report.findings.length === 0) {
+    return { tone: "ok", title: "Nothing changed, so the job has nothing to report and saves nothing.", details: [] };
+  }
+  const parts: string[] = [];
+  if (reported) parts.push(`reports ${reported} ${reported === 1 ? "difference" : "differences"}`);
+  if (committed) parts.push(`saves ${committed} changed ${committed === 1 ? "file" : "files"} to the repository`);
+  const title = [parts.length ? `The job ${parts.join(" and ")}.` : "", unseen ? `It cannot see ${unseen} ${unseen === 1 ? "change" : "changes"}.` : ""].filter(Boolean).join(" ");
+  const details: string[] = [];
+  const names = report.findings.filter((f) => f.outcome === "reported").map((f) => f.subject);
+  if (names.length) details.push(`Reported: ${names.join(", ")}.`);
+  if (report.findings.some((f) => f.step === "unseen" && f.subject !== "A file inside a container")) {
+    details.push("Nobody has written that machine into the repository yet, so there is nothing to compare it with.");
+  }
+  if (report.findings.some((f) => f.subject === "A file inside a container")) {
+    details.push("What is inside a container is the backup's job, not Git's.");
+  }
+  if (report.findings.some((f) => f.subject.startsWith("A synced file with"))) {
+    details.push("The password is scrubbed from the file before it is saved.");
+  }
+  return { tone: unseen ? "warn" : "ok", title, details };
+}
+
+/** What the job did about one guest or file, by subject. */
+export function jobFor(report: Report, subject: string): Outcome | "nothing" {
+  return report.findings.find((f) => f.subject === subject)?.outcome ?? "nothing";
 }

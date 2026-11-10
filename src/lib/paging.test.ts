@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { COOLDOWN_RUNS, ROWS, RUNS, failed, initialRuns, nextRun, pages, sent, type Run } from "./paging";
+import { COOLDOWN_RUNS, ROWS, RUNS, SCENARIOS, failed, initialRuns, nextRun, pages, pagingVerdict, sent, totals, type Run } from "./paging";
 
 const at = (flags: boolean[]) => flags.flatMap((f, i) => (f ? [i] : []));
 
@@ -16,8 +16,13 @@ describe("paging rule", () => {
     expect(at(pages([0, 1, 1, 1, 1, 1], "gated"))).toEqual([2]);
   });
 
-  it("clears silently and a fault that comes back is new", () => {
-    expect(at(pages([1, 1, 0, 1, 1], "gated"))).toEqual([1, 4]);
+  it("a flapping condition costs one message, not one per flap", () => {
+    expect(at(pages([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0], "gated"))).toEqual([1]);
+  });
+
+  it("a fault that returns after the cooldown pages again", () => {
+    const runs: Run[] = [1, 1, 0, ...Array.from({ length: 80 }, () => 0 as Run), 1, 1];
+    expect(at(pages(runs, "gated", { cooldown: COOLDOWN_RUNS.service }))).toEqual([1, 84]);
   });
 
   it("re-notifies only after the cooldown: six hours for a service check", () => {
@@ -42,7 +47,7 @@ describe("paging rule", () => {
     expect(at(pages([0, 1, 1, 0, 2, 1], "every"))).toEqual([1, 2, 4, 5]);
   });
 
-  it("the gated rule never sends more pages than there are failures, nor more than the naive rule", () => {
+  it("the gated rule never sends more pages than the naive rule, which sends one per failure", () => {
     let seed = 7;
     const next = () => {
       seed = (seed * 1103515245 + 12345) % 2147483648;
@@ -55,13 +60,28 @@ describe("paging rule", () => {
     }
   });
 
-  it("the opening strip: many failures, two pages", () => {
-    const rows = initialRuns();
-    const f = ROWS.reduce((n, r) => n + failed(rows[r.id]), 0);
-    const g = ROWS.reduce((n, r) => n + sent(pages(rows[r.id], "gated")), 0);
-    expect(rows.service).toHaveLength(RUNS);
-    expect(f).toBe(11);
-    expect(g).toBe(2);
+  it("each scenario has the strip length and the pages the note's rule gives", () => {
+    const expected: Record<string, [number, number, number]> = {
+      lasts: [6, 1, 6],
+      blips: [6, 0, 6],
+      flaps: [8, 1, 8],
+      cannot: [4, 1, 4],
+    };
+    for (const s of SCENARIOS) {
+      const strips = s.runs();
+      for (const r of ROWS) expect(strips[r.id]).toHaveLength(RUNS);
+      const gated = totals(strips, "gated");
+      const naive = totals(strips, "every");
+      expect([gated.failed, gated.sent, naive.sent]).toEqual(expected[s.id]);
+    }
+    expect(initialRuns().service).toEqual(SCENARIOS[0].runs().service);
+  });
+
+  it("the verdict is a plain sentence about the totals", () => {
+    expect(pagingVerdict({ failed: 6, sent: 1 }, "gated")).toMatchObject({ tone: "ok", title: "6 checks failed, 1 page sent." });
+    expect(pagingVerdict({ failed: 6, sent: 0 }, "gated").tone).toBe("ok");
+    expect(pagingVerdict({ failed: 0, sent: 0 }, "gated").title).toBe("Nothing failed, so nothing paged.");
+    expect(pagingVerdict({ failed: 6, sent: 6 }, "every").tone).toBe("warn");
   });
 
   it("a cell cycles healthy, failed and, for the watchdog only, could not check", () => {

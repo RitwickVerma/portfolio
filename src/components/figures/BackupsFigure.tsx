@@ -1,52 +1,60 @@
 "use client";
 
 import { useState } from "react";
-import { LOSSES, verdict, type Loss } from "@/lib/restore";
+import { FigureFrame, Presets, Verdict } from "./kit";
+import { LOSSES, headline, verdict, type Loss } from "@/lib/restore";
 
 // Which copy brings it back, by the note's own description of the copies.
+// The rows and the verdict come from verdict() in lib/restore.
 
-const TOGGLE =
-  "inline-flex items-center min-h-8 px-3 py-1 rounded-[4px] border-[1.5px] border-fg text-[0.9rem] leading-tight text-left hover:border-accent hover:text-accent aria-pressed:bg-fg aria-pressed:text-bg aria-pressed:hover:text-bg aria-pressed:hover:border-fg";
+const ORDER: Loss[] = ["host", "file", "config", "guest", "other"];
+const ITEMS = ORDER.map((id) => ({ id, label: LOSSES.find((l) => l.id === id)!.label }));
 
 export default function BackupsFigure() {
-  const [loss, setLoss] = useState<Loss>("host");
-  const v = verdict(loss);
+  const [loss, setLoss] = useState<Loss | null>(null);
+  const v = verdict(loss ?? "host");
 
   return (
-    <figure className="my-8 border-t-2 border-fg pt-4" aria-labelledby="backups-cap">
-      <p className="fact mb-2" id="backups-q">What do you lose?</p>
-      <ul className="flex flex-wrap gap-2" role="group" aria-labelledby="backups-q">
-        {LOSSES.map((l) => (
-          <li key={l.id}>
-            <button type="button" className={TOGGLE} aria-pressed={loss === l.id} onClick={() => setLoss(l.id)}>
-              {l.label}
-            </button>
-          </li>
-        ))}
+    <FigureFrame
+      claim="Lose the host and its backup goes with it; a second copy on another machine brings it back."
+      how="Press the first button: the host is lost, and the copies that survive light up."
+      caption="A lookup built from the note's description of the copies, not a restore."
+      about={
+        <>
+          <p>The note describes three places that hold your data. The Backup Server takes every guest nightly and lives on the host. Restic then copies that backup store, nightly, to a different machine. Git holds what is written down about the host and the config files, and the note says what is inside each container is the backup&apos;s problem, not Git&apos;s.</p>
+          <p>The point of the second copy is that the first lives on the thing that would fail. The figure does not model how fresh a copy is, how long a restore takes, or whether it works. Losing both machines is not drawn: the note does not say what happens then.</p>
+        </>
+      }
+    >
+      <Presets label="Lose" items={ITEMS} active={loss} onPick={setLoss} />
+
+      <ul aria-label="The three places a copy lives">
+        {v.rows.map(({ copy, state }) => {
+          const on = loss !== null && state === "restores it";
+          const gone = loss !== null && state === "had it, lost with it";
+          return (
+            <li
+              key={copy.id}
+              data-state={loss === null ? "idle" : state}
+              className={`grid grid-cols-[1fr_auto] gap-x-3 items-baseline border-t border-border px-2 py-2 ${on ? "bg-hit text-ink" : ""}`}
+            >
+              <span>
+                <span className={`font-semibold ${gone ? "line-through" : ""}`}>{copy.label}</span>
+                <span className={`block text-[0.95rem] ${on ? "" : "text-fg/75"}`}>Lives {copy.where}.</span>
+              </span>
+              <span className={`wd-narrow text-[0.95rem] text-right ${on ? "font-bold" : gone ? "font-semibold" : "text-muted"}`}>{loss === null ? "intact" : state}</span>
+            </li>
+          );
+        })}
       </ul>
 
-      <ul className="mt-4" aria-live="polite" data-testid="backups-result">
-        {v.rows.map(({ copy, state }) => (
-          <li key={copy.id} className="grid grid-cols-[1fr_auto] sm:grid-cols-[1.2fr_1fr_auto] gap-x-4 gap-y-0.5 items-baseline border-t border-border py-2">
-            <span className="font-semibold">{copy.label}</span>
-            <span className="fact sm:order-none order-last col-span-2 sm:col-span-1">{copy.where}</span>
-            <span className={state === "restores it" ? "font-semibold" : "text-muted"}>{state}</span>
-          </li>
-        ))}
-        <li className="border-t border-border pt-3 leading-snug">
-          {loss === "other"
-            ? "Nothing to restore. One copy is left, and it lives on the host."
-            : v.dataLost
-              ? "No copy in the note holds this."
-              : loss === "host"
-                ? "The first copy lived on the host. The off-host copy and the playbook are how it comes back."
-                : "Restored from the nightly copy."}
-        </li>
-      </ul>
-
-      <figcaption id="backups-cap" className="fact mt-4 max-w-[60ch]">
-        A lookup built from the note&apos;s description of the copies, not a restore. It does not model how recent a copy is or whether a restore works.
-      </figcaption>
-    </figure>
+      {loss === null ? (
+        <Verdict title="Nothing is lost yet.">Press a loss to see which copy would bring it back.</Verdict>
+      ) : (
+        <Verdict tone={v.dataLost ? "warn" : loss === "other" ? "plain" : "ok"} title={headline(loss)}>
+          {loss === "host" ? "There is a written recovery playbook next to the restic password." : null}
+        </Verdict>
+      )}
+    </FigureFrame>
   );
 }

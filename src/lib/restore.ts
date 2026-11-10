@@ -11,6 +11,8 @@ export type Place = "host" | "other" | "repo";
 export interface Copy {
   id: "pbs" | "restic" | "git";
   label: string;
+  /** How a sentence names it. */
+  short: string;
   /** Where the copy lives. */
   on: Place;
   where: string;
@@ -18,9 +20,9 @@ export interface Copy {
 }
 
 export const COPIES: Copy[] = [
-  { id: "pbs", label: "Backup Server, nightly", on: "host", where: "on the host", holds: ["file", "config", "guest", "host"] },
-  { id: "restic", label: "restic copy, nightly", on: "other", where: "on a different machine", holds: ["file", "config", "guest", "host"] },
-  { id: "git", label: "Git", on: "repo", where: "in the repository", holds: ["config", "host"] },
+  { id: "pbs", label: "Backup Server, nightly", short: "nightly backup on the host", on: "host", where: "on the host", holds: ["file", "config", "guest", "host"] },
+  { id: "restic", label: "Off-host copy (restic), nightly", short: "copy on the other machine", on: "other", where: "on a different machine", holds: ["file", "config", "guest", "host"] },
+  { id: "git", label: "Git", short: "Git", on: "repo", where: "in the repository", holds: ["config", "host"] },
 ];
 
 export const LOSSES: { id: Loss; label: string }[] = [
@@ -60,4 +62,21 @@ export function verdict(loss: Loss): Verdict {
   });
   const restoredBy = rows.filter((r) => r.state === "restores it").map((r) => r.copy.id);
   return { rows, restoredBy, dataLost: loss !== "other" && restoredBy.length === 0 };
+}
+
+const join = (names: string[]) => (names.length <= 2 ? names.join(" and ") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
+
+/** The verdict as one plain sentence. */
+export function headline(loss: Loss): string {
+  const v = verdict(loss);
+  if (loss === "other") return "No data is lost, but only the copy on the host is left.";
+  if (v.dataLost) return "No copy holds this.";
+  const name = (id: string) => {
+    const short = COPIES.find((c) => c.id === id)!.short;
+    return short === "Git" ? short : `the ${short}`;
+  };
+  const lost = v.rows.filter((r) => r.state === "had it, lost with it").map((r) => r.copy.short);
+  const back = v.restoredBy.map(name);
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  return `${lost.length ? `The ${join(lost)} went with it. ` : ""}${cap(join(back))} ${back.length === 1 ? "brings" : "bring"} it back.`;
 }
