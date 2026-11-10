@@ -42,7 +42,7 @@ const contact = [
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-8 print:mt-1">
-      <h2 className="font-mono text-muted text-sm tracking-widest uppercase pb-2 mb-4 border-b border-border print:mb-1 print:pb-0 print:text-[8.5pt] print:border-black">
+      <h2 className="wd-semi text-fg text-base font-extrabold pb-1.5 mb-4 border-b-2 border-fg print:mb-1 print:pb-0 print:text-[8.5pt] print:border-black">
         {title}
       </h2>
       {children}
@@ -54,7 +54,7 @@ function Row({ left, right }: { left: React.ReactNode; right?: string }) {
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-x-6">
       <h3 className="text-fg font-medium">{left}</h3>
-      {right && <span className="font-mono text-xs text-muted print:text-[8.5pt]">{right}</span>}
+      {right && <span className="wd-narrow text-[0.95rem] text-muted print:text-[8.5pt]">{right}</span>}
     </div>
   );
 }
@@ -63,16 +63,16 @@ export default function ResumePage() {
   return (
     <div className="resume min-h-screen">
       <nav aria-label="Resume actions" className="print:hidden border-b border-border">
-        <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
-          <Link href="/" className="font-mono text-sm text-accent hover:underline underline-offset-4">
-            ← ritwickverma.dev
+        <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
+          <Link href="/" className="wd-semi font-extrabold text-[1.05rem] hover:text-accent">
+            Ritwick Verma
           </Link>
           <div className="flex items-center gap-4">
             <span className="hidden sm:inline text-xs text-muted">Updated {resume.updated}</span>
             <a
               href="/Ritwick_Verma_Resume.pdf"
               download="Ritwick_Verma_Resume.pdf"
-              className="font-mono text-sm text-accent hover:underline underline-offset-4"
+              className="link text-[0.95rem]"
             >
               Download
             </a>
@@ -80,7 +80,7 @@ export default function ResumePage() {
               href="/Ritwick_Verma_Resume.pdf"
               target="_blank"
               rel="noopener"
-              className="px-4 py-3 rounded-lg bg-accent text-background text-sm font-medium hover:bg-accent/90 transition-colors"
+              className="px-3.5 py-1.5 rounded-[4px] bg-fg text-background text-[0.95rem] font-medium hover:bg-accent transition-colors"
             >
               Open PDF
             </a>
@@ -94,15 +94,15 @@ export default function ResumePage() {
         className="focus:outline-none max-w-3xl mx-auto px-6 py-12 text-fg/90 print:max-w-none print:p-0 print:text-[9pt] print:leading-[1.2]"
       >
         <header>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-fg print:text-[18pt]">
+          <h1 className="wd-semi text-4xl sm:text-5xl font-extrabold leading-none text-fg print:text-[18pt]">
             {hero.name}
           </h1>
           <p className="mt-1 text-fg/80 print:mt-0">{resume.title}</p>
-          <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 w-fit font-mono text-sm print:mt-0.5 print:grid-cols-3 print:gap-y-0 print:text-[8.5pt]">
+          <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 w-fit wd-narrow text-[0.95rem] print:mt-0.5 print:grid-cols-3 print:gap-y-0 print:text-[8.5pt]">
             {contact.map((c) => (
               <li key={c.label}>
                 {c.href ? (
-                  <a href={c.href} className="text-accent hover:underline underline-offset-4">
+                  <a href={c.href} className="link print:no-underline">
                     {c.label}
                   </a>
                 ) : (

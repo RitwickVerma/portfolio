@@ -6,35 +6,44 @@ A static site (`output: "export"`): pure HTML/JS/CSS on Cloudflare Pages. No
 server runtime; the only third-party request at view time is Cloudflare's
 own analytics beacon.
 
+## The idea
+
+I worked on a search engine for 5.5 years, so the home page opens on one: a
+search box over everything on the site. `src/lib/search.ts` is a tokenizer,
+a query rewriter, an inverted index and BM25 ranking in about 250 lines of
+dependency-free TypeScript, running in the browser. The row under the input
+shows the query plan. `/?q=c%2B%2B` links straight to a ranked result list.
+
 ## Stack
 
 - **Next.js 16** (App Router, static export) + React 19 + TypeScript
-- **three.js / React Three Fiber** — the 3D datacenter hero (WebGL2), loaded
-  lazily after idle behind a static SVG poster; the poster stays if WebGL2
-  is unavailable, reduced motion is set, or the renderer throws.
-- **framer-motion** — the only animation library; every curve and duration
-  comes from `src/lib/motion.ts`
-- **xterm.js** — the terminal section; mounted when it nears the viewport
-- **Tailwind CSS v4**
+- **Tailwind CSS v4**; a light and a dark palette in `src/lib/theme.ts`,
+  mirrored in `globals.css` and checked for contrast by a test
+- **Archivo** (variable, width and weight axes) and **Martian Mono**,
+  self-hosted from `src/fonts/`; the build makes no network request
 - **MDX** (`@next/mdx`, remark-gfm) — the notes. Add a file under
   `src/content/notes/` and an entry in `src/lib/notes.ts`; a test fails if
   the two disagree.
-- **Vitest** — pure logic only (data integrity, terminal output, motion
-  tokens, SEO helpers, the hero phase machine, hero label layout, the notes
-  registry)
+- **Vitest** — pure logic only: the search engine and its relevance checks,
+  data integrity, copy guards, theme contrast, SEO helpers, the notes
+  registry, the keyboard matrix, the status feed
+- No animation library, no 3D, no component library. Three client
+  components: the search box, the keyboard, the homelab status reader.
 
 ## Layout
 
 ```
-src/app/(site)/    home page + nav, footer, backdrop shader
+src/app/(site)/        home page + nav and footer
 src/app/(site)/notes/  /notes index and /notes/[slug] pages, one OG card each
-src/content/notes/ the notes themselves, MDX; registered in lib/notes.ts
-src/app/resume/    /resume — print-optimised, rendered from lib/data
-src/lib/status.ts  /status.json contract (schema 1) + pure helpers; statusStore.ts fetches it once
-tools/             status-from-api.sh (cron on the web container) + fixtures + example
-src/app/og.png/    Open Graph card, rendered to a real .png at build
-src/lib/data.ts    single source for home, /resume and the terminal
-src/lib/motion.ts  easing, duration, stagger, spring tokens
+src/content/notes/     the notes themselves, MDX; registered in lib/notes.ts
+src/app/resume/        /resume — print-optimised, rendered from lib/resume
+src/app/apps/          landing pages for the Android apps, in their own design
+src/lib/search.ts      the search engine
+src/lib/corpus.ts      the documents it indexes, built from the data below
+src/lib/data.ts        single source for home, /resume and the index
+src/lib/status.ts      /status.json contract (schema 1) + pure helpers
+tools/                 status-from-api.sh (cron on a host) + fixtures + example
+src/app/og.png/        Open Graph card, rendered to a real .png at build
 ```
 
 Everything the site claims lives in `src/lib/data.ts`. Counts (guests, tests,
@@ -53,8 +62,7 @@ npm run build    # static export → out/
 
 ## Live status
 
-The Homelab section, the hero's rack LEDs and the terminal's `status` command
-can read a `/status.json` feed: guest ids, running/stopped, uptime, host load,
+The Homelab section can read a `/status.json` feed: guest ids, running/stopped, uptime, host load,
 nothing that identifies a machine. `tools/status-from-api.sh` produces it
 from the Proxmox API with a read-only token; `parseStatus` rejects anything
 off-schema, and a test runs the script against recorded API fixtures.

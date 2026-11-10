@@ -1,5 +1,5 @@
 // Registry for /notes. One entry per MDX file in src/content/notes; the index
-// page, sitemap, OG cards and the terminal all read from here. notes.test.ts
+// page, sitemap, OG cards and the search index all read from here. notes.test.ts
 // checks the registry and the directory agree. Newest first.
 
 export interface Note {
@@ -57,8 +57,8 @@ export const notes: Note[] = [
     summary:
       "What on this site is mine, what is machine-made under my direction and which numbers are dated snapshots.",
     date: "2026-10-13",
-    updated: "2026-10-23",
-    tags: ["this site", "Next.js", "three.js"],
+    updated: "2026-11-10",
+    tags: ["this site", "Next.js", "search"],
   },
 ];
 

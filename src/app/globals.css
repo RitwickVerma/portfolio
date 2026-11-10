@@ -10,124 +10,171 @@
   --color-accent: var(--accent);
   --color-muted: var(--muted);
   --color-warn: var(--warn);
+  --color-hit: var(--hit);
+  --color-ink: var(--ink);
   --color-border: var(--border);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-archivo);
+  --font-mono: var(--font-martian);
 }
 
 @theme {
-  /* Fluid modular type scale — 1.25 (major third), clamped to viewport */
-  --text-display: clamp(2.75rem, 6vw + 0.5rem, 5rem);
-  --text-h2: clamp(1.5rem, 2vw + 0.5rem, 2rem);
+  /* Fluid type scale. Display is the name; h2 is a section's one sentence. */
+  --text-display: clamp(3rem, 9.5vw, 8.25rem);
+  --text-h2: clamp(1.75rem, 3.2vw + 0.5rem, 3rem);
+  --text-lede: clamp(1.25rem, 1.1vw + 0.9rem, 1.75rem);
 }
 
+/* mirrors src/lib/theme.ts (LIGHT) — theme.test.ts keeps them in sync */
 :root {
-  /* mirrors src/lib/motion.ts — motion.test.ts keeps them in sync */
-  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-slow: 700ms;
-  --stagger-line: 90ms;
+  --bg: #f1f2ee;
+  --fg: #12161b;
+  --fg-rgb: 18 22 27;
+  --muted: #566068;
+  --accent: #1a3fd0;
+  --accent-rgb: 26 63 208;
+  --hit: #ffe45c;
+  --warn: #b3261a;
+  --ink: #12161b;
+  --surface: rgb(var(--fg-rgb) / 0.035);
+  --border: rgb(var(--fg-rgb) / 0.16);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
 
-  /* mirrors src/lib/theme.ts — theme.test.ts keeps them in sync */
-  --bg: #0c0b09;
-  --fg: #ebe7df;
-  --muted: #8f8a80;
-  --accent: #f0b35a;
-  --accent-rgb: 240 179 90;
-  --warn: #ff5a4e;
-  --surface: rgba(255, 250, 240, 0.03);
-  --border: rgba(255, 250, 240, 0.08);
+/* mirrors src/lib/theme.ts (DARK) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1317;
+    --fg: #e8ebe6;
+    --fg-rgb: 232 235 230;
+    --muted: #97a1a6;
+    --accent: #9db4ff;
+    --accent-rgb: 157 180 255;
+    --hit: #ffe45c;
+    --warn: #ff8a7a;
+  }
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
     text-rendering: optimizeLegibility;
+    color-scheme: light dark;
   }
 
   body {
     background: var(--bg);
     color: var(--fg);
-    font-family: var(--font-geist-sans), system-ui, sans-serif;
-    line-height: 1.7;
+    font-family: var(--font-archivo), system-ui, sans-serif;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Balanced headings + consistent optical tracking */
   h1, h2, h3, h4 {
     text-wrap: balance;
-    letter-spacing: -0.02em;
   }
 
-  /* Tabular figures for mono — aligned numbers in stats/terminal */
+  p, li, dd {
+    text-wrap: pretty;
+  }
+
+  /* Tabular figures for mono: aligned numbers in the query plan and tables. */
   code, pre, .font-mono {
     font-variant-numeric: tabular-nums;
   }
+
+  /* The highlighter. Ink on yellow in both schemes. */
+  mark {
+    background: var(--hit);
+    color: var(--ink);
+    padding: 0.04em 0.12em;
+    margin: 0 -0.12em;
+    border-radius: 2px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+}
+
+/* One typeface, three widths. Expanded says who and what; the regular width
+   is for reading; condensed carries facts about a thing (dates, roles, ids). */
+.wd-wide {
+  font-stretch: 125%;
+  letter-spacing: -0.035em;
+}
+.wd-semi {
+  font-stretch: 112%;
+  letter-spacing: -0.02em;
+}
+.wd-narrow {
+  font-stretch: 78%;
+  letter-spacing: 0.005em;
+}
+
+/* A text link: blue and underlined, like a result. */
+.link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--accent-rgb) / 0.4);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+.link:hover {
+  text-decoration-color: var(--accent);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(var(--accent-rgb) / 0.25) transparent;
+  scrollbar-color: rgb(var(--fg-rgb) / 0.3) transparent;
 }
 
 ::selection {
-  background: rgb(var(--accent-rgb) / 0.22);
-  color: var(--fg);
+  background: var(--hit);
+  color: var(--ink);
 }
 
-/* Keyboard focus ring */
 *:focus-visible {
-  outline: 2px solid rgb(var(--accent-rgb) / 0.6);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
-/* Hero line reveal — each line rises through its own mask. Tokens above. */
-.line-mask {
-  display: block;
-  overflow: hidden;
-  /* room for descenders so the mask never clips them */
-  padding-bottom: 0.14em;
-  margin-bottom: -0.14em;
+/* Anchor targets sit below the sticky nav */
+[id] {
+  scroll-margin-top: 5.5rem;
 }
-.line-mask > span {
-  display: block;
-  animation: line-rise var(--dur-slow) var(--ease-out-quint) both;
-  animation-delay: calc(120ms + var(--i, 0) * var(--stagger-line));
+
+/* Arriving at a result's anchor: the highlighter marks where you landed, then lets go. */
+.landing:target {
+  animation: landed 2.4s var(--ease-out) 1;
 }
-@keyframes line-rise {
-  from {
-    transform: translateY(110%);
+@keyframes landed {
+  0%, 35% {
+    background: color-mix(in srgb, var(--hit) 55%, transparent);
+    box-shadow: 0 0 0 0.6rem color-mix(in srgb, var(--hit) 55%, transparent);
+  }
+  100% {
+    background: transparent;
+    box-shadow: 0 0 0 0.6rem transparent;
   }
 }
 
-/* No JavaScript: nothing below the hero may stay at its hidden initial state */
-html:not(.js) .reveal-root [style*="opacity"] {
-  opacity: 1 !important;
-  transform: none !important;
+/* Results re-rank on every keystroke; each row settles in, top first. */
+.rank-in {
+  animation: rank-in 320ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+@keyframes rank-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
-/* Anchor targets sit below the fixed nav */
-section[id] {
-  scroll-margin-top: 4rem;
-}
-
-/* Surface: a flat tint and a hairline. No blur — nothing moves behind a card. */
+/* Surface used by the keyboard and note code blocks: a tint and a hairline. */
 .glass {
   background: var(--surface);
   border: 1px solid var(--border);
-}
-
-.glass-hover:hover {
-  background: rgba(255, 250, 240, 0.05);
-  border-color: rgb(var(--accent-rgb) / 0.3);
-}
-
-/* Prevent canvas focus on mobile */
-canvas {
-  outline: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
 /* Notes: fenced code inherits the <pre> styling, not the inline-code pill */
@@ -139,33 +186,15 @@ canvas {
   font-size: inherit;
 }
 
-/* Terminal styles */
-.xterm-viewport::-webkit-scrollbar {
-  width: 4px;
-}
-.xterm-viewport::-webkit-scrollbar-track {
-  background: transparent;
-}
-.xterm-viewport::-webkit-scrollbar-thumb {
-  background: rgb(var(--accent-rgb) / 0.25);
-  border-radius: 2px;
-}
-
-/* ─── Reduced motion — respect the OS setting ─────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-  .scroll-indicator {
-    display: none;
-  }
-  .line-mask > span {
-    animation: none;
   }
 }
 
@@ -182,21 +211,13 @@ canvas {
     animation: none !important;
   }
 
-  /* Interactive/decorative chrome */
-  nav, canvas, .scroll-indicator {
+  nav, .no-print {
     display: none !important;
   }
 
   body {
-    cursor: auto !important;
     line-height: 1.5;
     font-size: 11pt;
-  }
-
-  /* The 3D hero pins inside a 200vh wrapper — collapse to a normal header */
-  #hero {
-    position: static !important;
-    height: auto !important;
   }
 
   a {

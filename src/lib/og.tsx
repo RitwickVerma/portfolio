@@ -1,8 +1,18 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
-import { ACCENT, BG, FG, MUTED, RACK_BODY } from "./theme";
+import { BG, FG, MUTED, ACCENT, HIT, INK } from "./theme";
 
-// Shared 1200×630 social card: dark house style, one accent, the same uneven
-// rack silhouettes as the hero. Rendered at build time (static export).
+// Shared 1200×630 social card in the site's own terms: ink on paper, the
+// name set large, the one-line claim under the highlighter, and a search box
+// along the bottom. Rendered at build time (static export).
+
+// The card renderer takes static WOFF, not the variable WOFF2 the pages use.
+const font = (file: string) => readFileSync(join(process.cwd(), "src/fonts", file));
+const FONTS = [
+  { name: "Archivo", data: font("Archivo-latin-400.woff"), weight: 400 as const, style: "normal" as const },
+  { name: "Archivo", data: font("Archivo-latin-800.woff"), weight: 800 as const, style: "normal" as const },
+];
 
 export type OgText = {
   eyebrow: string;
@@ -13,18 +23,8 @@ export type OgText = {
   lineTwo: string;
 };
 
-
-// Hand-placed, deliberately uneven — the same rack silhouettes as the hero.
-const RACKS = [
-  { x: 690, w: 74, h: 250 },
-  { x: 788, w: 82, h: 205 },
-  { x: 896, w: 70, h: 168 },
-  { x: 988, w: 86, h: 232 },
-  { x: 1090, w: 72, h: 188 },
-];
-const FLOOR = 150; // px from the bottom
-
-export function renderOg({ eyebrow, name, nameSize = 92, line, lineTwo }: OgText) {
+export function renderOg({ eyebrow, name, nameSize = 124, line, lineTwo }: OgText) {
+  const big = nameSize >= 100;
   return new ImageResponse(
     (
       <div
@@ -32,91 +32,55 @@ export function renderOg({ eyebrow, name, nameSize = 92, line, lineTwo }: OgText
           width: "100%",
           height: "100%",
           display: "flex",
-          position: "relative",
+          flexDirection: "column",
+          justifyContent: "space-between",
           background: BG,
           color: FG,
-          fontFamily: "Geist",
+          fontFamily: "Archivo",
+          padding: "56px 72px 60px",
+          borderTop: `14px solid ${FG}`,
         }}
       >
-        {RACKS.map((r, i) => (
+        <div style={{ display: "flex", fontSize: 26, color: MUTED }}>{eyebrow}</div>
+
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <div
-            key={i}
             style={{
-              position: "absolute",
-              left: r.x,
-              bottom: FLOOR,
-              width: r.w,
-              height: r.h,
               display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: 10,
-              background: RACK_BODY,
-              border: `1px solid ${ACCENT}44`,
-              borderRadius: 4,
+              fontSize: nameSize,
+              fontWeight: 800,
+              lineHeight: big ? 0.95 : 1.08,
+              letterSpacing: big ? -5 : -1.5,
             }}
           >
-            <div style={{ display: "flex", width: "100%", height: r.h * 0.55, background: `${ACCENT}1f`, borderRadius: 2 }} />
-            <div style={{ display: "flex", gap: 8 }}>
-              {[0, 1, 2].map((d) => (
-                <div
-                  key={d}
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    background: ACCENT,
-                    opacity: d === 2 ? 0.45 : 1,
-                  }}
-                />
-              ))}
+            {name}
+          </div>
+          <div style={{ display: "flex", marginTop: big ? 34 : 26 }}>
+            <div style={{ display: "flex", fontSize: 34, background: HIT, color: INK, padding: "4px 12px", marginLeft: -12 }}>
+              {line}
             </div>
           </div>
-        ))}
-        <div
-          style={{
-            position: "absolute",
-            left: 650,
-            right: 50,
-            bottom: FLOOR - 2,
-            height: 2,
-            background: `${ACCENT}55`,
-          }}
-        />
+          <div style={{ display: "flex", fontSize: 26, color: MUTED, marginTop: 14, lineHeight: 1.3, maxWidth: 1000 }}>
+            {lineTwo}
+          </div>
+        </div>
 
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
+            alignItems: "center",
             justifyContent: "space-between",
-            padding: "72px 20px 72px 80px",
-            width: 680,
-            height: "100%",
+            border: `3px solid ${FG}`,
+            borderRadius: 8,
+            padding: "14px 22px",
+            fontSize: 28,
           }}
         >
-          <div style={{ display: "flex", fontSize: 28, color: ACCENT }}>{eyebrow}</div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div
-              style={{
-                display: "flex",
-                fontSize: nameSize,
-                lineHeight: 1.08,
-                letterSpacing: nameSize >= 80 ? -3 : -1.5,
-              }}
-            >
-              {name}
-            </div>
-            <div style={{ display: "flex", fontSize: 36, color: ACCENT, marginTop: 28 }}>
-              {line}
-            </div>
-            <div style={{ display: "flex", fontSize: 28, color: MUTED, marginTop: 10, lineHeight: 1.3 }}>
-              {lineTwo}
-            </div>
-          </div>
+          <div style={{ display: "flex", color: MUTED }}>Search my record</div>
+          <div style={{ display: "flex", color: ACCENT }}>ritwickverma.dev</div>
         </div>
       </div>
     ),
-    { width: 1200, height: 630 },
+    { width: 1200, height: 630, fonts: FONTS },
   );
 }

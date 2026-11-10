@@ -6,12 +6,22 @@ export const metadata: Metadata = { title: "Not found", robots: { index: false }
 
 export default function NotFound() {
   return (
-    <main id="main" className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center min-h-screen">
-      <p className="font-mono text-muted text-sm tracking-widest uppercase">404</p>
-      <h1 className="text-2xl font-semibold">That page isn&apos;t here.</h1>
-      <Link href="/" className="text-accent hover:underline underline-offset-4">
-        Back to ritwickverma.dev
-      </Link>
+    <main id="main" className="flex-1 flex flex-col justify-center gap-5 max-w-[78rem] w-full mx-auto px-5 sm:px-8 min-h-screen">
+      <h1 className="wd-wide text-display font-black leading-[0.86]">404</h1>
+      <p className="text-lede max-w-[34ch]">
+        No document matches that address. The index holds only what is on this site.
+      </p>
+      <p className="flex flex-wrap gap-x-6 gap-y-2 text-lg">
+        <Link href="/" className="link">
+          Search the site
+        </Link>
+        <Link href="/notes/" className="link">
+          Read the notes
+        </Link>
+        <Link href="/resume/" className="link">
+          Open the resume
+        </Link>
+      </p>
     </main>
   );
 }
