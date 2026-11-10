@@ -246,42 +246,91 @@ test.describe("search", () => {
 });
 
 test.describe("the SudoStamp note's figures", () => {
-  const requests = (page: Page) => page.getByRole("list", { name: "Requests, oldest first" }).getByRole("listitem");
+  const limiter = (page: Page) => page.getByRole("figure", { name: /Changing address does not get a second prompt/ });
+  const requests = (page: Page) => limiter(page).getByRole("list", { name: "Requests, oldest first" }).getByRole("listitem");
+  const sigFigure = (page: Page) => page.getByRole("figure", { name: /One missing zero byte/ });
+  const sshView = (page: Page) => sigFigure(page).getByRole("group", { name: /^What the computer is sent \(SSH blob\)[^:]*: \d+ bytes, hex$/ });
+  const derView = (page: Page) => sigFigure(page).getByRole("group", { name: /^What the phone returns \(DER\): \d+ bytes, hex$/ });
 
   test("the limiter refuses a request without asking, and the 1.3 keying lets the same ones through", async ({ page }) => {
     const problems = watch(page);
     await page.goto(SUDO_NOTE);
     await page.waitForLoadState("networkidle");
-    // The example: approved, refused right behind it, denied, refused from a new address.
+    const fig = limiter(page);
+    const status = fig.getByRole("status");
+    // Opens on the one denial; "Rotate the address" retries from three new addresses, all refused without asking.
+    await expect(requests(page)).toHaveCount(1);
+    await expect(requests(page).nth(0)).toContainText("Asked, you denied");
+    await expect(fig.getByRole("button", { name: "Rotate the address" })).toHaveAttribute("aria-pressed", "false");
+    await fig.getByRole("button", { name: "Rotate the address" }).click();
     await expect(requests(page)).toHaveCount(4);
-    await expect(requests(page).nth(1)).toContainText("Refused. You were not asked.");
-    await expect(requests(page).nth(3)).toContainText(/cooling down after an unapproved request from this computer/i);
-    // Computer B again, from yet another address, straight after: still refused.
-    await page.getByRole("button", { name: "Send request" }).click();
-    await expect(requests(page)).toHaveCount(5);
-    await expect(requests(page).nth(4)).toContainText("Refused. You were not asked.");
-    await expect(requests(page).nth(4)).toContainText(/cooling down after an unapproved request from this computer/i);
-    await expect(requests(page).nth(4)).toContainText("Under 1.3, the same requests would have asked you here.");
-    // Counted by address, the same five requests all reach the user.
-    await page.getByRole("radio", { name: "address (1.3)" }).click();
-    await expect(page.getByRole("list", { name: "Requests, oldest first" })).not.toContainText("Refused");
-    await expect(requests(page).nth(4)).toContainText("Under 1.4, the same requests would have refused this one.");
+    await expect(requests(page).nth(0)).toContainText("Asked, you denied");
+    for (const n of [1, 2, 3]) {
+      await expect(requests(page).nth(n)).toContainText("Refused, phone stayed silent");
+      await expect(requests(page).nth(n)).toContainText(/cooling down after an unapproved request from this computer/i);
+    }
+    await expect(requests(page).nth(3)).toContainText("Old way: you would be asked here.");
+    await expect(status).toContainText("Counting by computer, the phone asks you 1 time. Counting by address, it would have asked 4.");
+    await expect(fig.getByRole("button", { name: "Rotate the address" })).toHaveAttribute("aria-pressed", "true");
+    // Counted by address, the same requests all reach the user, and the rows say so.
+    await fig.getByRole("radio", { name: "by address (before)" }).click();
+    await expect(fig.getByRole("list", { name: "Requests, oldest first" })).not.toContainText("Refused");
+    await expect(requests(page).nth(3)).toContainText("New way: the phone would stay silent here.");
+    await expect(status).toContainText("Counting by address, the phone asks you 4 times. Counting by computer, it would ask only 1.");
+    await fig.getByRole("radio", { name: "by computer (now)" }).click();
+    // Approved, then asked again straight away: refused while the quiet period lasts.
+    await fig.getByRole("button", { name: "Ask again right after a yes" }).click();
+    await expect(requests(page)).toHaveCount(3);
+    await expect(requests(page).nth(0)).toContainText("Asked, you approved");
+    await expect(requests(page).nth(1)).toContainText("Refused, phone stayed silent");
+    await expect(requests(page).nth(1)).toContainText(/a request was just approved/i);
+    await expect(fig.getByRole("button", { name: "Ask again right after a yes" })).toHaveAttribute("aria-pressed", "true");
     expect(problems).toEqual([]);
+  });
+
+  test("a request sent from the fold shows its row and the verdict without scrolling, and the 32-byte size is not repeated", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(SUDO_NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = limiter(page);
+    await expect(requests(page).first()).not.toContainText("32 bytes");
+    await fig.getByRole("button", { name: "Rotate the address" }).click();
+    await expect(requests(page)).toHaveCount(4);
+    await fig.getByText("Send your own request").click();
+    // Computer B again, from yet another address, straight after: still refused.
+    await fig.getByRole("button", { name: "Send request" }).click();
+    await expect(requests(page)).toHaveCount(5);
+    await expect(requests(page).nth(4)).toContainText("Refused, phone stayed silent");
+    await expect(requests(page).nth(4)).toContainText(/cooling down after an unapproved request from this computer/i);
+    await expect(requests(page).nth(4)).toContainText("Old way: you would be asked here.");
+    await expect(requests(page).nth(4)).toBeInViewport();
+    await expect(fig.getByRole("status")).toBeInViewport();
   });
 
   test("a payload that is not a challenge is refused before the user is asked, and the choices work from the keyboard", async ({ page }) => {
     await page.goto(SUDO_NOTE);
     await page.waitForLoadState("networkidle");
-    await page.getByRole("button", { name: "Start over" }).click();
+    const fig = limiter(page);
+    await fig.getByText("Send your own request").click();
+    await fig.getByRole("button", { name: "Start over" }).click();
     await expect(requests(page)).toHaveCount(0);
-    await page.getByRole("radio", { name: "100 bytes, something else" }).click();
-    await page.getByRole("button", { name: "Send request" }).click();
+    await expect(fig.getByRole("status")).toContainText("Nothing sent yet");
+    await fig.getByRole("radio", { name: "100 bytes, something else" }).click();
+    await fig.getByRole("button", { name: "Send request" }).click();
     await expect(requests(page)).toHaveCount(1);
-    await expect(requests(page).first()).toContainText("Refused before you were asked.");
+    await expect(requests(page).first()).toContainText("Refused, phone stayed silent");
+    await expect(requests(page).first()).toContainText("100 bytes");
     await expect(requests(page).first()).toContainText(/refusing to sign 100 bytes: not a pam_rssh challenge/i);
+    await expect(fig.getByRole("status")).toContainText("Either way of counting, the phone never asks you here.");
+    // The same thing in one tap.
+    await fig.getByRole("button", { name: "Rotate the address" }).click();
+    await expect(requests(page)).toHaveCount(4);
+    await fig.getByRole("button", { name: "Send 100 bytes" }).click();
+    await expect(requests(page)).toHaveCount(1);
+    await expect(requests(page).first()).toContainText(/refusing to sign 100 bytes/i);
     // Arrow keys move through a group of choices, and Tab leaves it.
-    const a = page.getByRole("radio", { name: "Computer A" });
-    const b = page.getByRole("radio", { name: "Computer B" });
+    const a = fig.getByRole("radio", { name: "Computer A" });
+    const b = fig.getByRole("radio", { name: "Computer B" });
     await b.focus();
     await page.keyboard.press("ArrowLeft");
     await expect(a).toBeFocused();
@@ -293,22 +342,41 @@ test.describe("the SudoStamp note's figures", () => {
     const problems = watch(page);
     await page.goto(SUDO_NOTE);
     await page.waitForLoadState("networkidle");
-    await expect(page.getByText("Signed just now in this tab")).toBeVisible();
-    await expect(page.getByRole("group", { name: /^SSH signature blob, as the agent sends it: \d+ bytes/ })).toBeVisible();
-    const status = page.locator("figure").filter({ hasText: "Sign another 32-byte value" }).getByRole("status");
-    await expect(status).toHaveText(/checked against this tab's public key with WebCrypto: valid\./);
-    // Find a signature whose r or s has its top bit set: the sign pad shows, and lighting its row lights the byte in both strips.
-    await page.getByRole("button", { name: "Keep signing until a sign pad is needed" }).click();
-    await expect(status).toHaveText(/valid\./);
-    const padRow = page.getByRole("listitem").filter({ hasText: /DER bytes \d+ \(1 B\), SSH bytes \d+ \(1 B\)/ }).first();
+    const fig = sigFigure(page);
+    const status = fig.getByRole("status");
+    await expect(fig.getByText("Signed just now in this tab")).toBeVisible();
+    await expect(sshView(page)).toBeVisible();
+    await expect(derView(page)).toBeVisible();
+    await expect(status).toContainText(/checked against this tab's public key with WebCrypto: valid\./);
+    await fig.getByRole("button", { name: "Sign another value" }).click();
+    await expect(status).toContainText(/with WebCrypto: valid\./);
+    // Find a signature whose r or s has its top bit set: the extra 00 is marked in both views.
+    // One tap to the punchline: signs until the pad is needed, leaves it out, and the reader refuses.
+    await fig.getByRole("button", { name: "Show it failing" }).click();
+    await expect(status).toContainText("Without the extra byte, the computer rejects this signature");
+    await expect(sshView(page).locator("[data-missing]").first()).toBeVisible();
+    await fig.getByRole("radio", { name: "with the extra byte (the app)" }).click();
+    await expect(status).toContainText(/with WebCrypto: valid\./);
+    await fig.getByRole("button", { name: "Keep signing until it needs the extra byte" }).click();
+    await expect(status).toContainText("This signature needed the extra byte, and it verified");
+    await expect(status).toContainText(/with WebCrypto: valid\./);
+    await expect(derView(page).locator("[data-pad]").first()).toBeVisible();
+    await expect(sshView(page).locator("[data-pad]").first()).toBeVisible();
+    // Field by field, in the fold: lighting a row lights the same field in both views.
+    await fig.getByText("Every field, and what WebCrypto returned").click();
+    const lenRow = fig.getByRole("listitem").filter({ hasText: /DER bytes 2 to 3 \(2 B\)/ }).first();
+    await expect(lenRow).toBeVisible();
+    const padRow = fig.getByRole("listitem").filter({ hasText: /DER bytes \d+ \(1 B\), SSH bytes \d+ \(1 B\)/ }).first();
     await expect(padRow).toBeVisible();
-    await padRow.getByRole("button").focus();
-    await expect(page.locator("figure .bg-hit")).toHaveCount(3);
+    await fig.getByRole("button", { name: /^Length of (r|s)$/ }).first().focus();
+    await expect(fig.locator("[role=group] span.bg-hit:not([data-pad])")).toHaveCount(2);
     // The bug the app warns about: without the pad, a reader sees a negative number and refuses.
-    await page.getByRole("button", { name: "Leave the sign pad out" }).click();
-    await expect(status).toHaveText(/reads as negative/);
-    await page.getByRole("button", { name: "Put the sign pad back" }).click();
-    await expect(status).toHaveText(/valid\./);
+    await fig.getByRole("radio", { name: "without it (the bug)" }).click();
+    await expect(status).toContainText("the computer rejects this signature");
+    await expect(status).toContainText(/reads as negative/);
+    await expect(sshView(page).locator("[data-missing]").first()).toBeVisible();
+    await fig.getByRole("radio", { name: "with the extra byte (the app)" }).click();
+    await expect(status).toContainText(/with WebCrypto: valid\./);
     expect(problems).toEqual([]);
   });
 
@@ -316,10 +384,13 @@ test.describe("the SudoStamp note's figures", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto(SUDO_NOTE);
-    await expect(requests(page)).toHaveCount(4);
-    await expect(requests(page).nth(3)).toContainText(/cooling down after an unapproved request from this computer/i);
+    await expect(limiter(page)).toBeVisible();
+    await expect(requests(page)).toHaveCount(1);
+    await expect(requests(page).nth(0)).toContainText("Asked, you denied");
+    await expect(limiter(page).getByRole("status")).toContainText("the phone asks you 1 time");
     await expect(page.getByText("Test vector from the app's unit test")).toBeVisible();
-    await expect(page.getByRole("group", { name: /^SSH signature blob/ })).toBeVisible();
+    await expect(sshView(page)).toBeVisible();
+    await expect(sigFigure(page)).toContainText("One missing zero byte and the signature fails");
     await context.close();
   });
 });

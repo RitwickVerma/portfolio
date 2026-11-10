@@ -9,7 +9,7 @@ import SignatureBytes from "@/components/figures/SignatureBytes";
 
 Version 1.3 cooled an address down for 30 seconds after a denial, and only addresses I had never approved. A comment in the code says rotating through IPv6 addresses beat it. Version 1.4 keys the limiter by the computer instead. After an approval, every request is refused for 3 seconds. After a denial, that computer waits 5 seconds if I have approved it before and 60 if I have not. After four unapproved requests in ten minutes, everything is refused. The password always works, so refusing never locks me out.
 
-Switch the figure to address and the example changes: the second prompt and the rotated address both reach you. The figure runs a TypeScript port of the app's limiter, with the app's own tests as vectors.
+The figure runs a TypeScript port of the app's limiter, with the app's own tests as vectors.
 
 ## The signer refuses before it asks you
 
