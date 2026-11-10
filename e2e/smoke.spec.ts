@@ -6,6 +6,7 @@ import AxeBuilder from "@axe-core/playwright";
 // complete without JavaScript, still under reduced motion, one printed page.
 
 const NOTE = "/notes/tizen-video-plane-ambilight/";
+const PLUTUS = "/notes/plutus-what-the-backtest-cannot-tell-you/";
 /** Scanned by axe as well: the home page with a query on it shows facets, plan chips and scores the idle page does not. */
 const WITH_QUERY = { name: "home with a query", path: "/?q=testing" } as const;
 const PAGES = [
@@ -13,6 +14,7 @@ const PAGES = [
   { name: "engine", path: "/engine/" },
   { name: "design", path: "/design/" },
   { name: "note", path: NOTE },
+  { name: "plutus note", path: PLUTUS },
   { name: "resume", path: "/resume/" },
 ] as const;
 const WIDTHS = [320, 390, 768, 1440] as const;
@@ -213,4 +215,59 @@ test.describe("accessibility", () => {
       });
     }
   }
+});
+
+test.describe("plutus note figures", () => {
+  test("the universe switch shows the biased number first and the honest one when pressed", async ({ page }) => {
+    await page.goto(PLUTUS);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /Same rule, same prices/ });
+    await expect(fig.getByRole("status")).toContainText("21.3% a year");
+    await fig.getByRole("button", { name: "Members at the time" }).click();
+    await expect(fig.getByRole("button", { name: "Members at the time" })).toHaveAttribute("aria-pressed", "true");
+    await expect(fig.getByRole("status")).toContainText("3.1% a year");
+    await expect(fig.getByRole("status")).toContainText("behind SPY");
+    await expect(fig.getByRole("status")).toContainText("18.2");
+  });
+
+  test("the toy market: survivors beat the market, the whole market does not", async ({ page }) => {
+    await page.goto(PLUTUS);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /no skill only the stocks that survived/ });
+    await fig.scrollIntoViewIfNeeded();
+    const gapOf = async () => {
+      const t = (await fig.getByRole("status").locator("p").first().innerText()).replace(/−/g, "-");
+      const m = t.match(/(-?[\d.]+)% a year, the market (-?[\d.]+)%/);
+      expect(m, t).not.toBeNull();
+      return Number(m![1]) - Number(m![2]);
+    };
+    await expect(fig.getByRole("status")).toContainText("Surviving stocks only");
+    expect(await gapOf()).toBeGreaterThan(1);
+    await fig.getByRole("button", { name: "Everyone who existed then" }).click();
+    await expect(fig.getByRole("status")).toContainText("Everyone who existed");
+    expect(Math.abs(await gapOf())).toBeLessThan(1.5);
+    await fig.getByRole("button", { name: /Draw another world/ }).click();
+    await expect(fig.getByRole("button", { name: /Draw another world \(seed 8\)/ })).toBeVisible();
+    // More controls: with nothing delisted both lists are the same list.
+    await fig.getByText("More controls and the numbers").click();
+    await fig.getByRole("slider").fill("0");
+    await expect(fig.getByText("nobody to leave out")).toBeVisible();
+  });
+
+  test("the bootstrap: a piece length and a number to show", async ({ page }) => {
+    await page.goto(PLUTUS);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /A backtest is one path/ });
+    await fig.scrollIntoViewIfNeeded();
+    await expect(fig.getByRole("status")).toContainText("yearly returns from");
+    const before = await fig.getByRole("status").innerText();
+    await fig.getByRole("button", { name: "6 months" }).click();
+    await expect(fig.getByRole("button", { name: "6 months" })).toHaveAttribute("aria-pressed", "true");
+    await expect.poll(async () => fig.getByRole("status").innerText()).not.toBe(before);
+    await fig.getByRole("radio", { name: "Worst fall" }).click();
+    await expect(fig.getByRole("status")).toContainText("worst falls from");
+    await expect(fig.getByRole("status")).toContainText("The real run got −34.5%");
+    await fig.getByRole("button", { name: /Deal again/ }).click();
+    await expect(fig.getByRole("button", { name: /Deal again \(seed 43\)/ })).toBeVisible();
+  });
 });
