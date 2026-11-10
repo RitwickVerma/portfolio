@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { sidewaysOverflow } from "./helpers";
 
 // Smoke tests over the built site. Each one guards a promise the site makes
 // in its own copy (colophon, /design): no errors, no third-party requests,
@@ -51,30 +52,7 @@ for (const { name, path } of PAGES) {
         await page.setViewportSize({ width, height: 900 });
         await page.goto(path);
         await page.waitForLoadState("networkidle");
-        const { scroll, client, widest } = await page.evaluate(() => {
-          const root = document.documentElement;
-          let widest = "";
-          let max = root.clientWidth;
-          for (const el of document.querySelectorAll("body *")) {
-            const r = el.getBoundingClientRect();
-            if (r.width > 0 && r.right > max + 0.5 && getComputedStyle(el).position !== "fixed") {
-              // Content inside a scroll container may be wider than the page; the page itself may not.
-              let clipped = false;
-              for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
-                const o = getComputedStyle(p).overflowX;
-                if (o === "auto" || o === "scroll" || o === "hidden" || o === "clip") {
-                  clipped = true;
-                  break;
-                }
-              }
-              if (!clipped) {
-                max = r.right;
-                widest = `${el.tagName.toLowerCase()}.${String(el.className).slice(0, 80)} right=${Math.round(r.right)}`;
-              }
-            }
-          }
-          return { scroll: root.scrollWidth, client: root.clientWidth, widest };
-        });
+        const { scroll, client, widest } = await sidewaysOverflow(page);
         expect(scroll, `page scrolls sideways; widest element: ${widest}`).toBeLessThanOrEqual(client);
         expect(widest, "an element pokes out of the viewport").toBe("");
       });

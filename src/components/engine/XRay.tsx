@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { search, parseQuery, CONTROL, TREATMENT, FUZZY_WEIGHT, PHRASE_BONUS, PREFIX_WEIGHT, REWRITE_WEIGHT, type SearchHit } from "@/lib/search";
+import { search, parseQuery, factor, CONTROL, TREATMENT, FUZZY_WEIGHT, PHRASE_BONUS, PREFIX_WEIGHT, REWRITE_WEIGHT, type SearchHit } from "@/lib/search";
 import { useSearchIndex } from "@/lib/useSearchIndex";
 import { CorpusMap, PlanChips } from "@/components/search/parts";
 
@@ -30,7 +30,7 @@ const TOP = 5;
 /** Posting lists drawn in stage 3. */
 const POSTINGS = 8;
 /** A multiplier as a reader would write it: 1.625, not 1.63, so the line multiplies back. */
-const factor = (n: number) => String(+n.toFixed(3));
+
 const short = (s: string, n = 46) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 /** What is in the box is what the address says: ?q= follows the query, and goes when the box is empty. */

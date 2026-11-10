@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   buildIndex, search, planQuery, parseQuery, tokenize, stem, highlight, snippet, editDistance, nearestTerms,
-  CONTROL, TREATMENT, PHRASE_BONUS, type SearchDoc,
+  scoreLine, CONTROL, TREATMENT, PHRASE_BONUS, type SearchDoc,
 } from "./search";
+import { buildCorpus } from "./corpus";
 
 const doc = (id: string, title: string, text: string, keywords: string[] = [], kind: SearchDoc["kind"] = "Project"): SearchDoc => ({
   id,
@@ -283,5 +284,49 @@ describe("highlight and snippet", () => {
     const s = snippet(long, ["needl", "haystack"]);
     expect(s.startsWith("… The needle sits in a haystack here.")).toBe(true);
     expect(s.length).toBeLessThan(260);
+  });
+});
+
+describe("scoreLine: the arithmetic as displayed", () => {
+  /** The numbers on a displayed line, multiplied: what a reader checking it by hand would get. */
+  const product = (line: ReturnType<typeof scoreLine>) => [line.base, ...line.factors.map((f) => f.value)].reduce((p, v) => p * Number(v), 1);
+  const real = buildIndex(buildCorpus());
+
+  it("the displayed factors multiply back to the displayed score, for every hit of many queries", () => {
+    let checked = 0;
+    let withPrior = 0;
+    for (const q of ["performance testing", "search engine", '"search engine" "c++"', "kind:note", "kind:project", "tech:kotlin", "fitment", '"traffic replay"', "hdr kind:note ", "resume "]) {
+      for (const hit of search(real, q).hits.slice(0, 40)) {
+        const line = scoreLine(hit);
+        expect(Math.abs(product(line) - hit.score), `${q} / ${hit.doc.id}: ${line.base} x ${line.factors.map((f) => f.value).join(" x ")} = ${line.total}`).toBeLessThan(0.0105);
+        expect(line.total).toBe(hit.score.toFixed(2));
+        checked += 1;
+        if (hit.explain.prior !== 1) withPrior += 1;
+      }
+    }
+    expect(checked).toBeGreaterThan(50);
+    expect(withPrior).toBeGreaterThan(10);
+  });
+
+  it("shows a prior to three decimals, not two: 1.625 is not 1.63", () => {
+    const lifted = buildIndex([{ ...docs[1], prior: 1.625 }]);
+    const line = scoreLine(search(lifted, '"traffic replay"').hits[0]);
+    expect(line.factors.map((f) => f.value)).toEqual(["1.625", "1.5"]);
+  });
+
+  it("a filter-only hit is listed by the filter at base 1, not at a base of 0.00", () => {
+    const hit = search(real, "kind:note").hits.find((h) => h.explain.prior !== 1) ?? search(real, "kind:note").hits[0];
+    expect(hit.explain.terms).toEqual([]);
+    const line = scoreLine(hit);
+    expect(line.base).toBe("1");
+    expect(line.listedByFilter).toBe(true);
+    expect(product(line)).toBeCloseTo(hit.score, 2);
+  });
+
+  it("a scored hit is not marked as listed by a filter, and shows its base to three decimals", () => {
+    const hit = search(real, "fitment").hits[0];
+    const line = scoreLine(hit);
+    expect(line.listedByFilter).toBe(false);
+    expect(line.base).toMatch(/^\d+\.\d{3}$/);
   });
 });

@@ -201,6 +201,16 @@
   border: 1px solid var(--fg);
   border-radius: var(--r-chip);
   white-space: nowrap;
+  /* A term can be as long as the box lets a visitor type (120 characters): never wider than its row. */
+  max-width: 100%;
+  overflow: hidden;
+}
+/* The term itself: shrinks and ends in an ellipsis rather than pushing the chip, and the page, wider. */
+.term > .term-t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
 }
 .term[data-source="rewrite"] {
   border-style: dashed;
@@ -238,6 +248,9 @@
 .term[data-source="filter"] > span {
   color: inherit;
   opacity: 0.7;
+}
+.term[data-source="filter"] > .term-t {
+  opacity: 1;
 }
 
 kbd {

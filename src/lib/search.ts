@@ -578,3 +578,33 @@ export function snippet(text: string, stems: Iterable<string>, max = 230): strin
   if (out.length > max) out = `${out.slice(0, out.lastIndexOf(" ", max)).replace(/[,;:]$/, "")}…`;
   return first > 0 ? `… ${out}` : out;
 }
+
+// ─── The score, as shown ────────────────────────────────────────────────────
+
+/** A multiplier as a reader would write it: 1.625, not 1.63, so the line multiplies back. */
+export const factor = (n: number) => String(+n.toFixed(3));
+
+export interface ScoreLine {
+  /** The sum over terms, to three decimals; "1" for a hit listed by a filter alone. */
+  base: string;
+  /** True when no term scored and the filters alone listed the document: its base is 1. */
+  listedByFilter: boolean;
+  /** The multipliers shown after the base, in order. */
+  factors: { label: string; value: string }[];
+  /** The score, to two decimals. */
+  total: string;
+}
+
+/**
+ * The line under a result: base x factors = score, every number as it is printed, so the line can be
+ * multiplied by hand. (A filter-only hit has no terms; its base is 1, as `search` computes it.)
+ */
+export function scoreLine(hit: SearchHit): ScoreLine {
+  const { terms, prior, phrases } = hit.explain;
+  const listedByFilter = terms.length === 0;
+  const sum = terms.reduce((s, t) => s + t.score, 0);
+  const factors: ScoreLine["factors"] = [];
+  if (prior !== 1) factors.push({ label: "static rank", value: factor(prior) });
+  if (phrases > 0) factors.push({ label: "phrase", value: factor(PHRASE_BONUS ** phrases) });
+  return { base: listedByFilter ? "1" : sum.toFixed(3), listedByFilter, factors, total: hit.score.toFixed(2) };
+}
