@@ -12,8 +12,8 @@ const SCALE = 25;
 const SHORT: Record<UniverseRow["id"], string> = { today: "Today's members", then: "Members at the time", ever: "Everyone who was ever in" };
 const PRESETS = [
   { id: "today", label: SHORT.today },
-  { id: "then", label: SHORT.then },
   { id: "ever", label: SHORT.ever },
+  { id: "then", label: SHORT.then },
 ] as const;
 
 function Row({ label, value, on, outline }: { label: string; value: number; on: boolean; outline?: boolean }) {
@@ -42,7 +42,7 @@ export default function UniverseSwitch() {
       claim="Same rule, same prices: 21.3% a year choosing from today's index, 3.1% choosing from the index of the day."
       how={
         <>
-          The index is the S&amp;P 500, a list of about 500 big US companies that changes every month. Press <b className="font-semibold text-fg">Members at the time</b> to give the rule only the companies that were on the list then.
+          The index is the S&amp;P 500, a list of about 500 big US companies that changes over time. Press <b className="font-semibold text-fg">Members at the time</b> to give the rule only the companies that were on the list then.
         </>
       }
       caption={`Real results of the strategy's own backtest on public prices, three runs of one setting over ${WINDOW}, stocks only: a shorter window and a narrower strategy than the 26.1% table further down.`}
@@ -68,7 +68,7 @@ export default function UniverseSwitch() {
       <Verdict tone={sel.cagr < SPY.cagr ? "warn" : "plain"} title={`${SHORT[id]}: ${pctText(sel.cagr)} a year.`}>
         {id === "then" ? (
           <>
-            That is {Math.abs(vsSpy).toFixed(1)} points behind SPY, and {gap(UNIVERSES[2], then).toFixed(1)} behind the same rule on today&apos;s members. Same code, same prices, same window: only the list changed.
+            That is {Math.abs(vsSpy).toFixed(1)} points behind SPY (a fund that just holds the index), and {gap(UNIVERSES[2], then).toFixed(1)} behind the same rule on today&apos;s members. Same code, same prices, same window: only the list changed.
           </>
         ) : (
           <>
