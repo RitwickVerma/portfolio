@@ -21,7 +21,7 @@ npm run build      # static export -> out/
 **A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
-Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 13 files / 145 tests pass.
+Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 21 files / 387 tests pass.
 ```bash
 npm run lint && npm run typecheck && npm test   # exactly what the CI `check` job runs
 npm run test:watch
@@ -32,6 +32,7 @@ npm run test:watch
 - `src/lib/corpus.test.ts` checks the corpus against the real data: every note section is a document whose anchor the page renders, and `WORK_HEADLINES` matches the generated `lib/resume.ts` bullets in count.
 - `src/lib/eval.test.ts` is the relevance guard: the judged queries in `lib/eval.ts` must all return a relevant first result under `TREATMENT`, nDCG@5 must stay at 0.9 or better, and `TREATMENT` must beat `CONTROL`. A ranking change that fails this needs either a fix or a conscious edit to the judgments.
 - `src/lib/theme.test.ts` checks both palettes against `globals.css` and for WCAG contrast.
+- `src/lib/sudostamp.test.ts` and `sudostampSim.test.ts` carry the SudoStamp repo's own unit tests (`LimiterTest.kt`, `SshSigTest.kt`, `CooldownTest.kt` as of v1.3.0) as vectors for the TypeScript port, plus four signatures made by `ssh-keygen -Y sign` with throwaway keys (public data only).
 - No test uses `vi.mock`/`vi.fn`/`vi.spyOn`; tests exercise pure functions and fixtures directly. Keep new logic pure so it stays testable this way.
 - `npm run build` also renders OG cards and must pass; it is not part of CI `check` (verified locally, ~30 s). The `e2e` job runs it.
 
@@ -41,7 +42,7 @@ Playwright (`e2e/smoke.spec.ts`, `playwright.config.ts`) over the built export i
 npm run build && npm run test:e2e                      # needs the browsers: npx playwright install
 docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/playwright:v1.65.0-noble npx playwright test   # what CI runs; WebKit needs this image on Debian
 ```
-- Per page (home, `/engine`, `/design`, one note, `/resume`): no console errors, no failed or third-party requests, no sideways overflow at 320/390/768/1440, complete with JavaScript disabled.
+- Per page (home, `/engine`, `/design`, two notes, `/resume`): no console errors, no failed or third-party requests, no sideways overflow at 320/390/768/1440, complete with JavaScript disabled.
 - Search: the chunk hydrates and ranks, `?q=` links work, Ctrl K opens the palette, the demo query types once and does not run under reduced motion.
 - `/resume` prints to one page on Letter and A4 (Chromium only: `page.pdf()`).
 - axe (WCAG 2.2 AA plus best-practice) on each page in both palettes, and on the home page with a query on it. A violation is fixed in the component, never excluded from the scan.
@@ -57,14 +58,16 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 | `src/app/{og.png,sitemap.ts,robots.ts,manifest.ts}` | Build-time OG image, sitemap, robots and web manifest. |
 | `src/components/` | `Search` (the hero), `Palette` (Ctrl K, every page), the home sections (`Work`, `Projects`, `Keyboard`, `Notes`, `Homelab`, `Contact`) on the shared `Section` frame, `Timeline`, `Crush80`, `NoteExtras` (contents rail, match highlighting), `Nav`, `Footer`. |
 | `src/components/search/parts.tsx` | Shared by every search surface: result row, plan chips, score breakdown (`Explain`), `CorpusMap`. |
-| `src/components/figures/` | `Ambilight` (canvas simulation; LEDs computed from the pixels), `InfiniteCanvas` (pan and zoom), `LabTopology` (SVG from `lib/data`). |
+| `src/components/figures/` | Home page: `Ambilight` (canvas simulation; LEDs computed from the pixels), `InfiniteCanvas` (pan and zoom), `LabTopology` (SVG from `lib/data`). Notes: `LimiterTimeline` and `SignatureBytes` (SudoStamp: the ported limiter; a WebCrypto signature as DER and as an SSH blob), `FrameAuthority` (kwin-canvas: the ported frame classifier against a stand-in for KWin's rule), `WaveOrReach` (ShutUp: the ported gesture detectors and a seeded property check), `ChordAlignment` (Chordist: the ported alignment beside the original greedy scan). Each note figure has its pure logic and tests in `src/lib/` and one e2e test that operates it. |
 | `src/components/engine/`, `design/` | `XRay` and `Benchmark` for `/engine`; `WidthSpecimen` for `/design`. |
 | `src/content/notes/*.mdx` | The engineering notes; each needs an entry in `src/lib/notes.ts` (newest first). |
 | `src/lib/data.ts` | Single source for home, `/resume` and the search index: projects, experience, education, services, skills, links. |
+| `src/lib/sudostamp.ts`, `sudostampSim.ts` | TypeScript port of SudoStamp's `Limiter`, the 1.3.0 per-address cooldown, the 32-byte signing refusal and the DER-to-SSH signature conversion (clock injected, no BigInt); the figure's replay model on top. Pure. |
 | `src/lib/search.ts` | The search engine, pure and dependency-free: query parser, tokenizer and stemmer, rewriter, prefix and fuzzy expansion, inverted index with per-field counts, BM25 with field boosts and a static-rank prior, per-hit `explain`, highlight and snippet helpers. `TREATMENT` is what the site runs; `CONTROL` is plain BM25. |
 | `src/lib/corpus.ts` | Builds the search documents from `lib/data`, `lib/resume`, `lib/notes` and (when given) the notes' sections; owns `WORK_HEADLINES`, the priors, starting points and example queries. The Work section renders from `workRoles` here. |
 | `src/lib/eval.ts` | The judged query set and the metrics (P@1, MRR, nDCG@5). Read by `/engine` at build and by `eval.test.ts`. |
 | `src/lib/useSearchIndex.ts` | Client store: one index per tab, record first, full text after idle. |
+| `src/lib/frameAuthority.ts`, `kwinFigure.ts` | A TypeScript port (GPL-2.0-or-later, header names the source) of kwin-canvas's `inReach`, `isPull` and `fightStep` plus a readout of the numbers they compare; and the figure's state machine with its stand-in for KWin's reachability rule and the presets cited from the project's unit tests. Their tests pin the readout to the port and the stand-in to the measured numbers. |
 | `src/lib/timeline.ts`, `slug.ts`, `themeSwitch.ts` | Period parser for the career strip; heading slugs shared by MDX and the index; the light/dark switch. |
 | `src/lib/status.ts`, `statusStore.ts` | `/status.json` schema 1, `parseStatus` validation, freshness helpers; the store fetches it once. |
 | `src/fonts/` | Self-hosted variable fonts (Archivo with width and weight axes, Martian Mono) and their OFL licences; loaded with `next/font/local` in `src/app/layout.tsx`. The build needs no network. |
@@ -105,3 +108,4 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 14. A figure must not trap the page: `InfiniteCanvas` uses `touch-action: pan-y`, never `none`.
 12. Search results for notes link with `?q=`; `NoteHighlights` reads it and paints matches with the CSS Custom Highlight API. It must never mutate the note's DOM.
 10. Martian Mono is wide: a mono string longer than about 40 characters wraps on phones. Keep mono for short tokens.
+15. `eval.test.ts` judges the query `ai`, and a short note section that says "AI" outranks the colophon section it expects first. The kwin-canvas note says "coding agents" for that reason; check the guard before putting the word in a new note.
