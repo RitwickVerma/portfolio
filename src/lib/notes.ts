@@ -19,9 +19,9 @@ export const notes: Note[] = [
     slug: "crush80-open-firmware",
     title: "Open firmware for a keyboard that shipped none",
     summary:
-      "The Crush 80's chip carries only a batch code. I got it wrong twice, then read the board. What is inside, and how ZMK installs over the stock updater.",
+      "Hold Fn on the real keymap. A rounding error made its clock run 6.7% fast, and I got the chip wrong twice before I read the board.",
     date: "2026-10-21",
-    updated: "2026-10-23",
+    updated: "2026-11-10",
     tags: ["ZMK", "RISC-V", "reverse engineering", "firmware"],
   },
   {
@@ -30,16 +30,16 @@ export const notes: Note[] = [
     summary:
       "Sixteen guests with fourteen declared in OpenTofu. A nightly pipeline commits whatever changed on the box. What it caught and where it falls short.",
     date: "2026-10-13",
-    updated: "2026-10-23",
+    updated: "2026-11-10",
     tags: ["Proxmox", "OpenTofu", "GitOps", "on-call"],
   },
   {
     slug: "plutus-what-the-backtest-cannot-tell-you",
     title: "Plutus: what the backtest cannot tell you",
     summary:
-      "30+ experiments found no edge that held up. This covers the five-signal bot that lost to SPY and the biases behind a backtest Sharpe of 1.04.",
+      "I found no edge. The same code earned 21.3% a year on today's index members and 3.1% on the members of the day. Press the figures.",
     date: "2026-10-13",
-    updated: "2026-10-23",
+    updated: "2026-11-10",
     tags: ["Python", "quant", "backtesting"],
   },
   {
@@ -48,7 +48,7 @@ export const notes: Note[] = [
     summary:
       "No capture card and no HDMI splitter. A headless Tizen app reads decoded frames from the TV's memory and drives an LED strip. How it works and how it fails.",
     date: "2026-10-13",
-    updated: "2026-10-23",
+    updated: "2026-11-10",
     tags: ["Tizen", ".NET", "HDR", "reverse engineering"],
   },
   {

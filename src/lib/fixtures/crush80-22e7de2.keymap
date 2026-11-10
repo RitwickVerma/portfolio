@@ -1,0 +1,184 @@
+/*
+ * Wobkey Crush 80 — ZMK keymap
+ *
+ * Base is a plain 80% layout: every key does what it says, Caps is Caps Lock, and
+ * there are no hold-taps and no combos. Everything extra sits behind the Fn key, which is a
+ * plain hold, and every layer here can be edited in VIA.
+ *
+ *   hold Fn              system controls + navigation (the HJKL cluster)
+ *   hold Fn and Space    numpad and bracket symbols
+ *   hold right Win       numpad on the nav cluster; add Space for the Macro layer (P)
+ *   Fn+M                 Mac mode on / off (modifiers in Mac order, Cmd shortcuts)
+ *
+ * Layers (the number is what VIA and ZMK Studio show)
+ *   0 Base    1 Mac     2 Fn      3 MacFn   4 Num     5 Macro   6-8 spare (empty, yours)
+ *
+ * The order matters, and it is checked by ZMK from the highest layer down: Fn
+ * must sit above Mac so Mac cannot swallow Fn's keys, MacFn above Fn and Num above
+ * MacFn so each can override the one below it, and spare layers last (ZMK numbers
+ * enabled layers first). Bump CONFIG_CRUSH80_KEYMAP_REV when you change the layer
+ * list: it clears live edits (VIA, Studio) saved for the old layout.
+ */
+
+/* Build every ZMK behavior, not only the ones this file references, so that
+ * ZMK Studio and VIA can assign them (&to, &lt, &mt, &sk, ...). The
+ * studio-rpc-usb-uart snippet normally defines this; the Bluetooth Studio
+ * transport used here does not. Must come before behaviors.dtsi. */
+#define ZMK_BEHAVIORS_KEEP_ALL
+
+#include <behaviors.dtsi>
+#include <dt-bindings/zmk/keys.h>
+#include <dt-bindings/zmk/bt.h>
+#include <dt-bindings/zmk/outputs.h>
+#include <dt-bindings/zmk/rgb.h>
+#include <rainy_rgb.dtsi>
+#include <via_macro.dtsi>
+#include <dt-bindings/rainy_rgb.h>
+
+#define BASE  0
+#define MAC   1
+#define FN    2
+#define MACFN 3
+#define NUM   4
+#define MACRO 5
+
+/ {
+	keymap {
+		compatible = "zmk,keymap";
+
+		/*
+		 * Layer 0: Base. Plain 80%, nothing else. Fn opens layer 2.
+		 */
+		default_layer {
+			display-name = "Base";
+			bindings = <
+				&kp ESC          &kp F1           &kp F2           &kp F3           &kp F4           &kp F5           &kp F6           &kp F7           &kp F8           &kp F9           &kp F10          &kp F11          &kp F12          &kp F13          &kp PSCRN        &kp SLCK         &kp PAUSE_BREAK
+				&kp GRAVE        &kp N1           &kp N2           &kp N3           &kp N4           &kp N5           &kp N6           &kp N7           &kp N8           &kp N9           &kp N0           &kp MINUS        &kp EQUAL        &kp BSPC         &kp INS          &kp HOME         &kp PG_UP
+				&kp TAB          &kp Q            &kp W            &kp E            &kp R            &kp T            &kp Y            &kp U            &kp I            &kp O            &kp P            &kp LBKT         &kp RBKT         &kp BSLH         &kp DEL          &kp END          &kp PG_DN
+				&kp CAPS         &kp A            &kp S            &kp D            &kp F            &kp G            &kp H            &kp J            &kp K            &kp L            &kp SEMI         &kp SQT          &kp RET
+				&kp LSHFT        &kp Z            &kp X            &kp C            &kp V            &kp B            &kp N            &kp M            &kp COMMA        &kp DOT          &kp FSLH         &kp RSHFT        &kp UP
+				&kp LCTRL        &kp LGUI         &kp LALT         &kp SPACE        &kp RALT         &mo FN           &mo MACFN        &kp RCTRL        &kp LEFT         &kp DOWN         &kp RIGHT
+			>;
+		};
+
+		/*
+		 * Layer 1: Mac (Fn+M toggles it). Only what differs on a Mac:
+		 *   Win <-> Alt and the right Alt <-> Super swap, giving Ctrl Opt Cmd Space Cmd
+		 *   Opt in Apple's order, so Cmd+C is a thumb away.
+		 *   PrtSc = Cmd+Shift+4 (screenshot a region)
+		 *   Home / End = Cmd+Left / Right (start / end of line, as on Windows and Linux)
+		 */
+		mac_layer {
+			display-name = "Mac";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp LS(LG(N4))   &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp LG(LEFT)     &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp LG(RIGHT)    &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &kp LALT         &kp LGUI         &trans           &kp RGUI         &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/*
+		 * Layer 2: Fn (hold). The highest of the layers you hold, so nothing above it
+		 * can hide these keys.
+		 *
+		 *   system       Esc recovery     F12 Studio unlock   PrtSc/ScrLk/Pause mute vol+ bri+
+		 *                Ins/Home/PgUp prev play next   End/PgDn vol- bri-
+		 *   connection   1 2 3 6 7 Bluetooth 1-5   4 USB   5 toggle USB/Bluetooth   Del clear BT pairing
+		 *   RGB          Bspc on/off   - = speed   [ ] hue   \ Enter effect   Up/Down brightness   B battery
+		 *   modes        M Mac mode
+		 *   navigation   H J K L arrows   U O Home End   Y N PgUp PgDn   X Bspc   ; Del
+		 *   jumps        A D word left / right   W S paragraph up / down
+		 *   Space        hold for the Num layer
+		 *
+		 * Shift, Ctrl, Alt and Cmd stay as they are, so Shift+Fn+L selects and
+		 * Shift+Fn+D selects a word. A D W S send Ctrl+Left / Right / Up / Down
+		 * (the Mac-specific versions live on layer 3, which the right Win key holds).
+		 */
+		fn_layer {
+			display-name = "Fn";
+			bindings = <
+				&bootloader      &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &studio_unlock   &trans           &kp C_MUTE       &kp C_VOL_UP     &kp C_BRI_UP
+				&trans           &bt BT_SEL 0     &bt BT_SEL 1     &bt BT_SEL 2     &out OUT_USB     &out OUT_TOG     &bt BT_SEL 3     &bt BT_SEL 4     &trans           &trans           &trans           &rgb RGB_SPD     &rgb RGB_SPI     &rgb RGB_TOG     &kp C_PREV       &kp C_PP         &kp C_NEXT
+				&trans           &trans           &kp LC(UP)       &trans           &trans           &trans           &kp PG_UP        &kp HOME         &trans           &kp END          &trans           &rgb RGB_HUD     &rgb RGB_HUI     &rgb RGB_EFF     &bt BT_CLR       &kp C_VOL_DN     &kp C_BRI_DN
+				&trans           &kp LC(LEFT)     &kp LC(DOWN)     &kp LC(RIGHT)    &trans           &trans           &kp LEFT         &kp DOWN         &kp UP           &kp RIGHT        &kp DEL          &trans           &rgb RGB_EFF
+				&trans           &trans           &kp BSPC         &trans           &trans           &rgb RGB_BAT     &kp PG_DN        &tog MAC         &trans           &trans           &trans           &trans           &rgb RGB_BRI
+				&trans           &trans           &trans           &mo NUM          &trans           &trans           &trans           &trans           &trans           &rgb RGB_BRD     &trans
+			>;
+		};
+
+		/*
+		 * Layer 3: MacFn. Held by the right Win key (your numpad on the nav cluster).
+		 * It is a plain held layer: an earlier conditional layer for it forced it off
+		 * whenever Mac mode was not on, which made the numpad and the macro layer
+		 * (Space on this layer) unreachable.
+		 * U / O become Cmd+Left / Right, so Fn+U / O still mean start / end of line,
+		 * and A D W S become Option+arrows (word and paragraph, the Mac way).
+		 */
+		mac_fn_layer {
+			display-name = "MacFn";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp N0           &kp N7           &kp N8           &kp N9
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp N4           &kp N5           &kp N6
+				&trans           &trans           &kp LA(UP)       &trans           &trans           &trans           &trans           &kp LG(LEFT)     &trans           &kp LG(RIGHT)    &trans           &trans           &trans           &trans           &kp N1           &kp N2           &kp N3
+				&trans           &kp LA(LEFT)     &kp LA(DOWN)     &kp LA(RIGHT)    &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &mo MACRO        &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/*
+		 * Layer 4: Num (hold Fn and Space). Above Fn so it can reuse the HJKL block.
+		 *
+		 *   right hand  7 8 9 -  /  4 5 6 + =  /  0 1 2 3 .      [ * ]  /  Enter
+		 *   left hand   ~ ! @ # $  /  ( ) { } |  /  [ ] < > \
+
+		 */
+		num_layer {
+			display-name = "Num";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &kp LS(GRAVE)    &kp LS(N1)       &kp LS(N2)       &kp LS(N3)       &kp LS(N4)       &trans           &kp N7           &kp N8           &kp N9           &kp MINUS        &kp LS(N8)       &kp FSLH         &trans           &trans           &trans           &trans
+				&trans           &kp LS(N9)       &kp LS(N0)       &kp LS(LBKT)     &kp LS(RBKT)     &kp LS(BSLH)     &trans           &kp N4           &kp N5           &kp N6           &kp LS(EQUAL)    &kp EQUAL        &kp RET
+				&trans           &kp LBKT         &kp RBKT         &kp LS(COMMA)    &kp LS(DOT)      &kp BSLH         &kp N0           &kp N1           &kp N2           &kp N3           &kp DOT          &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/*
+		 * Layer 5: Macro (hold right Win, then Space). P plays macro 0 (edit it in VIA).
+		 * A real layer, not a spare one: ZMK only looks up keys in layers that are
+		 * in the keymap file, so a macro key on a reserved spare layer never fires.
+		 */
+		macro_layer {
+			display-name = "Macro";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &vmacro 1        &trans           &trans           &trans           &trans           &trans           &trans           &vmacro 0        &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/* Layers 6-8: empty slots. VIA shows them as spare layers; ZMK Studio can
+		 * turn them into new layers. They must stay last: ZMK numbers the enabled
+		 * layers first, so a real layer placed after a reserved one is never
+		 * looked up. */
+		spare_layer_1 {
+			status = "reserved";
+		};
+
+		spare_layer_2 {
+			status = "reserved";
+		};
+
+		spare_layer_3 {
+			status = "reserved";
+		};
+	};
+};

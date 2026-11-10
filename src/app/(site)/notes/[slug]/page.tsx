@@ -67,13 +67,14 @@ export default async function NotePage({ params }: Params) {
   };
 
   return (
-    <article className="max-w-[var(--page)] mx-auto px-5 sm:px-8 pt-12 sm:pt-16 pb-24 sm:pb-32">
+    <article className="max-w-[var(--page)] mx-auto px-5 sm:px-8 pt-6 sm:pt-12 pb-24 sm:pb-32">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdString(articleJsonLd) }}
       />
-      <header className="mb-12 pb-10 border-b-2 border-fg">
-        <p className="wd-narrow text-[0.95rem] text-muted mb-5">
+      {/* Kept short on a phone: a note opens on its figure, and the figure should start on the first screen. */}
+      <header className="mb-6 pb-5 sm:mb-10 sm:pb-8 border-b-2 border-fg">
+        <p className="wd-narrow text-[0.95rem] text-muted mb-3 sm:mb-5">
           <Link href="/notes/" className="link">
             Notes
           </Link>
@@ -91,7 +92,7 @@ export default async function NotePage({ params }: Params) {
         <h1 className="wd-semi text-[clamp(2.1rem,5vw,4.25rem)] font-extrabold leading-[1] max-w-[20ch]">
           {note.title}
         </h1>
-        <p className="mt-6 text-lede leading-[1.3] text-fg/80 max-w-[44ch]">{note.summary}</p>
+        <p className="mt-3 sm:mt-6 text-[1.0625rem] sm:text-lede leading-[1.35] sm:leading-[1.3] text-fg/80 max-w-[44ch]">{note.summary}</p>
       </header>
 
       <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,44rem)_1fr] gap-x-16">
