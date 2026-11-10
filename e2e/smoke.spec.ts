@@ -271,5 +271,46 @@ test.describe("plutus note figures", () => {
     await expect(fig.getByRole("status")).toContainText("The real run got −34.5%");
     await fig.getByRole("button", { name: /Deal again/ }).click();
     await expect(fig.getByRole("button", { name: /Deal again \(seed 43\)/ })).toBeVisible();
+test.describe("the Tizen note's figures", () => {
+  test("the sampling figure starts still, and the lazy way makes an edge one colour", async ({ page }) => {
+    await page.goto(NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.locator("figure", { hasText: "average colour of its own patch" });
+    await expect(fig.getByRole("button", { name: "Play the film" })).toBeVisible();
+    await expect(fig.locator("[role=status][data-tone]")).toContainText(/different colours/);
+    await fig.getByRole("button", { name: /lazy way/ }).click();
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("1 colour");
+    await fig.getByRole("button", { name: /its own patch, as built/ }).click();
+    await expect(fig.locator("[role=status][data-tone]")).toContainText(/different colours/);
+  });
+
+  test("the PQ figure: ignoring the curve changes the LED numbers", async ({ page }) => {
+    await page.goto(NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.locator("figure", { hasText: "HDR video stores brightness" });
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("darker");
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("The app sends");
+    const before = await fig.locator("[role=status][data-tone]").innerText();
+    await fig.getByRole("button", { name: /A dark film/ }).click();
+    await expect(fig.getByRole("button", { name: /A dark film/ })).toHaveAttribute("aria-pressed", "true");
+    expect(await fig.locator("[role=status][data-tone]").innerText()).not.toBe(before);
+    await fig.getByText("More controls").click();
+    await fig.getByRole("radio", { name: "Deep green" }).click();
+    await expect(fig.getByRole("radio", { name: "Deep green" })).toHaveAttribute("aria-checked", "true");
+    await fig.getByRole("radio", { name: "Deep green" }).press("ArrowLeft");
+    await expect(fig.getByRole("radio", { name: "Sky blue" })).toBeFocused();
+  });
+
+  test("the ceiling figure recomputes the rate from the spots", async ({ page }) => {
+    await page.goto(NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.locator("figure", { hasText: "about 100 colours a second" });
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("4.2 times a second");
+    await fig.getByRole("button", { name: /One spot per LED/ }).click();
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("1.4 times a second");
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("740 ms");
+    await fig.getByText("More controls").click();
+    await fig.getByLabel(/Wait before each reading/).fill("17");
+    await expect(fig.locator("[role=status][data-tone]")).toContainText("measured about 1.4 Hz");
   });
 });

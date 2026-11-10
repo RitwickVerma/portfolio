@@ -21,7 +21,7 @@ export const notes: Note[] = [
     summary:
       "The Crush 80's chip carries only a batch code. I got it wrong twice, then read the board. What is inside, and how ZMK installs over the stock updater.",
     date: "2026-10-21",
-    updated: "2026-10-23",
+    updated: "2026-11-10",
     tags: ["ZMK", "RISC-V", "reverse engineering", "firmware"],
   },
   {
@@ -48,7 +48,7 @@ export const notes: Note[] = [
     summary:
       "No capture card and no HDMI splitter. A headless Tizen app reads decoded frames from the TV's memory and drives an LED strip. How it works and how it fails.",
     date: "2026-10-13",
-    updated: "2026-10-23",
+    updated: "2026-11-10",
     tags: ["Tizen", ".NET", "HDR", "reverse engineering"],
   },
   {
