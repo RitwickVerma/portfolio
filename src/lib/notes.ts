@@ -40,6 +40,14 @@ export const notes: Note[] = [
     tags: ["Android", "Kotlin", "property testing", "sensors"],
   },
   {
+    slug: "chordist-chart-alignment",
+    title: "One bad row should not move the rest",
+    summary:
+      "Drop one row from a chord chart and the old greedy matcher loses its place for the rest of the song. Chordist's alignment keeps it. Try it on Amazing Grace.",
+    date: "2026-11-10",
+    tags: ["Chordist", "dynamic programming", "sequence alignment", "Python"],
+  },
+  {
     slug: "crush80-open-firmware",
     title: "Open firmware for a keyboard that shipped none",
     summary:
