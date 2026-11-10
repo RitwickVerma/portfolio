@@ -69,7 +69,7 @@ export const OG_CARDS = {
     eyebrow: "ritwickverma.dev/design",
     name: "Index",
     line: "The design language of ritwickverma.dev",
-    lineTwo: "Five rules, the colour and type tokens, the components, and the three things that are allowed to move.",
+    lineTwo: "Five rules, the colour and type tokens, the components, and what is allowed to move.",
   },
 } as const satisfies Record<string, OgCard>;
 

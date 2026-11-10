@@ -5,10 +5,10 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 // One row, no menu button. The in-page links drop out on a phone, where the
 // page is a single scroll and the palette reaches everything. Search, theme
-// and Email always stay; Resume yields below 420 px (it needs 420 with the 44 px
-// icon targets; at 360 to 389 it pushed Email past the edge) and is in the footer,
-// the contact section and the palette. Icon targets are 44 px from 360 px up; at
-// 320 there is only room for 34.
+// and Email always stay. Resume is the link a recruiter on a phone wants, so it
+// stays from 390 px up (most phones); below that it pushed Email past the edge,
+// so it yields and is in the footer, the contact section and the palette. The
+// icon targets are 44 px wherever Resume leaves room: 360 to 389 and from 420 up.
 const links = [
   { href: "/#work", label: "Work", always: false },
   { href: "/#projects", label: "Projects", always: false },
@@ -27,13 +27,13 @@ export default function Nav() {
         </Link>
         <ul className="flex items-center">
           {links.map((l) => (
-            <li key={l.href} className={l.always ? "max-[419px]:hidden" : "hidden md:block"}>
+            <li key={l.href} className={l.always ? "max-[389px]:hidden" : "hidden md:block"}>
               <Link href={l.href} className={item}>
                 {l.label}
               </Link>
             </li>
           ))}
-          <li className="sm:ml-1 min-[360px]:[&>button]:min-h-11 min-[360px]:[&>button]:min-w-11 min-[360px]:[&>button]:justify-center">
+          <li className="sm:ml-1 min-[360px]:max-[389px]:[&>button]:min-h-11 min-[360px]:max-[389px]:[&>button]:min-w-11 min-[420px]:[&>button]:min-h-11 min-[420px]:[&>button]:min-w-11 [&>button]:justify-center">
             <PaletteButton />
           </li>
           <li>
