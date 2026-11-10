@@ -24,6 +24,23 @@ check:
     - npx tsc --noEmit
     - npm run test
 
+# Browser smoke tests over the built export, in the image that carries all
+# three engines. The image tag must match @playwright/test in package.json.
+e2e:
+  stage: check
+  image: mcr.microsoft.com/playwright:v1.65.0-noble
+  script:
+    - npm ci --prefer-offline
+    - npm run build
+    - npm run test:e2e
+  artifacts:
+    when: on_failure
+    expire_in: 1 week
+    paths:
+      - e2e-results/
+    reports:
+      junit: e2e-results/junit.xml
+
 # Builds the static export here in CI and deploys it to Cloudflare Pages.
 # Replaced the old SSH-to-CT114/rebuild.sh path on 2026-10-16 (migration to
 # Cloudflare Pages) -- CT114 nginx is no longer the serving origin for
@@ -36,6 +53,7 @@ deploy:
     - if: $CI_COMMIT_BRANCH == "master"
   needs:
     - check
+    - e2e
   script:
     - npm ci --prefer-offline
     - npm run build

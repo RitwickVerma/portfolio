@@ -192,14 +192,18 @@ export function ResultRow({
           type="button"
           onClick={onToggle}
           aria-expanded={open}
-          aria-label={`Score ${score.toFixed(2)}. ${open ? "Hide" : "Show"} why it ranks here`}
           className="hidden sm:block w-[4.5rem] self-start pt-2 text-right group"
         >
+          {/* No aria-label: the name is built from the content, so what is seen is what is announced. */}
+          <span className="sr-only">Score </span>
           <span className="font-mono text-xs text-muted group-hover:text-fg">{score.toFixed(2)}</span>
           <span className="block mt-1.5 h-[3px] bg-fg/10">
             <span className="block h-full bg-fg" style={{ width: `${Math.max(4, (score / top) * 100)}%` }} />
           </span>
-          <span className="fact !text-xs mt-1.5 block underline decoration-fg/30 underline-offset-4 group-hover:text-fg">{open ? "Hide" : "Why?"}</span>
+          <span className="fact !text-xs mt-1.5 block underline decoration-fg/30 underline-offset-4 group-hover:text-fg">
+            {open ? "Hide" : "Why?"}
+            <span className="sr-only">{open ? " the arithmetic" : " Show the arithmetic"}</span>
+          </span>
         </button>
       )}
     </li>

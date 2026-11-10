@@ -302,7 +302,7 @@ export default function Search() {
 
         {facets.length > 1 || activeKinds.length > 0 ? (
           <div className="flex flex-wrap gap-x-1 gap-y-1 pb-3" role="group" aria-label="Narrow by kind">
-            <button type="button" onClick={() => setKind(null)} aria-pressed={activeKinds.length === 0} className="fact px-2 py-1 rounded-[var(--r-chip)] hover:text-fg aria-pressed:bg-fg aria-pressed:text-background">
+            <button type="button" onClick={() => setKind(null)} aria-pressed={activeKinds.length === 0} className="fact px-2 py-1 rounded-[var(--r-chip)] hover:text-fg aria-pressed:bg-fg aria-pressed:!text-background">
               All {facetTotal}
             </button>
             {facets.map(([kind, count]) => (
@@ -311,7 +311,7 @@ export default function Search() {
                 type="button"
                 onClick={() => setKind(kind)}
                 aria-pressed={activeKinds.includes(kind)}
-                className="fact px-2 py-1 rounded-[var(--r-chip)] hover:text-fg aria-pressed:bg-fg aria-pressed:text-background"
+                className="fact px-2 py-1 rounded-[var(--r-chip)] hover:text-fg aria-pressed:bg-fg aria-pressed:!text-background"
               >
                 {kind} {count}
               </button>
@@ -325,6 +325,9 @@ export default function Search() {
             only what I have done, so that is the honest answer.
           </p>
         ) : (
+          <>
+          {/* Result titles are h3; this keeps the outline from jumping from h1 straight to them. */}
+          <h2 className="sr-only">{result ? "Search results" : "Starting points"}</h2>
           <ol id="hits" className="border-b border-border">
             {visible.map((hit, i) => (
               <ResultRow
@@ -341,6 +344,7 @@ export default function Search() {
               />
             ))}
           </ol>
+          </>
         )}
 
         <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-sm">

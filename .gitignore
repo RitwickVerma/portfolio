@@ -3,6 +3,8 @@ out/
 node_modules/
 .next/cache/
 *.tar.gz
+e2e-results/
+test-results/
 /tmp/
 
 # TypeScript incremental build cache
