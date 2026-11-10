@@ -30,7 +30,7 @@ export const JUDGMENTS: Judgment[] = [
   { query: "homelab", relevant: { "project-homelab": 2, "note-homelab-git-is-the-truth": 2, "note-homelab-git-is-the-truth--*": 1 } },
   { query: "infrastructure", relevant: { "project-homelab": 2, "note-homelab-git-is-the-truth": 2, "skills-tools": 1, "note-homelab-git-is-the-truth--*": 1 } },
   { query: "kotlin", relevant: { "project-sudostamp": 2, "project-kaeru": 2, "project-shutup": 1, "note-shutup-wave-or-reach": 1, "skills-languages": 1 } },
-  { query: "python", relevant: { "project-plutus": 2, "skills-languages": 1, "project-gesture-manager-x": 1, "earlier-1": 1, "note-plutus-what-the-backtest-cannot-tell-you*": 1 } },
+  { query: "python", relevant: { "project-plutus": 2, "skills-languages": 1, "project-gesture-manager-x": 1, "earlier-1": 1, "note-chordist-chart-alignment": 1, "note-plutus-what-the-backtest-cannot-tell-you*": 1 } },
   { query: "resume", relevant: { "page-resume": 2 } },
   { query: "email", relevant: { "page-contact": 2 } },
   { query: "hdr", relevant: { "project-tizen-ambilight": 2, "note-tizen-video-plane-ambilight": 2, "note-tizen-video-plane-ambilight--colour-the-plane-is-pq-the-leds-are-not": 2, "note-tizen-video-plane-ambilight--*": 1 } },
@@ -53,8 +53,7 @@ export const JUDGMENTS: Judgment[] = [
   { query: "backups", relevant: { "note-homelab-git-is-the-truth--backups-both-kinds": 2, "lab-CT108": 2 } },
   { query: "internship", relevant: { "earlier-*": 2, "page-resume": 1 } },
   { query: "mobile", relevant: { "project-shutup": 2, "earlier-0": 2, "project-sudostamp": 1, "project-kaeru": 1 } },
-  { query: "ai", relevant: { "note-colophon--how-it-was-made": 2, "project-shutup": 1, "project-tizen-ambilight": 1, "project-kwin-canvas": 1, "lab-CT101": 1, "note-colophon": 1, "note-sudostamp-refuse-before-asking--what-i-can-vouch-for": 1 } },
-  { query: "ai", relevant: { "note-colophon--how-it-was-made": 2, "note-shutup-wave-or-reach--the-first-version-is-mine-and-the-rewrite-is-shared": 1, "note-homelab-git-is-the-truth--the-agent": 1, "note-plutus-what-the-backtest-cannot-tell-you--running-it": 1, "project-shutup": 1, "project-tizen-ambilight": 1, "project-kwin-canvas": 1, "lab-CT101": 1, "note-colophon": 1 } },
+  { query: "ai", relevant: { "note-colophon--how-it-was-made": 2, "project-shutup": 1, "project-tizen-ambilight": 1, "project-kwin-canvas": 1, "lab-CT101": 1, "note-colophon": 1 } },
 ];
 
 /** The grade a document earns for a judgment: an exact key first, then the longest matching prefix key. */

@@ -320,6 +320,10 @@ test.describe("the SudoStamp note's figures", () => {
     await expect(requests(page).nth(3)).toContainText(/cooling down after an unapproved request from this computer/i);
     await expect(page.getByText("Test vector from the app's unit test")).toBeVisible();
     await expect(page.getByRole("group", { name: /^SSH signature blob/ })).toBeVisible();
+    await context.close();
+  });
+});
+
 test.describe("the ShutUp figure", () => {
   const figure = (page: Page) => page.getByRole("figure", { name: /ShutUp's wave detector/ });
 
@@ -399,6 +403,8 @@ test.describe("the ShutUp figure", () => {
     await expect(fig.getByRole("switch")).toHaveCount(0);
     await context.close();
   });
+});
+
 test.describe("alignment figure", () => {
   const summary = (page: Page, method: "Alignment" | "Greedy scan") => page.getByRole("row", { name: new RegExp(`^${method}`) });
   const method = (page: Page, name: "Alignment" | "Greedy scan") => page.getByRole("button", { name, exact: true });
