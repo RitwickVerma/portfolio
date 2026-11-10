@@ -7,6 +7,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 const NOTE = "/notes/tizen-video-plane-ambilight/";
 const PLUTUS = "/notes/plutus-what-the-backtest-cannot-tell-you/";
+const HOMELAB = "/notes/homelab-git-is-the-truth/";
 /** Scanned by axe as well: the home page with a query on it shows facets, plan chips and scores the idle page does not. */
 const WITH_QUERY = { name: "home with a query", path: "/?q=testing" } as const;
 const PAGES = [
@@ -15,6 +16,7 @@ const PAGES = [
   { name: "design", path: "/design/" },
   { name: "note", path: NOTE },
   { name: "plutus note", path: PLUTUS },
+  { name: "homelab note", path: HOMELAB },
   { name: "resume", path: "/resume/" },
 ] as const;
 const WIDTHS = [320, 390, 768, 1440] as const;
