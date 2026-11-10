@@ -1,20 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { EXAMPLE_QUERIES, STARTING_POINTS } from "@/lib/corpus";
 import { search, type DocKind, type SearchHit, type SearchResult } from "@/lib/search";
 import { useSearchIndex, timed } from "@/lib/useSearchIndex";
 import { CorpusMap, PlanChips, ResultRow, hrefFor } from "@/components/search/parts";
+import { SHOWN, SHOWN_PHONE, rowsInView, nextSelection, firstRevealed, reselect } from "@/lib/searchUi";
 
 // The hero. A working search engine over everything on this site: type, and
 // lib/search.ts parses, rewrites, retrieves and ranks in the browser. Before
 // any JavaScript runs the box shows a fixed list of starting points, so the
 // server HTML is already a complete page.
 
-const SHOWN = 6;
-/** Phones show fewer before "Show all": the record itself starts right below. */
-const SHOWN_PHONE = 3;
+/** Tailwind's `sm`: from here up the rows list SHOWN before "Show all", below it SHOWN_PHONE. */
+const WIDE = "(min-width: 40rem)";
+const subscribeWide = (notify: () => void) => {
+  const m = window.matchMedia(WIDE);
+  m.addEventListener("change", notify);
+  return () => m.removeEventListener("change", notify);
+};
+const isWide = () => window.matchMedia(WIDE).matches;
 /** Typed into the box once, on first load, unless the visitor gets there first. */
 const DEMO_QUERY = "fitment";
 const DEMO_START_MS = 1500;
@@ -56,19 +62,29 @@ export default function Search() {
   /** True while the demo has typed only part of its query. */
   const demoPartial = useRef(false);
   const textRef = useRef("");
+  /** Which row has the arrow-key selection, by document, and how many rows can be seen: what a re-rank must keep. */
+  const selectedId = useRef<string | null>(null);
+  const rowsSeen = useRef(0);
+  /** The row to focus once "Show all" has drawn the rest of the list. */
+  const focusRow = useRef<number | null>(null);
+  const wide = useSyncExternalStore(subscribeWide, isWide, () => true);
 
   const execute = useCallback(
-    (query: string, { syncUrl = true } = {}) => {
+    (query: string, { syncUrl = true, keep = false } = {}) => {
       textRef.current = query;
       setText(query);
-      setAll(false);
-      setSelected(-1);
-      setOpenId(null);
+      // A new query starts over; the same query ranked again (the full index arrived) keeps what the visitor did.
+      if (!keep) {
+        setAll(false);
+        setSelected(-1);
+        setOpenId(null);
+      }
       if (!query.trim()) {
         setRun(null);
       } else {
         const { value, ms } = timed(() => search(index, query));
         setRun({ result: value, ms });
+        if (keep) setSelected(reselect(value.hits.map((h) => h.doc.id), selectedId.current, rowsSeen.current));
       }
       if (syncUrl) {
         // A query is a link: /?q=c%2B%2B opens with the results already ranked.
@@ -103,7 +119,7 @@ export default function Search() {
   // When the notes' full text arrives, the query on screen is run again against it.
   useEffect(() => {
     if (!full || !textRef.current.trim()) return;
-    const t = window.setTimeout(() => execute(textRef.current, { syncUrl: false }), 0);
+    const t = window.setTimeout(() => execute(textRef.current, { syncUrl: false, keep: true }), 0);
     return () => window.clearTimeout(t);
   }, [full, execute]);
 
@@ -154,10 +170,25 @@ export default function Search() {
   const hits = result ? result.hits : starting;
   const top = result?.hits[0]?.score ?? 0;
   const visible = all ? hits : hits.slice(0, SHOWN);
+  /** What can be seen at this width: the phone hides rows the list still holds. */
+  const rows = rowsInView(hits.length, all, wide);
   const respelled = result?.plan.filter((t) => t.source === "fuzzy") ?? [];
   const facets = result ? (Object.entries(result.facets) as [DocKind, number][]).sort((a, b) => b[1] - a[1]) : [];
   const facetTotal = facets.reduce((n, [, c]) => n + c, 0);
   const activeKinds = result?.parsed.kinds ?? [];
+
+  useEffect(() => {
+    selectedId.current = selected >= 0 ? (visible[selected]?.doc.id ?? null) : null;
+    rowsSeen.current = rows;
+  });
+
+  // "Show all" removes the button that had focus; the first row it reveals takes it.
+  useEffect(() => {
+    if (!all || focusRow.current === null) return;
+    const row = focusRow.current;
+    focusRow.current = null;
+    document.querySelector<HTMLElement>(`#hit-${row} a`)?.focus();
+  }, [all]);
 
   const setKind = (kind: DocKind | null) => {
     take();
@@ -168,9 +199,9 @@ export default function Search() {
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      if (visible.length === 0) return;
+      if (rows === 0) return;
       e.preventDefault();
-      const next = e.key === "ArrowDown" ? Math.min(selected + 1, visible.length - 1) : Math.max(selected - 1, -1);
+      const next = nextSelection(selected, e.key, rows);
       setSelected(next);
       if (next >= 0) document.getElementById(`hit-${next}`)?.scrollIntoView({ block: "nearest" });
     } else if (e.key === "Enter" && selected >= 0 && visible[selected]) {
@@ -285,14 +316,14 @@ export default function Search() {
             </div>
           ))}
           <p className="fact sm:col-span-2 lg:col-span-4">
-            Arrow keys move through results, Enter opens one, Esc clears. <kbd>/</kbd> focuses this box and <kbd>Ctrl K</kbd> opens search on any page. Click a score to see how it was computed.
+            Arrow keys move through results, Enter opens one, Esc clears. <kbd>/</kbd> focuses this box and <kbd>Ctrl K</kbd> opens search on any page. Press Why? under a result to see how its score was computed.
           </p>
         </dl>
       )}
 
       <p className="sr-only" role="status" aria-live="polite">
         {selected >= 0 && visible[selected]
-          ? `Result ${selected + 1} of ${visible.length}: ${visible[selected].doc.title}. Enter opens it.`
+          ? `Result ${selected + 1} of ${rows}: ${visible[selected].doc.title}. Enter opens it.`
           : result
             ? `${result.hits.length} of ${result.total} documents match`
             : ""}
@@ -352,37 +383,41 @@ export default function Search() {
           <div className="h-11" aria-hidden="true" />
         )}
 
-        {result && hits.length === 0 ? (
+        {result && hits.length === 0 && (
           <p className="border-t border-border py-6 max-w-[60ch]">
-            No document matches <span className="font-semibold">“{text.trim()}”</span>. The index holds only what is on this site, and the site holds
+            No document matches <span className="font-semibold [overflow-wrap:anywhere]">“{text.trim()}”</span>. The index holds only what is on this site, and the site holds
             only what I have done, so that is the honest answer.
           </p>
-        ) : (
-          <>
-          {/* Result titles are h3; this keeps the outline from jumping from h1 straight to them. */}
-          <h2 className="sr-only">{result ? "Search results" : "Starting points"}</h2>
-          <ol id="hits" className="border-b border-border">
-            {visible.map((hit, i) => (
-              <ResultRow
-                key={hit.doc.id}
-                id={`hit-${i}`}
-                hit={hit}
-                top={top}
-                i={i}
-                query={text}
-                selected={i === selected}
-                open={openId === hit.doc.id}
-                onToggle={() => setOpenId((id) => (id === hit.doc.id ? null : hit.doc.id))}
-                collapsed={!all && i >= SHOWN_PHONE}
-              />
-            ))}
-          </ol>
-          </>
         )}
+        {/* Result titles are h3; this keeps the outline from jumping from h1 straight to them. */}
+        {hits.length > 0 && <h2 className="sr-only">{result ? "Search results" : "Starting points"}</h2>}
+        {/* Always in the page, so the box's aria-controls names something; empty, it takes no room. */}
+        <ol id="hits" className="border-b border-border empty:hidden">
+          {visible.map((hit, i) => (
+            <ResultRow
+              key={hit.doc.id}
+              id={`hit-${i}`}
+              hit={hit}
+              top={top}
+              i={i}
+              query={text}
+              selected={i === selected}
+              open={openId === hit.doc.id}
+              onToggle={() => setOpenId((id) => (id === hit.doc.id ? null : hit.doc.id))}
+              collapsed={!all && i >= SHOWN_PHONE}
+            />
+          ))}
+        </ol>
 
         <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-sm">
           {hits.length > SHOWN_PHONE && !all ? (
-            <button type="button" onClick={() => setAll(true)} className={`link ${hits.length > SHOWN ? "" : "sm:invisible"}`}>
+            <button
+              type="button"
+              onClick={() => {
+                focusRow.current = firstRevealed(wide);
+                setAll(true);
+              }}
+              className={`link ${hits.length > SHOWN ? "" : "sm:invisible"}`}>
               Show all {hits.length} results
             </button>
           ) : (

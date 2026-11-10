@@ -21,7 +21,7 @@ npm run build      # static export -> out/
 **A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
-Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 13 files / 145 tests pass.
+Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 14 files / 191 tests pass.
 ```bash
 npm run lint && npm run typecheck && npm test   # exactly what the CI `check` job runs
 npm run test:watch
@@ -61,9 +61,10 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 | `src/components/engine/`, `design/` | `XRay` and `Benchmark` for `/engine`; `WidthSpecimen` for `/design`. |
 | `src/content/notes/*.mdx` | The engineering notes; each needs an entry in `src/lib/notes.ts` (newest first). |
 | `src/lib/data.ts` | Single source for home, `/resume` and the search index: projects, experience, education, services, skills, links. |
-| `src/lib/search.ts` | The search engine, pure and dependency-free: query parser, tokenizer and stemmer, rewriter, prefix and fuzzy expansion, inverted index with per-field counts, BM25 with field boosts and a static-rank prior, per-hit `explain`, highlight and snippet helpers. `TREATMENT` is what the site runs; `CONTROL` is plain BM25. |
+| `src/lib/search.ts` | The search engine, pure and dependency-free: query parser, tokenizer (folds accents: "résumé" is "resume") and stemmer, rewriter, prefix and fuzzy expansion, inverted index with per-field counts, BM25 with field boosts and a static-rank prior, per-hit `explain`, highlight and snippet helpers. `TREATMENT` is what the site runs; `CONTROL` is plain BM25. |
 | `src/lib/corpus.ts` | Builds the search documents from `lib/data`, `lib/resume`, `lib/notes` and (when given) the notes' sections; owns `WORK_HEADLINES`, the priors, starting points and example queries. The Work section renders from `workRoles` here. |
 | `src/lib/eval.ts` | The judged query set and the metrics (P@1, MRR, nDCG@5). Read by `/engine` at build and by `eval.test.ts`. |
+| `src/lib/searchUi.ts` | The hero box's rules that need no DOM: rows visible at a width, arrow-key clamping, where focus goes after Show all, keeping a selection through a re-rank. |
 | `src/lib/useSearchIndex.ts` | Client store: one index per tab, record first, full text after idle. |
 | `src/lib/timeline.ts`, `slug.ts`, `themeSwitch.ts` | Period parser for the career strip; heading slugs shared by MDX and the index; the light/dark switch. |
 | `src/lib/status.ts`, `statusStore.ts` | `/status.json` schema 1, `parseStatus` validation, freshness helpers; the store fetches it once. |

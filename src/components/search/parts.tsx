@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import {
-  highlight, snippet, tokenize, PHRASE_BONUS,
+  highlight, snippet, tokenize, scoreLine,
   type DocKind, type ParsedQuery, type PlanTerm, type SearchDoc, type SearchHit, type SearchIndex,
 } from "@/lib/search";
 
@@ -47,7 +47,7 @@ const SOURCE_NOTE: Record<PlanTerm["source"], (t: PlanTerm) => string> = {
 /** The query plan: every term searched for, how it got there and how many documents hold it. */
 export function PlanChips({ plan, parsed }: { plan: PlanTerm[]; parsed: ParsedQuery }) {
   return (
-    <ul className="flex flex-wrap gap-1.5" aria-label="Query plan: the terms searched for">
+    <ul className="flex flex-wrap gap-1.5 min-w-0 max-w-full" aria-label="Query plan: the terms searched for">
       {plan.map((t) => (
         <li
           key={t.term}
@@ -56,25 +56,31 @@ export function PlanChips({ plan, parsed }: { plan: PlanTerm[]; parsed: ParsedQu
           data-empty={t.df === 0}
           title={`${t.term}: ${SOURCE_NOTE[t.source](t)}, in ${t.df} document${t.df === 1 ? "" : "s"}, weight ${t.weight}`}
         >
-          {t.term}
+          <span className="term-t">{t.term}</span>
+          {/* Seen as "search 17"; read as "search, in 17 documents". */}
+          <span className="sr-only">, in </span>
           <span>{t.df}</span>
+          <span className="sr-only"> document{t.df === 1 ? "" : "s"}</span>
         </li>
       ))}
       {parsed.excluded.map((t) => (
         <li key={`-${t}`} className="term" data-source="excluded" title={`Documents containing ${t} are removed`}>
-          {t}
+          <span className="sr-only">Excluded: </span>
+          <span className="term-t">{t}</span>
         </li>
       ))}
       {parsed.kinds.length > 0 && (
         <li className="term" data-source="filter" title="Only these kinds of document">
           <span>kind</span>
-          {parsed.kinds.join(" + ")}
+          <span className="sr-only">: </span>
+          <span className="term-t">{parsed.kinds.join(" + ")}</span>
         </li>
       )}
       {parsed.tech.map((t) => (
         <li key={`tech-${t}`} className="term" data-source="filter" title="Only documents whose stack lists this">
           <span>tech</span>
-          {t}
+          <span className="sr-only">: </span>
+          <span className="term-t">{t}</span>
         </li>
       ))}
     </ul>
@@ -85,51 +91,59 @@ const FIELD_NAMES = ["title", "tags", "text"] as const;
 
 /** The arithmetic behind one result, laid out so each line can be checked by hand. */
 export function Explain({ hit }: { hit: SearchHit }) {
-  const { terms, prior, phrases } = hit.explain;
+  const { terms } = hit.explain;
   const sum = terms.reduce((s, t) => s + t.score, 0);
+  const line = scoreLine(hit);
   const num = "text-right font-mono text-[0.7rem] py-1 pl-3";
   return (
     <div className="mt-3 border border-border rounded-[var(--r-box)] p-3 sm:p-4 bg-surface max-w-[44rem] overflow-x-auto">
-      <p className="fact mb-2">Why it ranks here. Each row is one term: weight × idf × how often it appears, damped for length.</p>
-      <table className="w-full border-collapse min-w-[26rem]">
-        <thead>
-          <tr className="fact text-left">
-            <th className="font-normal py-1">Term</th>
-            <th className="font-normal py-1 pl-3">Found in</th>
-            <th className="font-normal py-1 pl-3 text-right">Weight</th>
-            <th className="font-normal py-1 pl-3 text-right">idf</th>
-            <th className="font-normal py-1 pl-3 text-right">Score</th>
-            <th className="font-normal py-1 pl-3 w-[22%]" aria-hidden="true" />
-          </tr>
-        </thead>
-        <tbody>
-          {terms.map((t) => (
-            <tr key={t.term} className="border-t border-border">
-              <td className="py-1">
-                <span className="term" data-source={t.source}>
-                  {t.term}
-                </span>
-              </td>
-              <td className="py-1 pl-3 fact">
-                {t.tf
-                  .map((n, i) => (n > 0 ? `${FIELD_NAMES[i]}${n > 1 ? ` ×${n}` : ""}` : ""))
-                  .filter(Boolean)
-                  .join(", ")}
-              </td>
-              <td className={num}>{t.weight.toFixed(2)}</td>
-              <td className={num}>{t.idf.toFixed(2)}</td>
-              <td className={num}>{t.score.toFixed(2)}</td>
-              <td className="py-1 pl-3" aria-hidden="true">
-                <div className="h-2 bg-fg" style={{ width: `${Math.max(3, (t.score / sum) * 100)}%` }} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {line.listedByFilter ? (
+        <p className="fact mb-2">Why it is here. No term scored: the filter alone lists it, so its base is 1.</p>
+      ) : (
+        <>
+          <p className="fact mb-2">Why it ranks here. Each row is one term: weight × idf × how often it appears, damped for length.</p>
+          <table className="w-full border-collapse min-w-[26rem]">
+            <thead>
+              <tr className="fact text-left">
+                <th className="font-normal py-1">Term</th>
+                <th className="font-normal py-1 pl-3">Found in</th>
+                <th className="font-normal py-1 pl-3 text-right">Weight</th>
+                <th className="font-normal py-1 pl-3 text-right">idf</th>
+                <th className="font-normal py-1 pl-3 text-right">Score</th>
+                <th className="font-normal py-1 pl-3 w-[22%]" aria-hidden="true" />
+              </tr>
+            </thead>
+            <tbody>
+              {terms.map((t) => (
+                <tr key={t.term} className="border-t border-border">
+                  <td className="py-1">
+                    <span className="term" data-source={t.source}>
+                      {t.term}
+                    </span>
+                  </td>
+                  <td className="py-1 pl-3 fact">
+                    {t.tf
+                      .map((n, i) => (n > 0 ? `${FIELD_NAMES[i]}${n > 1 ? ` ×${n}` : ""}` : ""))
+                      .filter(Boolean)
+                      .join(", ")}
+                  </td>
+                  <td className={num}>{t.weight.toFixed(2)}</td>
+                  <td className={num}>{t.idf.toFixed(2)}</td>
+                  <td className={num}>{t.score.toFixed(2)}</td>
+                  <td className="py-1 pl-3" aria-hidden="true">
+                    <div className="h-2 bg-fg" style={{ width: `${Math.max(3, (t.score / sum) * 100)}%` }} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+      {/* Every number is printed as the engine holds it to three decimals, so the line multiplies back by hand. */}
       <p className="mt-2 pt-2 border-t border-fg font-mono text-[0.7rem] leading-relaxed">
-        {sum.toFixed(2)}
-        {prior !== 1 ? ` × ${prior.toFixed(2)} static rank` : ""}
-        {phrases > 0 ? ` × ${(PHRASE_BONUS ** phrases).toFixed(2)} phrase` : ""} = <span className="font-bold">{hit.score.toFixed(2)}</span>
+        {line.base}
+        {line.listedByFilter ? " (listed by the filter)" : ""}
+        {line.factors.map((f) => ` × ${f.value} ${f.label}`).join("")} = <span className="font-bold">{line.total}</span>
       </p>
     </div>
   );
@@ -160,7 +174,7 @@ export function ResultRow({
     <li
       id={id}
       data-selected={selected}
-      className={`rank-in ${collapsed ? "max-sm:hidden" : ""} relative grid grid-cols-[1fr_auto] sm:grid-cols-[7.5rem_1fr_auto] gap-x-6 gap-y-1 py-4 border-t border-border data-[selected=true]:bg-surface data-[selected=true]:shadow-[inset_3px_0_0_var(--fg)] data-[selected=true]:-mx-3 data-[selected=true]:px-3`}
+      className={`rank-in ${collapsed ? "max-sm:hidden" : ""} relative grid grid-cols-[1fr_auto] sm:grid-cols-[7.5rem_1fr_auto] gap-x-3 sm:gap-x-6 gap-y-1 py-4 border-t border-border data-[selected=true]:bg-surface data-[selected=true]:shadow-[inset_3px_0_0_var(--fg)] data-[selected=true]:-mx-3 data-[selected=true]:px-3`}
       style={{ "--i": i } as CSSProperties}
     >
       <p className="fact sm:pt-1.5 col-span-2 sm:col-span-1">{doc.kind}</p>
@@ -192,15 +206,16 @@ export function ResultRow({
           type="button"
           onClick={onToggle}
           aria-expanded={open}
-          className="hidden sm:block w-[4.5rem] self-start pt-2 text-right group"
+          // Wide: score, bar and "Why?" stacked. Phone: just "Why?", a 44 px target; the score is still read aloud.
+          className="w-11 sm:w-[4.5rem] max-sm:min-h-11 max-sm:flex max-sm:items-start max-sm:justify-end max-sm:pt-1 self-start sm:pt-2 text-right group"
         >
           {/* No aria-label: the name is built from the content, so what is seen is what is announced. */}
           <span className="sr-only">Score </span>
-          <span className="font-mono text-xs text-muted group-hover:text-fg">{score.toFixed(2)}</span>
-          <span className="block mt-1.5 h-[3px] bg-fg/10">
+          <span className="font-mono text-xs text-muted group-hover:text-fg max-sm:sr-only">{score.toFixed(2)}</span>
+          <span className="block mt-1.5 h-[3px] bg-fg/10 max-sm:hidden">
             <span className="block h-full bg-fg" style={{ width: `${Math.max(4, (score / top) * 100)}%` }} />
           </span>
-          <span className="fact !text-xs mt-1.5 block underline decoration-fg/30 underline-offset-4 group-hover:text-fg">
+          <span className="fact !text-xs sm:mt-1.5 block underline decoration-fg/30 underline-offset-4 group-hover:text-fg max-sm:pt-2">
             {open ? "Hide" : "Why?"}
             <span className="sr-only">{open ? " the arithmetic" : " Show the arithmetic"}</span>
           </span>

@@ -1,8 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-// No canonical: the root layout's "/" would otherwise mark every 404 as a copy of the home page.
-export const metadata: Metadata = { title: "Not found", robots: { index: false }, alternates: { canonical: null } };
+const TITLE = "Not found";
+const DESCRIPTION = "No document matches that address. The index holds only what is on this site.";
+
+// Nothing is inherited from the home page: no canonical (the layout's "/" would mark every 404 as a
+// copy of it), no og:url, and a description of its own. An openGraph of its own, without a url,
+// replaces the layout's whole openGraph, so the home page's url and card do not carry over.
+export const metadata: Metadata = {
+  title: TITLE,
+  description: DESCRIPTION,
+  robots: { index: false },
+  alternates: { canonical: null },
+  openGraph: { title: `${TITLE} · Ritwick Verma`, description: DESCRIPTION, siteName: "ritwickverma.dev", type: "website", locale: "en_US" },
+  twitter: { card: "summary", title: `${TITLE} · Ritwick Verma`, description: DESCRIPTION },
+};
 
 export default function NotFound() {
   return (
