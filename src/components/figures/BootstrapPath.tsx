@@ -75,7 +75,7 @@ export default function BootstrapPath() {
       claim="A backtest is one path. Deal the same weeks out in a new order a thousand times and the result swings widely."
       how={
         <>
-          Press a piece length: the real weeks are cut into pieces of about that size and dealt again at random, 1,000 times. The dark line marks what the real backtest got.
+          Press a piece length: the real weeks are cut into pieces of about that size and dealt again at random, 1,000 times. The tall vertical line marks what the real backtest got.
         </>
       }
       caption="The real equity curve of the backtest below, resampled in your browser; because the path comes from the survivor universe, the bias is inside every reshuffle and no spread here can show it."
@@ -115,9 +115,6 @@ export default function BootstrapPath() {
             <rect x={x(s.lo)} width={x(s.hi) - x(s.lo)} y={38.5} height={1.5} fill="var(--fg)" />
             <line x1={x(actual)} x2={x(actual)} y1={0} y2={40} stroke="var(--fg)" strokeWidth={2.5} vectorEffect="non-scaling-stroke" />
           </svg>
-          <div className="fact absolute left-1 top-1 rounded-[3px] bg-background/85 px-1.5 py-0.5 leading-snug">
-            Bars: reshuffles ending near each {what}. Line under them: the middle 95%.
-          </div>
         </div>
         <div className="relative mt-1 h-6" aria-hidden="true">
           {xTicks.map((t) => (
@@ -126,6 +123,9 @@ export default function BootstrapPath() {
             </span>
           ))}
         </div>
+        <p className="fact mt-1">
+          Bars: how many of the {SAMPLES.toLocaleString("en-US")} reshuffles ended near each {what}. Thick line under them: the middle 95%, {pctText(s.lo * 100, 0)} to {pctText(s.hi * 100, 0)}.
+        </p>
       </div>
       <Verdict title={`The same weeks give ${metric === "cagr" ? "yearly returns" : "worst falls"} from ${pctText(s.lo * 100, 0)} to ${pctText(s.hi * 100, 0)}.`}>
         The real run got {pctText(actual * 100)}, which beat {doBetter} of every 100 reshuffles. All of that spread is luck inside one path; it does not include the choice of companies.
@@ -150,7 +150,7 @@ export default function BootstrapPath() {
             className="h-11 w-52 max-w-full accent-fg"
           />
         </div>
-        <p className="fact mt-3 mb-1">The real path (dark) and 12 of the reshuffles, growth of 1 on a log scale over {YEARS.toFixed(1)} years</p>
+        <p className="fact mt-3 mb-1">The real path (thick) and 12 of the reshuffles, growth of 1 on a log scale over {YEARS.toFixed(1)} years</p>
         <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2">
           <div className="relative" aria-hidden="true">
             {pathTicks.map((t) => (

@@ -37,7 +37,7 @@ export const notes: Note[] = [
     slug: "plutus-what-the-backtest-cannot-tell-you",
     title: "Plutus: what the backtest cannot tell you",
     summary:
-      "I found no edge. The same code earned 21.3% a year on today's index members and 3.1% on the members of the day. Figures to run: the bias, and one path.",
+      "I found no edge. The same code earned 21.3% a year on today's index members and 3.1% on the members of the day. Press the figures.",
     date: "2026-10-13",
     updated: "2026-11-10",
     tags: ["Python", "quant", "backtesting"],

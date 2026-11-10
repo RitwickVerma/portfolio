@@ -38,7 +38,7 @@ export default function SurvivorToy() {
   const lo = Math.log(Math.min(...run.strategy, ...run.market) * 0.95);
   const hi = Math.log(Math.max(...run.strategy, ...run.market) * 1.05);
   const yOf = (v: number) => 100 - ((Math.log(v) - lo) / (hi - lo)) * 100;
-  const ticks = [0.5, 1, 2, 4, 8].filter((t) => Math.log(t) > lo && Math.log(t) < hi);
+  const ticks = [0.5, 1, 2, 3, 5, 10].filter((t) => Math.log(t) > lo && Math.log(t) < hi);
   const years = (run.strategy.length - 1) / 12;
   const pick = universe === "survivors" ? mean.survivors : mean.then;
   const edge = (pick - mean.market) * 100;
@@ -54,7 +54,7 @@ export default function SurvivorToy() {
       claim="Give a rule with no skill only the stocks that survived, and it looks skilful."
       how={
         <>
-          A made-up market where every stock has the same odds. Survivors are the stocks still listed at the end. Press <b className="font-semibold text-fg">Everyone who existed then</b> and watch the dark line fall to the market&apos;s.
+          A made-up market where every stock has the same odds. Survivors are the stocks still listed at the end. Press <b className="font-semibold text-fg">Everyone who existed then</b> and watch the solid line fall to the dashed one.
         </>
       }
       caption="Synthetic: 300 invented stocks and a crude delisting rule, nothing from Plutus or any real market; it shows the direction, and the real gap above is larger than this reaches."
@@ -95,7 +95,7 @@ export default function SurvivorToy() {
             </svg>
             <div className="fact absolute left-2 top-1 rounded-[3px] bg-background/85 px-1.5 py-0.5 leading-snug">
               <div className="text-fg">
-                <span aria-hidden="true">━ </span>the rule: <span className="tabular-nums font-semibold">{end(run.strategy).toFixed(1)}×</span> in {years} years
+                <span aria-hidden="true">━ </span>In this world the rule: <span className="tabular-nums font-semibold">{end(run.strategy).toFixed(1)}×</span> in {years} years
               </div>
               <div>
                 <span aria-hidden="true">╌ </span>the market: <span className="tabular-nums font-semibold">{end(run.market).toFixed(1)}×</span>
