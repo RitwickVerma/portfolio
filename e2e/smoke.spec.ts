@@ -6,6 +6,8 @@ import AxeBuilder from "@axe-core/playwright";
 // complete without JavaScript, still under reduced motion, one printed page.
 
 const NOTE = "/notes/tizen-video-plane-ambilight/";
+/** A note that opens on a figure you operate; it gets every check the other pages get. */
+const FIGURE_NOTE = "/notes/kwin-canvas-frame-classifier/";
 /** Scanned by axe as well: the home page with a query on it shows facets, plan chips and scores the idle page does not. */
 const WITH_QUERY = { name: "home with a query", path: "/?q=testing" } as const;
 const PAGES = [
@@ -13,6 +15,7 @@ const PAGES = [
   { name: "engine", path: "/engine/" },
   { name: "design", path: "/design/" },
   { name: "note", path: NOTE },
+  { name: "figure note", path: FIGURE_NOTE },
   { name: "resume", path: "/resume/" },
 ] as const;
 const WIDTHS = [320, 390, 768, 1440] as const;
@@ -93,11 +96,93 @@ for (const { name, path } of PAGES) {
         for (const id of ["work-0-0", "homelab", "contact", "skills", "earlier"]) await expect(page.locator(`#${id}`)).toHaveCount(1);
         await expect(page.locator("#hits a").first()).toHaveAttribute("href", /#work-0-0$/);
       }
+      if (name === "figure note") {
+        // The figure's first state is a played case, so the server HTML already says what the classifier decided and why.
+        const figure = page.locator("figure").first();
+        await expect(figure.locator("[aria-live]")).toContainText("Revert");
+        await expect(figure.getByText(/Same size, from out of reach to in reach/)).toBeVisible();
+        await expect(figure.locator("figcaption")).toContainText("KWin is not running");
+      }
       if (name === "resume") await expect(page.locator("a[download]")).toHaveAttribute("href", /Ritwick_Verma_Resume\.pdf$/);
       await context.close();
     });
   });
 }
+
+test.describe("the frame-authority figure", () => {
+  test("a pull is reverted and a move on the screen is adopted, placed by keyboard and by pointer", async ({ page }) => {
+    const problems = watch(page);
+    await page.goto(FIGURE_NOTE);
+    await page.waitForLoadState("networkidle");
+    const figure = page.locator("figure").first();
+    const verdict = figure.locator("[aria-live]");
+    const move = figure.getByRole("button", { name: "Move it" });
+    const win = figure.getByRole("group", { name: /^Window at/ });
+    const x = figure.getByLabel("x", { exact: true });
+
+    // Server-rendered state, then the same case played again: the second revert of a chain.
+    await expect(verdict).toContainText("Revert");
+    await move.click();
+    await expect(verdict).toContainText("Revert");
+    await expect(verdict).toContainText("from 4000, 300 to 1820, 300");
+
+    // A third one right after would be the window insisting, so let the figure's clock pause between the next moves.
+    await figure.getByLabel("After a pause (2000 ms)").check();
+
+    // Keyboard: nine Shift+Left steps of 200 px bring it from 4000 to 2200, still out of reach; two more put 100 px of it over the monitor.
+    await win.focus();
+    for (let i = 0; i < 9; i++) await page.keyboard.press("Shift+ArrowLeft");
+    await expect(x).toHaveValue("2200");
+    await move.click();
+    await expect(verdict).toContainText("Revert");
+    await expect(verdict).toContainText("from 2200, 300 to 1820, 300");
+    await win.focus();
+    for (let i = 0; i < 2; i++) await page.keyboard.press("Shift+ArrowLeft");
+    await expect(x).toHaveValue("1800");
+    // Now in reach: KWin's rule has nothing to do, and a window that did not move is adopted.
+    await move.click();
+    await expect(verdict).toContainText("Adopt");
+    await expect(figure.getByText("not asked").first()).toBeVisible();
+
+    // Pointer: drag it far off to the right, where KWin will pull it back.
+    const box = (await win.locator("rect").nth(1).boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, { steps: 6 });
+    await page.mouse.up();
+    expect(Number(await x.inputValue())).toBeGreaterThan(2500);
+    await expect(verdict).toContainText("Not played");
+    await move.click();
+    await expect(verdict).toContainText("Revert");
+
+    // A preset is a whole case: a move between two places on the screen is the window's own.
+    await figure.getByRole("button", { name: "A move on the screen" }).click();
+    await expect(verdict).toContainText("Adopt");
+    await expect(figure.getByRole("button", { name: "A move on the screen" })).toHaveAttribute("aria-pressed", "true");
+    expect(problems).toEqual([]);
+  });
+
+  test("a window that insists is adopted on the third move, and a pause starts the chain again", async ({ page }) => {
+    await page.goto(FIGURE_NOTE);
+    await page.waitForLoadState("networkidle");
+    const figure = page.locator("figure").first();
+    const verdict = figure.locator("[aria-live]");
+    const move = figure.getByRole("button", { name: "Move it" });
+    await figure.getByRole("button", { name: "A window that insists" }).click();
+    await expect(verdict).toContainText("Revert");
+    await move.click();
+    await expect(verdict).toContainText("Revert");
+    await move.click();
+    await expect(verdict).toContainText("Adopt");
+    await expect(verdict).toContainText("third in a row");
+    await figure.getByRole("button", { name: "Pulled in from far away" }).click();
+    await figure.getByLabel("After a pause (2000 ms)").check();
+    await move.click();
+    await move.click();
+    await move.click();
+    await expect(verdict).toContainText("Revert");
+  });
+});
 
 test.describe("search", () => {
   test("the search chunk hydrates and ranks in the browser", async ({ page }) => {
