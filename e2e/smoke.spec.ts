@@ -325,65 +325,124 @@ test.describe("the SudoStamp note's figures", () => {
 });
 
 test.describe("the ShutUp figure", () => {
-  const figure = (page: Page) => page.getByRole("figure", { name: /ShutUp's wave detector/ });
+  const figure = (page: Page) => page.getByRole("figure", { name: /A hand reaching to decline a call looks like a wave/ });
+  const open = (fig: ReturnType<typeof figure>, summary: string) => fig.locator("summary", { hasText: summary }).click();
+
+  test("opens on the claim, a preset and the reach, and the first screen holds the drawing and the verdict", async ({ page }) => {
+    const problems = watch(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(SHUTUP);
+    await page.waitForLoadState("networkidle");
+    const fig = figure(page);
+    await expect(fig.getByRole("button", { name: "Reach for the phone" })).toHaveAttribute("aria-pressed", "true");
+    // Three rule switches in one row, and nothing else to operate before the folds.
+    await expect(fig.getByRole("switch")).toHaveCount(3);
+    // The drawing labels its own marks and axis, and the verdict sits under it, inside the first screens.
+    await expect(fig.getByText("Hand over the sensor").first()).toBeVisible();
+    await expect(fig.getByText("ignored", { exact: true }).first()).toBeVisible();
+    await expect(fig.getByText("Seconds since the ringing began")).toBeVisible();
+    const verdict = fig.getByRole("status").first();
+    await expect(verdict).toContainText("The call keeps ringing.");
+    const box = await verdict.boundingBox();
+    expect(box!.y + box!.height).toBeLessThan(844 * 1.5);
+    // The two things that live in folds are closed until asked for.
+    await expect(fig.locator("summary", { hasText: "Why: what each rule did" })).toBeVisible();
+    await expect(fig.getByRole("button", { name: "Hand over the sensor" })).toBeHidden();
+    expect(problems).toEqual([]);
+  });
 
   test("refuses the reach with the motion guard on and answers the call with it off", async ({ page }) => {
     const problems = watch(page);
     await page.goto(SHUTUP);
     await page.waitForLoadState("networkidle");
     const fig = figure(page);
-    const status = fig.getByRole("status");
-    const guard = fig.getByRole("switch", { name: "Motion guard" });
+    const status = fig.getByRole("status").first();
+    const guard = fig.getByRole("switch", { name: /Ignore waves while the phone moves/ });
     await expect(guard).toBeChecked();
-    // The reach pattern is loaded, every rule is on: both late waves are refused and the call keeps ringing.
-    await expect(status).toContainText("Nothing fired");
+    // The reach pattern is loaded, every rule is on: both late waves are ignored and the call keeps ringing.
+    await expect(status).toContainText("The call keeps ringing.");
+    await expect(status).toContainText("0.30 s too early; 1.20 s dropped when the phone moved; 1.75 s soon after the phone moved");
+    await open(fig, "Why: what each rule did");
     await expect(fig.getByText("a wave 0.40 s after the phone moved, muted until 2.15 s")).toBeVisible();
     await expect(fig.getByText("a wave 0.70 s too early, waves are ignored until 1.00 s")).toBeVisible();
-    // Guard off: the same reach is now a double wave, and a double wave answers.
+    // Guard off: the same reach is now a double wave, and a double wave answers. The drawing and the verdict change in place.
     await guard.uncheck();
-    await expect(status).toContainText("The call was answered at 1.75 s");
-    await expect(fig.getByText(/^fired double wave$/)).toBeVisible();
+    await expect(status).toContainText("The call is answered at 1.75 s.");
+    await expect(status).toHaveAttribute("data-tone", "warn");
+    await expect(fig.getByText("answers", { exact: true })).toBeVisible();
+    await expect(fig.getByText("jolt (rule off)")).toBeVisible();
+    await expect(status).toContainText("Switched off: \u201cIgnore waves while the phone moves\u201d.");
+    await expect(fig.getByText(/^recognised double wave$/)).toBeVisible();
     await expect(fig.getByText(/the phone moved: waves muted/)).toHaveCount(0);
     await guard.check();
-    await expect(status).toContainText("Nothing fired");
+    await expect(status).toContainText("The call keeps ringing.");
+    await expect(status).toHaveAttribute("data-tone", "ok");
     expect(problems).toEqual([]);
   });
 
-  test("a timeline built by tapping NEAR and FAR runs through the real detectors", async ({ page }) => {
+  test("the presets show a reach, a deliberate wave and a double wave, and each one's own result", async ({ page }) => {
     await page.goto(SHUTUP);
     await page.waitForLoadState("networkidle");
     const fig = figure(page);
-    const status = fig.getByRole("status");
+    const status = fig.getByRole("status").first();
+    const preset = (name: string) => fig.getByRole("button", { name, exact: true });
+    await preset("A deliberate wave").click();
+    await expect(preset("A deliberate wave")).toHaveAttribute("aria-pressed", "true");
+    await expect(status).toContainText("The call is not answered.");
+    await expect(status).toContainText("silences the ringer at 3.20 s");
+    // The same wave answers the moment it is seen once the single-wave rule is off.
+    await fig.getByRole("switch", { name: /One wave only silences/ }).uncheck();
+    await expect(status).toContainText("The call is answered at 2.00 s.");
+    await fig.getByRole("switch", { name: /One wave only silences/ }).check();
+    await preset("A double wave").click();
+    await expect(status).toContainText("The call is answered at 2.50 s.");
+    await expect(status).toContainText("double wave");
+    await preset("Reach for the phone").click();
+    await expect(status).toContainText("The call keeps ringing.");
+  });
+
+  test("a timeline built by tapping hand over the sensor and away runs through the real detectors", async ({ page }) => {
+    await page.goto(SHUTUP);
+    await page.waitForLoadState("networkidle");
+    const fig = figure(page);
+    const status = fig.getByRole("status").first();
+    await open(fig, "Build your own timeline");
     await fig.getByRole("button", { name: "Clear" }).click();
-    await expect(status).toContainText("Nothing fired");
-    await fig.getByRole("button", { name: "1 s", exact: true }).click();
+    await expect(status).toContainText("The call keeps ringing.");
+    await expect(status).toContainText("No wave was seen");
+    await expect(fig.getByRole("button", { name: "Reach for the phone" })).toHaveAttribute("aria-pressed", "false");
+    await fig.getByRole("radio", { name: "1 s", exact: true }).click();
     await fig.getByRole("button", { name: "Hand away" }).click();
     await fig.getByRole("button", { name: "Hand away" }).click();
-    await fig.getByRole("button", { name: "0.25 s", exact: true }).click();
-    await fig.getByRole("button", { name: "Hand near" }).click();
+    await fig.getByRole("radio", { name: "0.25 s", exact: true }).click();
+    await fig.getByRole("button", { name: "Hand over the sensor" }).click();
     await fig.getByRole("button", { name: "Hand away" }).click();
-    await fig.getByRole("button", { name: "Hand near" }).click();
+    await fig.getByRole("button", { name: "Hand over the sensor" }).click();
     // Two separate waves inside the window, after the arming delay: a double wave, which answers.
-    await expect(status).toContainText("The call was answered at 2.50 s");
+    await expect(status).toContainText("The call is answered at 2.50 s.");
     await fig.getByRole("button", { name: "Undo" }).click();
     // One wave: the window runs out and it silences. A single wave never answers.
-    await expect(status).toContainText("The ringer was silenced at 3.20 s");
+    await expect(status).toContainText("silences the ringer at 3.20 s");
     // Take the single-wave rule off and the same wave answers the moment it is seen.
-    await fig.getByRole("switch", { name: "Single-wave rule" }).uncheck();
-    await expect(status).toContainText("The call was answered at 2.00 s");
+    await fig.getByRole("switch", { name: /One wave only silences/ }).uncheck();
+    await expect(status).toContainText("The call is answered at 2.00 s.");
+    // A jolt is an event of its own on the timeline.
+    await fig.getByRole("button", { name: "Phone jolt" }).click();
+    await expect(fig.getByText("jolt", { exact: true })).toBeVisible();
   });
 
   test("the randomised check runs in the tab, shows its seed and finds violations when a rule is off", async ({ page }) => {
     await page.goto(SHUTUP);
     await page.waitForLoadState("networkidle");
     const fig = figure(page);
+    await open(fig, "Check it on random streams");
     await expect(fig.getByText(/Seed 7, 400 streams of 200 readings/)).toBeVisible();
     await expect(fig.getByText(/No stream broke a rule/)).toBeVisible();
     await fig.getByLabel("Seed").fill("11");
     await fig.getByRole("button", { name: "Run 400 streams" }).click();
     await expect(fig.getByText(/Seed 11, 400 streams of 200 readings/)).toBeVisible();
     await expect(fig.getByText(/No stream broke a rule/)).toBeVisible();
-    await fig.getByRole("switch", { name: "Motion guard" }).uncheck();
+    await fig.getByRole("switch", { name: /Ignore waves while the phone moves/ }).uncheck();
     await expect(fig.getByText(/The switches have changed since this run/)).toBeVisible();
     await fig.getByRole("button", { name: "Run 400 streams" }).click();
     await expect(fig.getByText(/the motion guard off/)).toBeVisible();
@@ -396,9 +455,10 @@ test.describe("the ShutUp figure", () => {
     const page = await context.newPage();
     await page.goto(SHUTUP);
     const fig = figure(page);
-    await expect(fig.getByRole("status")).toContainText("Nothing fired");
+    await expect(fig.getByRole("status").first()).toContainText("The call keeps ringing.");
     await expect(fig.getByText("a wave 0.40 s after the phone moved, muted until 2.15 s")).toBeVisible();
     await expect(fig.getByText(/Seed 7, 400 streams of 200 readings/)).toBeVisible();
+    await expect(fig.getByText(/No stream broke a rule/)).toBeVisible();
     await expect(fig.getByRole("button")).toHaveCount(0);
     await expect(fig.getByRole("switch")).toHaveCount(0);
     await context.close();
