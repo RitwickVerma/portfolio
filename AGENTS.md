@@ -21,7 +21,7 @@ npm run build      # static export -> out/
 **A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
-Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 13 files / 145 tests pass.
+Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 15 files / 186 tests pass.
 ```bash
 npm run lint && npm run typecheck && npm test   # exactly what the CI `check` job runs
 npm run test:watch
@@ -32,6 +32,7 @@ npm run test:watch
 - `src/lib/corpus.test.ts` checks the corpus against the real data: every note section is a document whose anchor the page renders, and `WORK_HEADLINES` matches the generated `lib/resume.ts` bullets in count.
 - `src/lib/eval.test.ts` is the relevance guard: the judged queries in `lib/eval.ts` must all return a relevant first result under `TREATMENT`, nDCG@5 must stay at 0.9 or better, and `TREATMENT` must beat `CONTROL`. A ranking change that fails this needs either a fix or a conscious edit to the judgments.
 - `src/lib/theme.test.ts` checks both palettes against `globals.css` and for WCAG contrast.
+- `src/lib/sudostamp.test.ts` and `sudostampSim.test.ts` carry the SudoStamp repo's own unit tests (`LimiterTest.kt`, `SshSigTest.kt`, `CooldownTest.kt` as of v1.3.0) as vectors for the TypeScript port, plus four signatures made by `ssh-keygen -Y sign` with throwaway keys (public data only).
 - No test uses `vi.mock`/`vi.fn`/`vi.spyOn`; tests exercise pure functions and fixtures directly. Keep new logic pure so it stays testable this way.
 - `npm run build` also renders OG cards and must pass; it is not part of CI `check` (verified locally, ~30 s). The `e2e` job runs it.
 
@@ -41,7 +42,7 @@ Playwright (`e2e/smoke.spec.ts`, `playwright.config.ts`) over the built export i
 npm run build && npm run test:e2e                      # needs the browsers: npx playwright install
 docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/playwright:v1.65.0-noble npx playwright test   # what CI runs; WebKit needs this image on Debian
 ```
-- Per page (home, `/engine`, `/design`, one note, `/resume`): no console errors, no failed or third-party requests, no sideways overflow at 320/390/768/1440, complete with JavaScript disabled.
+- Per page (home, `/engine`, `/design`, two notes, `/resume`): no console errors, no failed or third-party requests, no sideways overflow at 320/390/768/1440, complete with JavaScript disabled.
 - Search: the chunk hydrates and ranks, `?q=` links work, Ctrl K opens the palette, the demo query types once and does not run under reduced motion.
 - `/resume` prints to one page on Letter and A4 (Chromium only: `page.pdf()`).
 - axe (WCAG 2.2 AA plus best-practice) on each page in both palettes, and on the home page with a query on it. A violation is fixed in the component, never excluded from the scan.
@@ -57,10 +58,11 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 | `src/app/{og.png,sitemap.ts,robots.ts,manifest.ts}` | Build-time OG image, sitemap, robots and web manifest. |
 | `src/components/` | `Search` (the hero), `Palette` (Ctrl K, every page), the home sections (`Work`, `Projects`, `Keyboard`, `Notes`, `Homelab`, `Contact`) on the shared `Section` frame, `Timeline`, `Crush80`, `NoteExtras` (contents rail, match highlighting), `Nav`, `Footer`. |
 | `src/components/search/parts.tsx` | Shared by every search surface: result row, plan chips, score breakdown (`Explain`), `CorpusMap`. |
-| `src/components/figures/` | `Ambilight` (canvas simulation; LEDs computed from the pixels), `InfiniteCanvas` (pan and zoom), `LabTopology` (SVG from `lib/data`). |
+| `src/components/figures/` | `Ambilight` (canvas simulation; LEDs computed from the pixels), `InfiniteCanvas` (pan and zoom), `LabTopology` (SVG from `lib/data`), `LimiterTimeline` and `SignatureBytes` (the SudoStamp note: the real limiter replaying what you send; a WebCrypto signature as DER and as an SSH blob). |
 | `src/components/engine/`, `design/` | `XRay` and `Benchmark` for `/engine`; `WidthSpecimen` for `/design`. |
 | `src/content/notes/*.mdx` | The engineering notes; each needs an entry in `src/lib/notes.ts` (newest first). |
 | `src/lib/data.ts` | Single source for home, `/resume` and the search index: projects, experience, education, services, skills, links. |
+| `src/lib/sudostamp.ts`, `sudostampSim.ts` | TypeScript port of SudoStamp's `Limiter`, the 1.3.0 per-address cooldown, the 32-byte signing refusal and the DER-to-SSH signature conversion (clock injected, no BigInt); the figure's replay model on top. Pure. |
 | `src/lib/search.ts` | The search engine, pure and dependency-free: query parser, tokenizer and stemmer, rewriter, prefix and fuzzy expansion, inverted index with per-field counts, BM25 with field boosts and a static-rank prior, per-hit `explain`, highlight and snippet helpers. `TREATMENT` is what the site runs; `CONTROL` is plain BM25. |
 | `src/lib/corpus.ts` | Builds the search documents from `lib/data`, `lib/resume`, `lib/notes` and (when given) the notes' sections; owns `WORK_HEADLINES`, the priors, starting points and example queries. The Work section renders from `workRoles` here. |
 | `src/lib/eval.ts` | The judged query set and the metrics (P@1, MRR, nDCG@5). Read by `/engine` at build and by `eval.test.ts`. |

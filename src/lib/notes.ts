@@ -16,6 +16,14 @@ export interface Note {
 
 export const notes: Note[] = [
   {
+    slug: "sudostamp-refuse-before-asking",
+    title: "A phone that approves sudo refuses first",
+    summary:
+      "SudoStamp's phone limits requests by computer, not address, and refuses before it asks. One encoding detail decides if a signature verifies.",
+    date: "2026-11-10",
+    tags: ["SudoStamp", "Android Keystore", "ssh-agent", "security"],
+  },
+  {
     slug: "crush80-open-firmware",
     title: "Open firmware for a keyboard that shipped none",
     summary:

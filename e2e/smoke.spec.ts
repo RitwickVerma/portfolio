@@ -6,6 +6,7 @@ import AxeBuilder from "@axe-core/playwright";
 // complete without JavaScript, still under reduced motion, one printed page.
 
 const NOTE = "/notes/tizen-video-plane-ambilight/";
+const SUDO_NOTE = "/notes/sudostamp-refuse-before-asking/";
 /** Scanned by axe as well: the home page with a query on it shows facets, plan chips and scores the idle page does not. */
 const WITH_QUERY = { name: "home with a query", path: "/?q=testing" } as const;
 const PAGES = [
@@ -13,6 +14,7 @@ const PAGES = [
   { name: "engine", path: "/engine/" },
   { name: "design", path: "/design/" },
   { name: "note", path: NOTE },
+  { name: "note with figures", path: SUDO_NOTE },
   { name: "resume", path: "/resume/" },
 ] as const;
 const WIDTHS = [320, 390, 768, 1440] as const;
@@ -150,6 +152,85 @@ test.describe("search", () => {
     await page.waitForTimeout(4000);
     await expect(page.locator("#q")).toHaveValue("");
     await expect(page).not.toHaveURL(/\?q=/);
+    await context.close();
+  });
+});
+
+test.describe("the SudoStamp note's figures", () => {
+  const requests = (page: Page) => page.getByRole("list", { name: "Requests, oldest first" }).getByRole("listitem");
+
+  test("the limiter refuses a request without asking, and the 1.3 keying lets the same ones through", async ({ page }) => {
+    const problems = watch(page);
+    await page.goto(SUDO_NOTE);
+    await page.waitForLoadState("networkidle");
+    // The example: approved, refused right behind it, denied, refused from a new address.
+    await expect(requests(page)).toHaveCount(4);
+    await expect(requests(page).nth(1)).toContainText("Refused. You were not asked.");
+    await expect(requests(page).nth(3)).toContainText(/cooling down after an unapproved request from this computer/i);
+    // Computer B again, from yet another address, straight after: still refused.
+    await page.getByRole("button", { name: "Send request" }).click();
+    await expect(requests(page)).toHaveCount(5);
+    await expect(requests(page).nth(4)).toContainText("Refused. You were not asked.");
+    await expect(requests(page).nth(4)).toContainText(/cooling down after an unapproved request from this computer/i);
+    await expect(requests(page).nth(4)).toContainText("Under 1.3, the same requests would have asked you here.");
+    // Counted by address, the same five requests all reach the user.
+    await page.getByRole("radio", { name: "address (1.3)" }).click();
+    await expect(page.getByRole("list", { name: "Requests, oldest first" })).not.toContainText("Refused");
+    await expect(requests(page).nth(4)).toContainText("Under 1.4, the same requests would have refused this one.");
+    expect(problems).toEqual([]);
+  });
+
+  test("a payload that is not a challenge is refused before the user is asked, and the choices work from the keyboard", async ({ page }) => {
+    await page.goto(SUDO_NOTE);
+    await page.waitForLoadState("networkidle");
+    await page.getByRole("button", { name: "Start over" }).click();
+    await expect(requests(page)).toHaveCount(0);
+    await page.getByRole("radio", { name: "100 bytes, something else" }).click();
+    await page.getByRole("button", { name: "Send request" }).click();
+    await expect(requests(page)).toHaveCount(1);
+    await expect(requests(page).first()).toContainText("Refused before you were asked.");
+    await expect(requests(page).first()).toContainText(/refusing to sign 100 bytes: not a pam_rssh challenge/i);
+    // Arrow keys move through a group of choices, and Tab leaves it.
+    const a = page.getByRole("radio", { name: "Computer A" });
+    const b = page.getByRole("radio", { name: "Computer B" });
+    await b.focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(a).toBeFocused();
+    await expect(a).toHaveAttribute("aria-checked", "true");
+    await expect(b).toHaveAttribute("aria-checked", "false");
+  });
+
+  test("the byte explorer signs in the browser and shows an SSH blob that verifies", async ({ page }) => {
+    const problems = watch(page);
+    await page.goto(SUDO_NOTE);
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText("Signed just now in this tab")).toBeVisible();
+    await expect(page.getByRole("group", { name: /^SSH signature blob, as the agent sends it: \d+ bytes/ })).toBeVisible();
+    const status = page.locator("figure").filter({ hasText: "Sign another 32-byte value" }).getByRole("status");
+    await expect(status).toHaveText(/checked against this tab's public key with WebCrypto: valid\./);
+    // Find a signature whose r or s has its top bit set: the sign pad shows, and lighting its row lights the byte in both strips.
+    await page.getByRole("button", { name: "Keep signing until a sign pad is needed" }).click();
+    await expect(status).toHaveText(/valid\./);
+    const padRow = page.getByRole("listitem").filter({ hasText: /DER bytes \d+ \(1 B\), SSH bytes \d+ \(1 B\)/ }).first();
+    await expect(padRow).toBeVisible();
+    await padRow.getByRole("button").focus();
+    await expect(page.locator("figure .bg-hit")).toHaveCount(3);
+    // The bug the app warns about: without the pad, a reader sees a negative number and refuses.
+    await page.getByRole("button", { name: "Leave the sign pad out" }).click();
+    await expect(status).toHaveText(/reads as negative/);
+    await page.getByRole("button", { name: "Put the sign pad back" }).click();
+    await expect(status).toHaveText(/valid\./);
+    expect(problems).toEqual([]);
+  });
+
+  test("without JavaScript both figures still show their examples", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto(SUDO_NOTE);
+    await expect(requests(page)).toHaveCount(4);
+    await expect(requests(page).nth(3)).toContainText(/cooling down after an unapproved request from this computer/i);
+    await expect(page.getByText("Test vector from the app's unit test")).toBeVisible();
+    await expect(page.getByRole("group", { name: /^SSH signature blob/ })).toBeVisible();
     await context.close();
   });
 });
