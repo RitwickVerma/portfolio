@@ -328,7 +328,7 @@ describe("the note", () => {
 
   it("opens with the figure, and has at most 450 words of prose", () => {
     expect(source.split("\n").filter((l) => l.trim() !== "").slice(0, 2)).toEqual([
-      'import ChordAlignment from "@/components/figures/ChordAlignment";',
+      'import { ChordAlignment } from "@/components/figures/lazy";',
       "<ChordAlignment />",
     ]);
     expect(plainText(source).split(" ").length).toBeLessThanOrEqual(450);
