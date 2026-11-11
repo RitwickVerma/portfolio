@@ -1098,9 +1098,9 @@ test.describe("crush80 note figures", () => {
     const board = fig.getByRole("region", { name: /Crush 80 keys/ });
     expect(await board.evaluate((b) => b.scrollWidth > b.clientWidth)).toBe(true);
     await expect(fig.getByText("Swipe the board sideways")).toBeVisible();
-    // The board opens on the middle of the keys, so there is more of it on both sides.
-    const fades = await board.evaluate((b) => [...b.parentElement!.querySelectorAll(":scope > div[aria-hidden]")].map((f) => getComputedStyle(f).opacity));
-    expect(fades).toEqual(["1", "1"]);
+    // The board opens on the middle of the keys, so there is more of it on both sides. The fades
+    // transition in, so poll: WebKit read one of them at 0.59 when asked straight after load.
+    await expect.poll(() => board.evaluate((b) => [...b.parentElement!.querySelectorAll(":scope > div[aria-hidden]")].map((f) => getComputedStyle(f).opacity))).toEqual(["1", "1"]);
     await board.evaluate((b) => (b.scrollLeft = b.scrollWidth));
     await expect.poll(() => board.evaluate((b) => [...b.parentElement!.querySelectorAll(":scope > div[aria-hidden]")].map((f) => getComputedStyle(f).opacity))).toEqual(["0", "1"]);
     await page.setViewportSize({ width: 1440, height: 900 });
