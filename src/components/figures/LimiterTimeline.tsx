@@ -38,7 +38,7 @@ const req = (from: Computer, answer: Answer, gapMs: number, extra: Partial<Reque
 
 /** Each one-tap scenario is a list of requests fed to the same replay. */
 const SCENARIOS: Record<PresetId, RequestInput[]> = {
-  // A computer you denied retries from a new address every time. The figure opens on the first request alone.
+  // A computer you denied retries from a new address every time. The figure opens on this one, already played.
   rotate: [req("b", "deny", 0, { fresh: true }), req("b", "deny", 5_000, { fresh: true }), req("b", "deny", 5_000, { fresh: true }), req("b", "deny", 5_000, { fresh: true })],
   // You approve, and the next two arrive straight behind it.
   quick: [req("a", "approve", 0), req("a", "approve", 0), req("a", "approve", 0)],
@@ -134,8 +134,8 @@ function Log({ rows, keying }: { rows: Row[]; keying: Keying }) {
 
 export default function LimiterTimeline() {
   const [keying, setKeying] = useState<Keying>("computer");
-  const [inputs, setInputs] = useState<RequestInput[]>(SCENARIOS.rotate.slice(0, 1));
-  const [preset, setPreset] = useState<PresetId | null>(null);
+  const [inputs, setInputs] = useState<RequestInput[]>(SCENARIOS.rotate);
+  const [preset, setPreset] = useState<PresetId | null>("rotate");
   const [from, setFrom] = useState<Computer>("b");
   const [fresh, setFresh] = useState(true);
   const [payload, setPayload] = useState(32);

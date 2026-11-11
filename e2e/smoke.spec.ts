@@ -349,11 +349,8 @@ test.describe("the SudoStamp note's figures", () => {
     await page.waitForLoadState("networkidle");
     const fig = limiter(page);
     const status = fig.getByRole("status");
-    // Opens on the one denial; "Rotate the address" retries from three new addresses, all refused without asking.
-    await expect(requests(page)).toHaveCount(1);
-    await expect(requests(page).nth(0)).toContainText("Asked, you denied");
-    await expect(fig.getByRole("button", { name: "Rotate the address" })).toHaveAttribute("aria-pressed", "false");
-    await fig.getByRole("button", { name: "Rotate the address" }).click();
+    // Opens on "Rotate the address" already played: one denial, then three new addresses, all refused without asking.
+    await expect(fig.getByRole("button", { name: "Rotate the address" })).toHaveAttribute("aria-pressed", "true");
     await expect(requests(page)).toHaveCount(4);
     await expect(requests(page).nth(0)).toContainText("Asked, you denied");
     for (const n of [1, 2, 3]) {
@@ -362,7 +359,14 @@ test.describe("the SudoStamp note's figures", () => {
     }
     await expect(requests(page).nth(3)).toContainText("Old way: you would be asked here.");
     await expect(status).toContainText("Counting by computer, the phone asks you 1 time. Counting by address, it would have asked 4.");
-    await expect(fig.getByRole("button", { name: "Rotate the address" })).toHaveAttribute("aria-pressed", "true");
+    // One request alone is a different story: nothing is at stake until a second one arrives.
+    await fig.getByText("Send your own request").click();
+    await fig.getByRole("button", { name: "Start over" }).click();
+    await fig.getByRole("button", { name: "Send request" }).click();
+    await expect(requests(page)).toHaveCount(1);
+    await expect(fig.getByRole("button", { name: "Rotate the address" })).toHaveAttribute("aria-pressed", "false");
+    await fig.getByRole("button", { name: "Rotate the address" }).click();
+    await expect(requests(page)).toHaveCount(4);
     // Counted by address, the same requests all reach the user, and the rows say so.
     await fig.getByRole("radio", { name: "by address (before)" }).click();
     await expect(fig.getByRole("list", { name: "Requests, oldest first" })).not.toContainText("Refused");
@@ -476,9 +480,10 @@ test.describe("the SudoStamp note's figures", () => {
     const page = await context.newPage();
     await page.goto(SUDO_NOTE);
     await expect(limiter(page)).toBeVisible();
-    await expect(requests(page)).toHaveCount(1);
+    await expect(requests(page)).toHaveCount(4);
     await expect(requests(page).nth(0)).toContainText("Asked, you denied");
-    await expect(limiter(page).getByRole("status")).toContainText("the phone asks you 1 time");
+    await expect(requests(page).nth(3)).toContainText("Refused, phone stayed silent");
+    await expect(limiter(page).getByRole("status")).toContainText("Counting by computer, the phone asks you 1 time. Counting by address, it would have asked 4.");
     await expect(page.getByText("Test vector from the app's unit test")).toBeVisible();
     await expect(sshView(page)).toBeVisible();
     await expect(sigFigure(page)).toContainText("One missing zero byte and the signature fails");
