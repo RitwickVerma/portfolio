@@ -56,7 +56,7 @@ export const projects: Project[] = [
     description:
       "An infinite window canvas for KDE Plasma, built only on KWin's public scripting API: no patched compositor, no private headers.",
     role: "Fork maintainer, 344 commits ahead, proposed upstream in stages",
-    metric: { value: "123", label: "scenarios against a nested KWin, 903 checks passing in the last full run. REUSE lint in CI" },
+    metric: { value: "123", label: "scenarios against a nested KWin; the last full run: 655 ok, none failing, 4 skipped. REUSE lint in CI" },
     why: "Every window stays an ordinary KWin window at an ordinary position, so fullscreen apps keep direct scanout. The canvas only moves a camera over them. Written by an agent under my direction, and the README says so.",
     tech: ["KWin", "QML", "JavaScript", "Plasma 6"],
     links: { gitlab: "https://gitlab.com/ritwick7/kwin-canvas" },
@@ -83,10 +83,10 @@ export const projects: Project[] = [
     title: "Crush 80 firmware",
     description:
       "Open firmware for a Wobkey Crush 80 Pro keyboard whose vendor never released source: ZMK on the Telink TLSR9511, a RISC-V SoC. USB, Bluetooth, 154 addressable LEDs and OpenRGB, installed over the stock updater with one cable.",
-    role: "Fork maintainer. Added per-key RGB, OpenRGB and the update and recovery tooling · Apache-2.0",
+    role: "Fork maintainer. Added OpenRGB, VIA, the LED map and the update and recovery tooling · Apache-2.0",
     // LEDs confirmed working 2026-09-15 on the ported driver; OpenRGB Direct verified 2026-10-14 (gitlab.com/ritwick7/crush80-zmk).
     metric: { value: "154 LEDs", label: "lit from a ported WS2812 driver on the SoC's SPI DMA, GRB, one data line" },
-    why: "My first guess was wrong: a WB32 chip and a QMK port that could never run. The stock image's USB descriptor said TLSR9511, which QMK does not support. The findings document keeps the wrong turn next to the evidence. The matrix, LED line and power gate were traced from PCB photos and the stock binary's GPIO init.",
+    why: "My first guess was wrong: a WB32 chip and a QMK port that could never run. The stock image's USB descriptor said TLSR9511, which QMK does not support. The matrix, LED line and power gate were traced from PCB photos and the stock binary's GPIO init.",
     tech: ["ZMK", "Zephyr", "RISC-V", "Ghidra", "C"],
     links: { gitlab: "https://gitlab.com/ritwick7/crush80-zmk", page: "/#keyboard", pageLabel: "Try the keyboard demo" },
     featured: false,
