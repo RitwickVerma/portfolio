@@ -10,7 +10,7 @@ import { buildCorpus } from "@/lib/corpus";
 import { notes } from "@/lib/notes";
 import { noteText } from "@/lib/notes.server";
 import { buildIndex, CONTROL, TREATMENT } from "@/lib/search";
-import { evaluate, JUDGMENTS } from "@/lib/eval";
+import { evaluate, JUDGMENTS, type QueryEval } from "@/lib/eval";
 
 const DESCRIPTION =
   "How the search on ritwickverma.dev works: a query taken apart stage by stage, a control-against-treatment replay of judged queries, and a latency benchmark.";
@@ -23,6 +23,51 @@ export const metadata: Metadata = {
 
 const SOURCE = "https://gitlab.com/ritwick7/portfolio/-/blob/master/src/lib";
 const pct = (n: number) => `${Math.round(n * 100)}%`;
+const rank = (n: number) => (n === 0 ? "not found" : n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`);
+
+type Pair = { t: QueryEval; c: QueryEval };
+
+function ReplayTable({ rows }: { rows: Pair[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[40rem] border-collapse text-[0.95rem]">
+        <thead>
+          <tr className="fact text-left border-b border-fg">
+            <th className="font-normal py-2 pr-4">Query</th>
+            <th className="font-normal py-2 pr-4">First relevant result, control</th>
+            <th className="font-normal py-2 pr-4">Treatment</th>
+            <th className="font-normal py-2 w-[34%]">nDCG at 5: control, then treatment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ t, c }) => {
+            const better = (c.firstRelevant === 0 && t.firstRelevant > 0) || (t.firstRelevant > 0 && t.firstRelevant < c.firstRelevant);
+            return (
+              <tr key={t.query} className="border-b border-border">
+                <td className="py-1.5 pr-4">
+                  <ReplayLink query={t.query} />
+                </td>
+                <td className={`py-1.5 pr-4 ${c.firstRelevant === 0 ? "text-warn" : ""}`}>{rank(c.firstRelevant)}</td>
+                <td className={`py-1.5 pr-4 ${better ? "text-ok font-semibold" : ""}`}>{rank(t.firstRelevant)}</td>
+                <td className="py-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 space-y-0.5" aria-hidden="true">
+                      <div className="h-1.5 bg-fg/30" style={{ width: `${Math.max(1, c.ndcg * 100)}%` }} />
+                      <div className="h-1.5 bg-fg" style={{ width: `${Math.max(1, t.ndcg * 100)}%` }} />
+                    </div>
+                    <span className="font-mono text-[0.7rem] text-muted whitespace-nowrap">
+                      {c.ndcg.toFixed(2)}, {t.ndcg.toFixed(2)}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function EnginePage() {
   // Computed at build, from the same corpus the browser builds.
@@ -30,7 +75,12 @@ export default function EnginePage() {
   const control = evaluate(index, CONTROL);
   const treatment = evaluate(index, TREATMENT);
   const lines = Math.round(readFileSync(join(process.cwd(), "src/lib/search.ts"), "utf8").split("\n").length / 50) * 50;
-  const changed = treatment.queries.filter((q, i) => q.firstRelevant !== control.queries[i].firstRelevant || Math.abs(q.ndcg - control.queries[i].ndcg) > 0.005).length;
+  // Every judged query, paired; the ones the two rankers answer differently come first.
+  const pairs = treatment.queries.map((t, i) => ({ t, c: control.queries[i] }));
+  const differs = ({ t, c }: (typeof pairs)[number]) => t.firstRelevant !== c.firstRelevant || Math.abs(t.ndcg - c.ndcg) > 0.005;
+  const differing = pairs.filter(differs);
+  const agreeing = pairs.filter((p) => !differs(p));
+  const changed = differing.length;
 
   const metrics = [
     { label: "First result is relevant", control: pct(control.p1), treatment: pct(treatment.p1) },
@@ -88,45 +138,19 @@ export default function EnginePage() {
           ))}
         </dl>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[40rem] border-collapse text-[0.95rem]">
-            <thead>
-              <tr className="fact text-left border-b border-fg">
-                <th className="font-normal py-2 pr-4">Query</th>
-                <th className="font-normal py-2 pr-4">First relevant result, control</th>
-                <th className="font-normal py-2 pr-4">Treatment</th>
-                <th className="font-normal py-2 w-[34%]">nDCG at 5: control, then treatment</th>
-              </tr>
-            </thead>
-            <tbody>
-              {treatment.queries.map((t, i) => {
-                const c = control.queries[i];
-                const rank = (n: number) => (n === 0 ? "not found" : n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`);
-                const better = (c.firstRelevant === 0 && t.firstRelevant > 0) || (t.firstRelevant > 0 && t.firstRelevant < c.firstRelevant);
-                return (
-                  <tr key={t.query} className="border-b border-border">
-                    <td className="py-1.5 pr-4">
-                      <ReplayLink query={t.query} />
-                    </td>
-                    <td className={`py-1.5 pr-4 ${c.firstRelevant === 0 ? "text-warn" : ""}`}>{rank(c.firstRelevant)}</td>
-                    <td className={`py-1.5 pr-4 ${better ? "text-ok font-semibold" : ""}`}>{rank(t.firstRelevant)}</td>
-                    <td className="py-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 space-y-0.5" aria-hidden="true">
-                          <div className="h-1.5 bg-fg/30" style={{ width: `${Math.max(1, c.ndcg * 100)}%` }} />
-                          <div className="h-1.5 bg-fg" style={{ width: `${Math.max(1, t.ndcg * 100)}%` }} />
-                        </div>
-                        <span className="font-mono text-[0.7rem] text-muted whitespace-nowrap">
-                          {c.ndcg.toFixed(2)}, {t.ndcg.toFixed(2)}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div data-replay-differ>
+          <ReplayTable rows={differing} />
         </div>
+        {agreeing.length > 0 && (
+          <details className="mt-6" data-replay-agree>
+            <summary className="link cursor-pointer inline-flex items-center min-h-11">
+              Show the other {agreeing.length} {agreeing.length === 1 ? "query" : "queries"}, where both rankers agree
+            </summary>
+            <div className="mt-2">
+              <ReplayTable rows={agreeing} />
+            </div>
+          </details>
+        )}
         <p className="fact mt-4 max-w-[72ch]">
           The control is BM25 over title, tags and text with equal weight and nothing else. The treatment adds field weights, the query rewriter, a nearest
           spelling for a word nothing matched, and a static rank per document. Click a query to take it apart above.

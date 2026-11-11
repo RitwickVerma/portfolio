@@ -19,6 +19,48 @@ test.describe("engine room", () => {
     await expect(page).toHaveURL(/\/engine\/$/);
   });
 
+  test("the replay shows the queries where the rankers differ and folds the rest into a details", async ({ page }) => {
+    await page.goto("/engine/");
+    await page.waitForLoadState("networkidle");
+    const differ = page.locator("[data-replay-differ] tbody tr");
+    const agree = page.locator("[data-replay-agree] tbody tr");
+    const nDiffer = await differ.count();
+    const nAgree = await agree.count();
+    expect(nDiffer).toBeGreaterThan(0);
+    expect(nAgree).toBeGreaterThan(0);
+    // The lede counts the differing ones; the summary counts the folded ones; no row was dropped.
+    await expect(page.locator("#replay")).toContainText(`${nDiffer} of ${nDiffer + nAgree} come out differently`);
+    await expect(page.locator("#replay h2")).toContainText(`${nDiffer + nAgree} judged queries`);
+    const details = page.locator("[data-replay-agree]");
+    await expect(details.locator("summary")).toHaveText(`Show the other ${nAgree} queries, where both rankers agree`);
+    expect(await details.evaluate((el) => (el as HTMLDetailsElement).open)).toBe(false);
+    await expect(agree.first()).toBeHidden();
+    // Visible rows each differ: a different first rank, or a different nDCG.
+    for (let i = 0; i < nDiffer; i++) {
+      const cells = await differ.nth(i).locator("td").allInnerTexts();
+      const [c, t] = cells[3].split(",").map((x) => Number(x.trim()));
+      expect(cells[1] !== cells[2] || Math.abs(c - t) > 0.005, `row ${cells[0]} differs`).toBe(true);
+    }
+    await details.locator("summary").click();
+    await expect(agree.first()).toBeVisible();
+    for (let i = 0; i < nAgree; i++) {
+      const cells = await agree.nth(i).locator("td").allInnerTexts();
+      const [c, t] = cells[3].split(",").map((x) => Number(x.trim()));
+      expect(cells[1] === cells[2] && Math.abs(c - t) <= 0.005, `row ${cells[0]} agrees`).toBe(true);
+    }
+  });
+
+  test("the folded replay rows open without JavaScript", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto("/engine/");
+    const agree = page.locator("[data-replay-agree] tbody tr");
+    await expect(agree.first()).toBeHidden();
+    await page.locator("[data-replay-agree] summary").click();
+    await expect(agree.first()).toBeVisible();
+    await context.close();
+  });
+
   test("two phrases show the 2.25 they multiply by, so stage 4 multiplies back", async ({ page }) => {
     await page.goto("/engine/");
     await page.waitForLoadState("networkidle"); // the key handlers exist only after hydration
