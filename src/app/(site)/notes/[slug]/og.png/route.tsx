@@ -1,6 +1,7 @@
 import { notes, getNote, formatNoteDate } from "@/lib/notes";
 import { hero } from "@/lib/data";
 import { renderOg } from "@/lib/og";
+import { ogFigure } from "@/lib/ogFigures";
 
 // One social card per note, rendered to a real .png at build.
 export const dynamic = "force-static";
@@ -14,11 +15,14 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   const { slug } = await ctx.params;
   const note = getNote(slug);
   if (!note) return new Response("Not found", { status: 404 });
+  // A note with a lead figure gets it on the card, computed here by the same library the page runs.
+  const f = ogFigure(slug);
   return renderOg({
     eyebrow: `ritwickverma.dev/notes · ${formatNoteDate(note.date)}`,
     name: note.title,
     nameSize: 56,
     line: hero.name,
-    lineTwo: note.summary,
+    lineTwo: f?.line ?? note.summary,
+    figure: f?.figure,
   });
 }
