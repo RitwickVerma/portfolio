@@ -679,7 +679,7 @@ test.describe("the ShutUp figure", () => {
     await expect(fig.getByText(/The switches have changed since this run/)).toBeVisible();
     await fig.getByRole("button", { name: "Run 400 streams" }).click();
     await expect(fig.getByText(/the motion guard off/)).toBeVisible();
-    await expect(fig.getByText(/1 of 4 rules broken by random streams: \d+ of 400 streams/)).toBeVisible();
+    await expect(fig.getByText(/1 of 4 checks failed on random streams: \d+ of 400 streams/)).toBeVisible();
     await expect(fig.getByText(/First failure: stream 0, seed \d+/)).toBeVisible();
   });
 

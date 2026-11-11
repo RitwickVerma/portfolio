@@ -711,7 +711,7 @@ export interface TermLine {
 
 /** One term's row as printed: weight x idf x saturation = score, and the three printed factors round to the printed score. */
 export function termLine(t: TermScore): TermLine {
-  const weight = factor(t.weight);
+  const weight = t.weight.toFixed(2);
   const idf = t.idf.toFixed(2);
   const score = t.score.toFixed(2);
   const shown = Number(weight) * Number(idf);

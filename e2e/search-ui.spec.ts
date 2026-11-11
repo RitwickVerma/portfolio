@@ -117,7 +117,8 @@ test.describe("the Why? control", () => {
           const item = items.nth(i);
           const [w, idf, sat, score] = ((await item.innerText()).match(/(-?\d+\.\d+)\s*weight\s*×\s*(-?\d+\.\d+)\s*idf\s*×\s*(-?\d+\.\d+)\s*saturation\s*=\s*(-?\d+\.\d+)/)?.slice(1) ?? []).map(Number);
           expect(score, `term ${i} shows its four numbers`).toBeDefined();
-          expect(Math.abs(w * idf * sat - score), `term ${i} multiplies back`).toBeLessThan(0.05);
+          // The row prints as many decimals of the last factor as it takes: the product is the printed score to under half a cent.
+          expect(Math.abs(w * idf * sat - score), `term ${i} multiplies back`).toBeLessThan(0.005);
           const box = (await item.boundingBox())!;
           expect(box.x + box.width).toBeLessThanOrEqual(width);
         }
