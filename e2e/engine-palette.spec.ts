@@ -75,7 +75,7 @@ test.describe("engine room", () => {
     await context.close();
   });
 
-  test("two phrases show the 2.25 they multiply by, so stage 4 multiplies back", async ({ page }) => {
+  test("two phrases show the 2.25 they multiply by, so stage 3 multiplies back", async ({ page }) => {
     await page.goto("/engine/");
     await page.waitForLoadState("networkidle"); // the key handlers exist only after hydration
     // Filled again until it takes: a fill that lands before hydration is overwritten by the first render.

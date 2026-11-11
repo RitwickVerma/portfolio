@@ -105,7 +105,7 @@ export default function EnginePage() {
       <Section
         id="xray"
         title="One query, taken apart."
-        lede={<p>Type anything. Each stage shows what the engine holds at that point, down to the posting lists and the arithmetic behind every score.</p>}
+        lede={<p>Type anything. Each stage shows what the engine holds at that point, down to the arithmetic behind every score.</p>}
       >
         <XRay />
       </Section>

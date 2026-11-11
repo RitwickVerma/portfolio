@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { search, parseQuery, scoreLine, factor, CONTROL, TREATMENT, FUZZY_WEIGHT, PHRASE_BONUS, PREFIX_WEIGHT, REWRITE_WEIGHT, type SearchHit } from "@/lib/search";
+import { search, parseQuery, scoreLine, factor, CONTROL, TREATMENT, FUZZY_WEIGHT, PHRASE_BONUS, PREFIX_WEIGHT, REWRITE_WEIGHT } from "@/lib/search";
 import { useSearchIndex } from "@/lib/useSearchIndex";
-import { CorpusMap, PlanChips } from "@/components/search/parts";
+import { PlanChips } from "@/components/search/parts";
 
 // One query, taken apart. Each stage shows what the engine holds at that
-// point: the stems, the plan, the posting lists, the scores. The last stage
+// point: the stems, the plan, the scores. The last stage
 // runs the same query through the control ranker and shows what moved.
 
 const PRESETS = ["performance testing", '"traffic replay" -plutus', "fitmnet", "kind:note hdr tone", "reverse eng"];
@@ -27,10 +27,6 @@ function Stage({ n, name, what, children }: { n: number; name: string; what: str
 }
 
 const TOP = 5;
-/** Posting lists drawn in stage 3. */
-const POSTINGS = 8;
-/** A multiplier as a reader would write it: 1.625, not 1.63, so the line multiplies back. */
-
 const short = (s: string, n = 46) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 /** What is in the box is what the address says: ?q= follows the query, and goes when the box is empty. */
@@ -88,14 +84,6 @@ export default function XRay() {
         }),
     [text],
   );
-
-  const postings = treatment.plan.slice(0, POSTINGS).map((t) => {
-    const posting = index.postings.get(t.term);
-    const hits: SearchHit[] = posting
-      ? [...posting.keys()].map((i) => ({ doc: index.docs[i], score: 0, matched: [], explain: { terms: [], prior: 1, phrases: 0 } }))
-      : [];
-    return { term: t, hits };
-  });
 
   const controlRank = new Map(control.hits.map((h, i) => [h.doc.id, i + 1]));
   const best = treatment.hits[0]?.score ?? 1;
@@ -188,30 +176,7 @@ export default function XRay() {
           )}
         </Stage>
 
-        <Stage n={3} name="Retrieve" what="One posting list per term. Each strip is the whole index; a lit tick is a document that contains the term.">
-          {postings.length === 0 ? (
-            <p className="fact">{filtered ? "A filter reads each document's kind or stack, not a posting list." : "No posting lists to read."}</p>
-          ) : (
-            <>
-            <ul className="space-y-2.5 [--map-h:1.1rem]">
-              {postings.map(({ term, hits }) => (
-                <li key={term.term} className="grid grid-cols-[minmax(0,1fr)_2rem] sm:grid-cols-[10rem_minmax(0,1fr)_2.5rem] items-end gap-x-3 gap-y-1">
-                  <span className="term justify-self-start max-w-full overflow-hidden max-sm:col-span-2" data-source={term.source} data-empty={term.df === 0}>
-                    {term.term}
-                  </span>
-                  <div className="min-w-0">
-                    <CorpusMap index={index} hits={hits} compact />
-                  </div>
-                  <span className="font-mono text-xs text-muted text-right">{term.df}</span>
-                </li>
-              ))}
-            </ul>
-            {treatment.plan.length > POSTINGS && <p className="fact mt-3">The first {POSTINGS} of {treatment.plan.length} terms.</p>}
-            </>
-          )}
-        </Stage>
-
-        <Stage n={4} name="Rank" what="BM25 per term across title, tags and text, summed, then multiplied by the document's static rank. Each bar is split by term.">
+        <Stage n={3} name="Rank" what="BM25 per term across title, tags and text, summed, then multiplied by the document's static rank. Each bar is split by term.">
           {treatment.hits.length === 0 ? (
             <p>No document matches. That is a result too.</p>
           ) : (
@@ -253,7 +218,7 @@ export default function XRay() {
           )}
         </Stage>
 
-        <Stage n={5} name="Control against treatment" what="The same query through plain BM25 with nothing added, beside what the site runs. One query, both rankers.">
+        <Stage n={4} name="Control against treatment" what="The same query through plain BM25 with nothing added, beside what the site runs. One query, both rankers.">
           <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6">
             <div>
               <p className="fact mb-1.5">Control: BM25 only, {control.hits.length} match{control.hits.length === 1 ? "" : "es"}</p>
