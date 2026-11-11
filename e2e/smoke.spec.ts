@@ -399,6 +399,9 @@ test.describe("search", () => {
     await page.waitForTimeout(4000);
     await expect(page.locator("#q")).toHaveValue("");
     await expect(page).not.toHaveURL(/\?q=/);
+    // And the page did hydrate: an empty box on a page whose script never ran would prove nothing.
+    await page.locator("#q").pressSequentially("fitment");
+    await expect(page.getByText(/ranked in your browser/)).toBeVisible();
     await context.close();
   });
 });

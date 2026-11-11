@@ -6,7 +6,7 @@ import { LimiterTimeline, SignatureBytes } from "@/components/figures/lazy";
 
 [SudoStamp](/apps/sudostamp/) approves `sudo` on Linux computers with a fingerprint on my phone. What I worry about is a tired tap: anything that makes the phone ask again and again, or right after a real approval.
 
-Version 1.3 cooled an address down for 30 seconds after a denial, and only addresses I had never approved. A comment in the code says rotating through IPv6 addresses beat it. Version 1.4 keys the limiter by the computer instead. After an approval, every request is refused for 3 seconds. After a denial, that computer waits 5 seconds if I have approved it before and 60 if I have not. After four unapproved requests in ten minutes, everything is refused. The password always works, so refusing never locks me out.
+Version 1.3 cooled an address down for 30 seconds after a denial, and only addresses I had never approved. A comment in the code says rotating through IPv6 addresses beat it. Version 1.4 keys the limiter by the computer instead. After an approval, every request is refused for 3 seconds. After a denial or a prompt left unanswered, that computer waits 5 seconds if I have approved it before and 60 if I have not. After four unapproved requests in ten minutes, everything is refused. The password always works, so refusing never locks me out.
 
 The figure runs a TypeScript port of the app's limiter, with the app's own tests as vectors.
 

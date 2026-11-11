@@ -47,12 +47,19 @@ const LITERALS: [RegExp, string][] = [
 ];
 
 /**
- * A deliberately small suffix stripper: -ing and -ed, then plurals, then a trailing e. The order
- * matters: with plurals first, "bias" lost its s and "biased" did not, so the two never met.
+ * A deliberately small suffix stripper: plurals, -ing, -ed, a trailing e. It is not consistent
+ * across every form of a word ("bias" and "biased" do not meet, nor "tune" and "tuning"). Two
+ * attempts to fix that were measured over the site's whole vocabulary and reverted: stripping
+ * -ing and -ed before plurals split "settings" from "setting", "findings" from "finding" and
+ * "released" from "release"; stripping the e from four-letter words merged "note" with "not"
+ * and "page" with "paging". A real stemmer is the fix, not another rule here.
  */
 export function stem(word: string): string {
   let w = word;
   if (/^\d/.test(w)) return w;
+  if (w.length > 4 && w.endsWith("ies")) w = `${w.slice(0, -3)}y`;
+  else if (w.length > 4 && /(ss|x|z|ch|sh)es$/.test(w)) w = w.slice(0, -2);
+  else if (w.length > 3 && w.endsWith("s") && !/(ss|us|is)$/.test(w)) w = w.slice(0, -1);
 
   const before = w;
   if (w.length > 5 && w.endsWith("ing")) w = w.slice(0, -3);
@@ -60,12 +67,6 @@ export function stem(word: string): string {
   // "running" -> "runn" -> "run"; keep ll/ss/zz ("install", "pass").
   if (w !== before && /([^aeiouylsz])\1$/.test(w)) w = w.slice(0, -1);
 
-  if (w.length > 4 && w.endsWith("ies")) w = `${w.slice(0, -3)}y`;
-  else if (w.length > 4 && /(ss|x|z|ch|sh)es$/.test(w)) w = w.slice(0, -2);
-  else if (w.length > 3 && w.endsWith("s") && !/(ss|us|is)$/.test(w)) w = w.slice(0, -1);
-
-  // Five letters and up. At four, "note" met "not", "time" met "tim" and "page" met "paging":
-  // the judged queries lost relevance, so "tune" and "tuning" stay apart, a known limit.
   if (w.length > 4 && w.endsWith("e")) w = w.slice(0, -1);
   return w;
 }
@@ -570,7 +571,7 @@ export interface Segment {
  * letters (and combining marks) belong to the word, so "résumé" is one run of text and the
  * highlight covers it; `tokenize` folds it when the run is compared with a stem.
  */
-export const WORD = /[A-Za-z0-9\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u0300-\u036F\u1E00-\u1EFF]+(?:,\d{3})*(?:\+\+|#)?/g;
+export const WORD = /[A-Za-z0-9\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u0300-\u036F\u1E00-\u1EFF]+(?:,\d{3}(?!\d))*(?:\+\+|#)?/g;
 
 /** Split text into runs, marking the words whose stem is in `stems`. */
 export function highlight(text: string, stems: Iterable<string>): Segment[] {
@@ -622,8 +623,10 @@ export function snippet(text: string, stems: Iterable<string>, max = 230): strin
       if (tokenize(m[0]).some((t) => set.has(t))) {
         const at = m.index ?? 0;
         if (at + m[0].length > max) {
-          const back = out.lastIndexOf(" ", Math.max(0, at - Math.floor(max / 3)));
-          from = back > 0 ? back + 1 : 0;
+          const start = Math.max(0, at - Math.floor(max / 3));
+          const back = out.lastIndexOf(" ", start);
+          // No space to step back to (one very long token before the match): start mid-token.
+          from = back > 0 ? back + 1 : start;
         }
         break;
       }
@@ -715,6 +718,7 @@ export function termLine(t: TermScore): TermLine {
   const idf = t.idf.toFixed(2);
   const score = t.score.toFixed(2);
   const shown = Number(weight) * Number(idf);
-  const saturation = fewestDecimals(t.score / shown, 2, (sat) => roundsTo(shown * sat, score));
+  // A term in every document has an idf that prints as 0.00: its score is 0.00 too, and there is nothing to divide by.
+  const saturation = shown > 0 ? fewestDecimals(t.score / shown, 2, (sat) => roundsTo(shown * sat, score)) : "0.00";
   return { weight, idf, saturation, score };
 }

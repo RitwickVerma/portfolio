@@ -169,6 +169,7 @@ test.describe("an unbroken 120-character word", () => {
       expect(widest, "an element pokes out of the viewport").toBe("");
       const plan = page.locator('ul[aria-label^="Query plan"]');
       const list = (await plan.boundingBox())!;
+      expect(await plan.locator("li").count(), "plan chips to measure").toBeGreaterThan(0);
       for (const chip of await plan.locator("li").all()) {
         const b = (await chip.boundingBox())!;
         expect(b.x + b.width, "a plan chip is wider than its list").toBeLessThanOrEqual(list.x + list.width + 0.5);
@@ -218,5 +219,40 @@ test.describe("aria-controls", () => {
     await page.locator("#q").fill(QUERY);
     await expect(page.locator("#hits > li").first()).toBeVisible();
     await expect(page.locator("#hits")).toHaveCount(1);
+  });
+});
+
+test.describe("facet chips, the cases a review broke", () => {
+  test("a chip closes an open quote, so the filter is a filter and not part of the phrase", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const box = page.locator("#q");
+    await expect(async () => {
+      await box.fill('"reverse engineering');
+      await expect(page.getByRole("group", { name: "Narrow by kind" })).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 20_000 });
+    // The first chip after "All": whatever kind leads for this phrase.
+    const chip = page.getByRole("group", { name: "Narrow by kind" }).getByRole("button").nth(1);
+    const kind = ((await chip.innerText()).match(/^(.*?)\s+\d+$/) ?? [])[1];
+    expect(kind, "a kind chip to click").toBeTruthy();
+    await chip.click();
+    await expect(box).toHaveValue(/^"reverse engineering" kind:[a-z]+ $/);
+    const rows = page.locator("#hits > li");
+    await expect(rows.first()).toBeVisible();
+    const labels = await rows.evaluateAll((els) => els.map((el) => (el.textContent ?? "").trim()));
+    expect(labels.length).toBeGreaterThan(0);
+    for (const text of labels) expect(text.startsWith(kind!), `${text.slice(0, 30)} is a ${kind}`).toBe(true);
+  });
+
+  test("a chip replaces a negated kind filter instead of leaving it behind", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const box = page.locator("#q");
+    await expect(async () => {
+      await box.fill("testing -kind:note ");
+      await expect(page.getByRole("group", { name: "Narrow by kind" })).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 20_000 });
+    await page.getByRole("group", { name: "Narrow by kind" }).getByRole("button", { name: /^Project \d+$/ }).click();
+    await expect(box).toHaveValue("testing kind:project ");
   });
 });

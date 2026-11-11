@@ -142,14 +142,30 @@ describe("snippet", () => {
   it("a long run with no space is cut at the limit, not left whole", () => {
     expect(snippet("x".repeat(400), ["nothing"]).length).toBeLessThanOrEqual(231);
   });
+
+  it("a match after one very long unbroken token is still shown", () => {
+    const stems = tokenize("needle");
+    const shown = snippet(`${"a".repeat(300)} needle`, stems);
+    expect(highlight(shown, stems).some((x) => x.hit)).toBe(true);
+    expect(shown.length).toBeLessThanOrEqual(234);
+  });
+
+  it("the highlighter reads a list of numbers as the tokenizer does", () => {
+    expect(highlight("ran in 2020,2021 and 2022", ["2021"]).some((x) => x.hit && x.text === "2021")).toBe(true);
+    expect(highlight("50,000 queries", ["50000"]).some((x) => x.hit && x.text === "50,000")).toBe(true);
+  });
 });
 
 describe("stemmer and metrics, pinned to known values", () => {
-  it("a word and its -ed form meet", async () => {
+  it("a plural meets its singular, including plurals of -ing and -ed words", async () => {
     const { stem } = await import("./search");
-    expect(stem("biased")).toBe(stem("bias"));
+    // The families a reordered stemmer split, found by running old and new over the whole vocabulary.
+    for (const [a, b] of [["settings", "setting"], ["findings", "finding"], ["readings", "reading"], ["timings", "timing"], ["tests", "test"], ["queries", "query"]]) {
+      expect(stem(a), `${a} / ${b}`).toBe(stem(b));
+    }
+    expect(stem("released")).toBe(stem("release"));
+    expect(stem("closed")).toBe(stem("close"));
     expect(stem("cached")).toBe(stem("cache"));
-    expect(stem("tests")).toBe(stem("testing"));
   });
 
   it("nDCG@5 of a known ranking is the number worked by hand", async () => {

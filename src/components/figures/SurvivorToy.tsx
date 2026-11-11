@@ -116,7 +116,7 @@ export default function SurvivorToy() {
           ? listGain > 0.5
             ? `The same rule earns ${listGain.toFixed(1)} points a year more from this list than from everyone who existed. No stock has better odds than another, so that is the list's doing: the rule never held a company in the month it disappeared.`
             : "With almost nobody disappearing, the surviving list is nearly the whole market, so there is nothing for the list to hide."
-          : `With the whole market to choose from, the rule ends ${Math.abs(edge).toFixed(1)} points ${edge < 0 ? "below" : "above"} the market. It has nothing to find: twenty stocks are bumpier than three hundred, which costs a little, and the rest is chance between made-up worlds.`}{" "}
+          : `With the whole market to choose from, the rule ends ${Math.abs(edge).toFixed(1)} points ${edge < 0 ? "below" : "above"} the market. It has nothing to find: ${edge < 0 ? "twenty stocks are bumpier than three hundred, which costs a little, and the rest is chance between made-up worlds" : "the gap is chance between made-up worlds"}.`}{" "}
         Average of {WORLDS} made-up worlds, not the one drawn above.
       </Verdict>
       <Actions>

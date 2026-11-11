@@ -573,7 +573,7 @@ export default function FrameAuthority() {
           ) : null}
         </Verdict>
       ) : (
-        <Verdict quiet title={`No call yet: the window is at ${at(frame)}, ${here?.ok ? "in" : "out of"} reach`}>
+        <Verdict title={`No call yet: the window is at ${at(frame)}, ${here?.ok ? "in" : "out of"} reach`}>
           <p>
             {here
               ? `${here.across >= 0 ? `${fmt(here.across)} px of it is over the screen` : `It is ${fmt(-here.across)} px clear of the screen`}; 100 px must be over it. Press “${BUTTON[scene.actor]}” to see what the canvas does.`

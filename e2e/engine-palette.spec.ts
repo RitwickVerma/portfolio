@@ -64,8 +64,11 @@ test.describe("engine room", () => {
   test("two phrases show the 2.25 they multiply by, so stage 4 multiplies back", async ({ page }) => {
     await page.goto("/engine/");
     await page.waitForLoadState("networkidle"); // the key handlers exist only after hydration
-    await page.locator("#xray-q").fill('"search engine" "c++"');
-    await expect(page.locator("#xray li p.font-mono").first()).toContainText("× 2.25 phrase");
+    // Filled again until it takes: a fill that lands before hydration is overwritten by the first render.
+    await expect(async () => {
+      await page.locator("#xray-q").fill('"search engine" "c++"');
+      await expect(page.locator("#xray li p.font-mono").first()).toContainText("× 2.25 phrase", { timeout: 2000 });
+    }).toPass({ timeout: 20_000 });
   });
 
   test("an unbroken 120-character word does not widen the page", async ({ page }) => {

@@ -16,7 +16,7 @@ When the accelerometer says the phone moved, waves are muted for 0.8 s and a pen
 
 ## The property test checks streams I would not write by hand
 
-`WaveSafetyPropertyTest` feeds the real session random streams of 200 readings from fixed seeds, 1,600 in all. It asserts that no wave counts within 0.8 s of motion or before the arming delay, that a double needs two separate edges and that no setting leaves Answer or End on a single wave.
+`WaveSafetyPropertyTest` feeds the real session 400 random streams of 200 readings from fixed seeds, each run under four settings: 1,600 runs in all. It asserts that no wave counts within 0.8 s of motion or before the arming delay, that a double needs two separate edges and that no setting leaves Answer or End on a single wave.
 
 The button runs them on the port. With every rule on it finds nothing. Switch one off and it finds that rule's violation, so the check can fail.
 

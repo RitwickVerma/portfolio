@@ -118,7 +118,9 @@ export default function Search() {
 
   // When the notes' full text arrives, the query on screen is run again against it.
   useEffect(() => {
-    if (!full || !textRef.current.trim()) return;
+    // Not while the demo is part-way through its word: the box holds "fit", and ranking that would
+    // re-flow the list the demo is careful to rank only once. The demo's last key ranks on the full index.
+    if (!full || !textRef.current.trim() || demoPartial.current) return;
     const t = window.setTimeout(() => execute(textRef.current, { syncUrl: false, keep: true }), 0);
     return () => window.clearTimeout(t);
   }, [full, execute]);
@@ -192,7 +194,11 @@ export default function Search() {
 
   const setKind = (kind: DocKind | null) => {
     take();
-    const bare = textRef.current.replace(/(^|\s)(kind|in):\S*/gi, " ").replace(/\s+/g, " ").trim();
+    // Drop any kind filter already there, a negated one included ("-kind:note" would otherwise survive
+    // and exclude the words "kind" and "note").
+    let bare = textRef.current.replace(/(^|\s)-?(kind|in):\S*/gi, " ").replace(/\s+/g, " ").trim();
+    // An unclosed quote would swallow the filter into the phrase: close it first.
+    if ((bare.match(/"/g) ?? []).length % 2 === 1) bare += '"';
     execute(kind ? `${bare} kind:${FACET_FILTER[kind]} `.trimStart() : `${bare} `);
     inputRef.current?.focus();
   };

@@ -141,6 +141,6 @@ export function pagingVerdict(t: Totals, rule: Rule): PagingVerdict {
     return { tone: t.failed > 1 ? "warn" : "plain", title, detail: "Every failed check pages, so a fault that lasts pages again on every check." };
   }
   if (t.failed === 0) return { tone: "plain", title: "Nothing failed, so nothing paged.", detail: "Silent means healthy." };
-  if (t.sent === 0) return { tone: "ok", title, detail: "No fault failed twice in a row, so nobody was woken for a blip." };
-  return { tone: t.sent < t.failed ? "ok" : "plain", title, detail: "A page goes out once a check has failed twice in a row, and not again while it keeps failing." };
+  if (t.sent === 0) return { tone: "ok", title, detail: "No check went two runs in a row without a healthy answer, so nobody was woken for a blip." };
+  return { tone: t.sent < t.failed ? "ok" : "plain", title, detail: "A page goes out once a check has gone two runs in a row without a healthy answer, and not again for the same fault while it lasts." };
 }

@@ -191,7 +191,6 @@ export class WaveDetector {
     this.lastNear = false;
     this.pendingSingleAtMs = null;
     this.ignoreUntilMs = 0;
-    this.ignoreBecause = "arming";
   }
 }
 

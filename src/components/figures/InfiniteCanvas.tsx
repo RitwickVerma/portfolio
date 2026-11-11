@@ -138,6 +138,11 @@ export default function InfiniteCanvas() {
         onPointerCancel={(e) => {
           if (drag.current && drag.current.id === e.pointerId) drag.current = null;
         }}
+        // If the browser drops the up event (capture lost, window blurred mid-drag), the drag still ends here;
+        // without this the canvas would refuse every later press.
+        onLostPointerCapture={(e) => {
+          if (drag.current && drag.current.id === e.pointerId) drag.current = null;
+        }}
         className="relative h-[19rem] sm:h-[22rem] overflow-hidden border-2 border-fg rounded-[var(--r-box)] bg-surface cursor-grab active:cursor-grabbing touch-pan-y select-none outline-none focus-visible:border-accent"
         style={{
           backgroundImage: "radial-gradient(rgb(var(--fg-rgb) / 0.22) 1px, transparent 1px)",

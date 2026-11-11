@@ -189,14 +189,14 @@ export function Toggle({
 /**
  * What the real logic decided, right where the visitor pressed. `ok` and
  * `warn` colour the rule only: they are for a computed outcome, never for
- * decoration. Announced politely to screen readers when it changes, unless
- * `quiet` (a readout that changes while the visitor drags).
+ * decoration. Announced politely to screen readers when it changes.
  */
-export function Verdict({ tone = "plain", title, quiet = false, children }: { tone?: "ok" | "warn" | "plain"; title: string; quiet?: boolean; children?: ReactNode }) {
+export function Verdict({ tone = "plain", title, children }: { tone?: "ok" | "warn" | "plain"; title: string; children?: ReactNode }) {
   const rule = tone === "ok" ? "border-ok" : tone === "warn" ? "border-warn" : "border-fg";
-  // `quiet` is for text that follows a drag or a held key (coordinates): read on demand, not announced on every step.
+  // Always a live region. Making it one only once there is a result was tried and reverted: a region
+  // that becomes live in the same update that fills it is often not announced at all.
   return (
-    <div role={quiet ? undefined : "status"} aria-live={quiet ? undefined : "polite"} data-tone={tone} className={`border-l-4 ${rule} pl-3 py-0.5`}>
+    <div role="status" aria-live="polite" data-tone={tone} className={`border-l-4 ${rule} pl-3 py-0.5`}>
       <p className="wd-semi text-lg sm:text-xl font-bold leading-snug">{title}</p>
       {children ? <div className="text-[0.95rem] text-fg/85 max-w-[62ch] mt-0.5">{children}</div> : null}
     </div>

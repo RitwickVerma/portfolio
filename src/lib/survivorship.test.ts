@@ -154,14 +154,21 @@ describe("the toy market", () => {
     expect(a.survivors - a.then).toBeGreaterThan(0.015);
     expect(a.survivors - a.then).toBeLessThan(0.03);
   }, 60_000);
-  it("the rule has nothing to find: on the honest universe it earns the market, at every delisting rate", () => {
-    // 200 worlds each, so the mean is tight enough to see an edge of half a point. With delisting tied
-    // to past returns (an earlier version) this was +1.4 points at 5% and +2.6 at 12%.
+  it("the rule has nothing to find: on the honest universe it never beats the market by more than chance", () => {
+    // Three seed bases of 100 worlds each, so one lucky base cannot carry the claim. With delisting
+    // tied to past returns (an earlier version) the rule was +1.4 points at 5% and +2.6 at 12%.
+    // Twenty stocks are bumpier than three hundred, so the rule sits a little UNDER the market
+    // (between about -0.7 and +0.1 points by base); the bound is one-sided on purpose.
     for (const rate of [0.05, 0.12]) {
-      const a = averageOver({ ...TOY, seed: 1000, delistRate: rate }, 200);
-      expect(Math.abs(a.then - a.market), `rate ${rate}: then ${a.then.toFixed(4)} market ${a.market.toFixed(4)}`).toBeLessThan(0.005);
+      let edge = 0;
+      for (const seed of [1, 1000, 3000]) {
+        const a = averageOver({ ...TOY, seed, delistRate: rate }, 100);
+        edge += (a.then - a.market) / 3;
+      }
+      expect(edge, `rate ${rate}: mean edge ${(edge * 100).toFixed(2)} points`).toBeLessThan(0.004);
+      expect(edge, `rate ${rate}: mean edge ${(edge * 100).toFixed(2)} points`).toBeGreaterThan(-0.012);
     }
-  }, 60_000);
+  }, 120_000);
   it("with nobody delisted the two lists are the same list", () => {
     const a = averageOver({ ...TOY, delistRate: 0 }, 10);
     expect(a.survivors).toBe(a.then);
