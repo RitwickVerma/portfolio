@@ -15,6 +15,10 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI ? [["list"], ["junit", { outputFile: "e2e-results/junit.xml" }]] : "list",
   outputDir: "e2e-results/artifacts",
+  // Same reason for the assertions: a 5 s expect that holds here in 0.2 s timed out on the shared runner
+  // while five other pipelines ran beside it (six distinct tests, all "visible within 5000ms", all passing
+  // on rerun). The assertions are unchanged; only the patience is.
+  expect: { timeout: process.env.CI ? 15_000 : 5_000 },
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: "retain-on-failure",
