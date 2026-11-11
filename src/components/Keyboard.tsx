@@ -12,8 +12,8 @@ export default function Keyboard() {
       title="This is my keyboard, as its firmware sees it."
       lede={
         <p>
-          A Crush 80, drawn from the 6×16 matrix in the ZMK board definition: 88 switches, 16 column strobes and 6 row
-          senses. The vendor never released source, so I{" "}
+          A Crush 80, drawn from the 6×16 matrix in its ZMK board definition: 88 switches. The vendor never released
+          source, so I{" "}
           <a href={`#${projectAnchor("crush80-firmware")}`} className="link">
             ported open firmware to it
           </a>
