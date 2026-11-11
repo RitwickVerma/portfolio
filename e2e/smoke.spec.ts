@@ -354,9 +354,12 @@ test.describe("search", () => {
   test("Ctrl K opens search on another page", async ({ page }) => {
     await page.goto("/design/");
     await page.waitForLoadState("networkidle");
-    await page.keyboard.press("Control+k");
+    // networkidle is not hydration: on a slow runner the first Ctrl+K can land before the handler exists.
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible();
+    await expect(async () => {
+      if (!(await dialog.isVisible())) await page.keyboard.press("Control+k");
+      await expect(dialog).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
     await page.keyboard.type("fitment");
     await expect(dialog.getByRole("option").first()).toContainText(/fitment/i);
   });
