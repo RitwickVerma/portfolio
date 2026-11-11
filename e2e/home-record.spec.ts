@@ -138,8 +138,9 @@ test.describe("skills with evidence", () => {
       const shown = Number(await chip.locator(".tabular-nums").textContent());
       await chip.click();
       await expect(page).toHaveURL(/\?q=/);
-      // The number was counted over the full index (the notes' sections), so wait for it to land.
-      await expect(page.getByText(/indexed in this tab in/)).toBeVisible();
+      // The number was counted over the full index (the notes' sections), so wait for it to land. The
+      // index builds in the tab after hydration; on the shared CI runner Firefox needed more than 5 s.
+      await expect(page.getByText(/indexed in this tab in/)).toBeVisible({ timeout: 30_000 });
       await expect(page.locator("[role=status]").filter({ hasText: /documents match/ }), name).toHaveText(new RegExp(`^${shown} of \\d+ documents match`));
       await expect(page.locator("#hits > li").first()).toBeVisible();
     }
