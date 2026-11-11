@@ -206,3 +206,46 @@ test.describe("projects", () => {
     await ctx.close();
   });
 });
+
+test.describe("homelab", () => {
+  test("pressing a guest shows its description and stack under the diagram, one at a time", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const fig = page.locator("#homelab figure").first();
+    const line = fig.locator("[aria-live=polite]");
+    await expect(line).toContainText("Press a guest");
+    const vault = fig.getByRole("button", { name: /^Vaultwarden/ });
+    await vault.click();
+    await expect(vault).toHaveAttribute("aria-pressed", "true");
+    await expect(line).toContainText("Vaultwarden, CT104");
+    await expect(line).toContainText("Password manager");
+    await expect(line).toContainText("Rust, Docker");
+    await fig.getByRole("button", { name: /^Immich/ }).click();
+    await expect(line).toContainText("Photo and video backup with ML search");
+    await expect(line).not.toContainText("Password manager");
+    await expect(vault).toHaveAttribute("aria-pressed", "false");
+    await fig.getByRole("button", { name: "Gateway" }).click();
+    await expect(line).toContainText("Traefik, Authelia SSO, Headscale VPN and CrowdSec");
+    await fig.getByRole("button", { name: "Gateway" }).click();
+    await expect(line).toContainText("Press a guest");
+  });
+
+  test("a guest is a 44 px target on a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const tile = page.locator("#homelab figure").first().getByRole("button", { name: /^Vaultwarden/ });
+    expect((await tile.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  });
+
+  test("the sixteen-row inventory is folded, and the counts come from the data", async ({ page }) => {
+    await page.goto("/");
+    const fold = page.locator("#homelab details").first();
+    await expect(fold.locator("summary")).toContainText("All 16 guests");
+    await expect(fold.locator("li").first()).toBeHidden();
+    await fold.locator("summary").click();
+    await expect(fold.locator("li")).toHaveCount(16);
+    await expect(page.locator("#homelab")).toContainText("OpenTofu declares 14 of the 16");
+    await expect(page.locator("#homelab figure").first()).toContainText("declares 14 of 16 guests");
+  });
+});

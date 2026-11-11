@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import { services } from "@/lib/data";
+import { labCounts, guestById, guestDetail, toggleGuest } from "@/lib/lab";
 
 // The lab as a drawing: one way in, sixteen guests, and the loop that keeps
 // Git and the host in agreement. Every box is read from lib/data; nothing
@@ -34,12 +38,16 @@ function Step({ name, line, quiet }: { name: string; line: string; quiet?: boole
 }
 
 export default function LabTopology() {
+  const [open, setOpen] = useState<string | null>(null);
+  const picked = guestById(open);
+  const detail = picked ? guestDetail(picked) : null;
+  const counts = labCounts();
   const gateway = services.find((s) => s.name === "Gateway");
   const guests = services.filter((s) => s !== gateway);
   const title = `Lab topology. Traffic enters through the gateway (${gateway?.description}) and reaches ${guests.length} other guests on one Proxmox host. A nightly pipeline diffs the host against Git and commits what changed.`;
   return (
     <figure className="mb-10">
-      <div role="img" aria-label={title} className="space-y-2">
+      <div role="group" aria-label={title} className="space-y-2">
         {/* The way in, and the host it opens onto. */}
         <div className="grid gap-2 lg:grid-cols-[auto_auto_auto_auto_1fr] lg:items-center lg:gap-x-3">
           <div>
@@ -47,8 +55,15 @@ export default function LabTopology() {
             <p className="text-[0.8125rem] leading-snug text-fg/75">web or VPN</p>
           </div>
           <Arrow />
-          <div className="rounded-[3px] bg-fg px-3 py-2 text-background">
-            <p className="text-[0.95rem] font-bold leading-snug">Gateway</p>
+          <div className={`rounded-[3px] border-2 border-fg px-3 py-2 ${gateway && open === gateway.ct ? "bg-background text-fg" : "bg-fg text-background"}`}>
+            <button
+              type="button"
+              aria-pressed={gateway ? open === gateway.ct : false}
+              onClick={() => gateway && setOpen(toggleGuest(open, gateway.ct))}
+              className="min-h-11 text-left text-[0.95rem] font-bold leading-snug underline decoration-current/40 underline-offset-4"
+            >
+              Gateway
+            </button>
             <ul className="mt-0.5 grid grid-cols-2 gap-x-4 text-[0.8125rem] leading-snug lg:grid-cols-1">
               {GATEWAY_PARTS.map((t) => (
                 <li key={t}>{t}</li>
@@ -59,14 +74,32 @@ export default function LabTopology() {
           <div className="rounded-md border border-dashed border-fg/40 p-2.5">
             <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
               {guests.map((s) => (
-                <li key={s.ct} className="rounded-[3px] border border-fg bg-background px-2 py-1.5">
-                  <p className="text-[0.8125rem] font-semibold leading-tight text-fg">{s.name}</p>
-                  <p className="font-mono text-xs leading-snug text-fg/75">{s.ct}</p>
+                <li key={s.ct}>
+                  <button
+                    type="button"
+                    aria-pressed={open === s.ct}
+                    onClick={() => setOpen(toggleGuest(open, s.ct))}
+                    className="flex h-full min-h-11 w-full flex-col justify-between rounded-[3px] border border-fg bg-background px-2 py-1.5 text-left text-fg transition-colors duration-[var(--dur-tap)] hover:border-accent aria-pressed:bg-fg aria-pressed:text-background"
+                  >
+                    <span className="block text-[0.8125rem] font-semibold leading-tight">{s.name}</span>
+                    <span className="block font-mono text-xs leading-snug opacity-75">{s.ct}</span>
+                  </button>
                 </li>
               ))}
             </ul>
             <p className="mt-2 text-right text-[0.8125rem] text-fg/75">one Proxmox host</p>
           </div>
+        </div>
+
+        <div aria-live="polite" className="mt-3 min-h-14 sm:min-h-9 border-l-4 border-fg pl-3 py-0.5">
+          {detail ? (
+            <p className="text-[0.95rem] leading-snug">
+              <span className="font-semibold">{detail.title}</span> <span className="text-fg/85">{detail.description}.</span>{" "}
+              <span className="fact">{detail.tech}</span>
+            </p>
+          ) : (
+            <p className="text-[0.95rem] leading-snug text-fg/75">Press a guest to see what it does and its stack.</p>
+          )}
         </div>
 
         {/* The loop: CI checks the host; Git declares to CI and CI commits back. */}
@@ -82,7 +115,7 @@ export default function LabTopology() {
               <span aria-hidden="true" className="mr-1.5 text-fg">
                 →
               </span>
-              declares 14 of {services.length} guests
+              declares {counts.declared} of {counts.guests} guests
             </p>
             <p>
               <span aria-hidden="true" className="mr-1.5 text-fg">
