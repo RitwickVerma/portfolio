@@ -91,7 +91,7 @@ export default function PqToLed() {
       <Presets items={SCENES} active={scene} onPick={pick} />
 
       <div>
-        <p className="fact mb-2">
+        <p className="text-[0.95rem] leading-snug text-fg/75 mb-2">
           The picture says {name} at {fmtNits(nits)} nits. The TV stores that as PQ code {code} of 255.
         </p>
         <div className="grid grid-cols-2 gap-3">
@@ -127,7 +127,7 @@ export default function PqToLed() {
             }}
           />
           <div>
-            <label htmlFor="pq-nits" className="fact flex items-baseline justify-between gap-3">
+            <label htmlFor="pq-nits" className="text-[0.95rem] leading-snug text-fg/75 flex items-baseline justify-between gap-3">
               <span>Brightness of the brightest channel</span>
               <span className="text-fg tabular-nums">{fmtNits(nits)} nits</span>
             </label>
@@ -162,7 +162,7 @@ export default function PqToLed() {
             ] as [string, string][]
           ).map(([k, v]) => (
             <div key={k} className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-x-3 py-1.5 border-b border-border last:border-0">
-              <dt className="fact">{k}</dt>
+              <dt className="text-[0.95rem] leading-snug text-fg/75">{k}</dt>
               <dd className="tabular-nums text-fg/90">{v}</dd>
             </div>
           ))}

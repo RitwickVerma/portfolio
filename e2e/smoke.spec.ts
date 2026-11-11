@@ -102,6 +102,52 @@ for (const { name, path } of PAGES) {
   });
 }
 
+test.describe("note figures: type", () => {
+  const NOTES = [
+    "/notes/chordist-chart-alignment/",
+    "/notes/crush80-open-firmware/",
+    "/notes/homelab-git-is-the-truth/",
+    "/notes/kwin-canvas-frame-classifier/",
+    "/notes/plutus-what-the-backtest-cannot-tell-you/",
+    "/notes/shutup-wave-or-reach/",
+    "/notes/sudostamp-refuse-before-asking/",
+    "/notes/tizen-video-plane-ambilight/",
+  ];
+  for (const path of NOTES) {
+    test(`${path}: all drawn text is 12 px or more and sentences are not set condensed`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(path);
+      await page.waitForLoadState("networkidle");
+      const bad = await page.evaluate(() => {
+        const out: string[] = [];
+        // The folds hold tables and controls too.
+        document.querySelectorAll("figure details").forEach((d) => ((d as HTMLDetailsElement).open = true));
+        for (const fig of document.querySelectorAll("figure")) {
+          const walker = document.createTreeWalker(fig, NodeFilter.SHOW_TEXT);
+          for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+            const text = (n.textContent ?? "").trim();
+            const el = n.parentElement;
+            if (!text || !el || el.closest(".sr-only")) continue;
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0 || getComputedStyle(el).visibility === "hidden") continue;
+            let px = parseFloat(getComputedStyle(el).fontSize);
+            const svg = el.closest("svg");
+            if (svg && el instanceof SVGGraphicsElement) {
+              const m = el.getScreenCTM();
+              px *= m ? Math.hypot(m.a, m.b) : 1;
+            }
+            if (px < 11.95) out.push(`${px.toFixed(1)}px: ${text.slice(0, 40)}`);
+            // The condensed .fact is for dates, units and numbers, not a sentence a reader needs.
+            if (el.closest(".fact") && !el.closest("button") && text.split(/\s+/).length > 6) out.push(`condensed sentence: ${text.slice(0, 50)}`);
+          }
+        }
+        return out;
+      });
+      expect(bad).toEqual([]);
+    });
+  }
+});
+
 test.describe("the frame-authority figure", () => {
   test("a pull is put back and a move on the screen is kept, placed by keyboard and by pointer", async ({ page }) => {
     const problems = watch(page);

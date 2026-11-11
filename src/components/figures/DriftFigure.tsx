@@ -23,7 +23,7 @@ function Row({ title, sub, job, differs }: { title: string; sub: string; job: st
         <span className="font-semibold">{title}</span>
         <span className={`block text-[0.95rem] leading-snug ${differs ? "text-fg" : "text-fg/75"}`}>{sub}</span>
       </span>
-      <span className={`wd-narrow text-[0.95rem] text-right ${job === "nothing to report" ? "text-muted" : "font-bold"}`}>{job}</span>
+      <span className={`text-[0.95rem] text-right ${job === "nothing to report" ? "text-fg/75" : "font-bold"}`}>{job}</span>
     </li>
   );
 }

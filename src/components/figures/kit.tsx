@@ -127,7 +127,7 @@ export function Segmented<T extends string>({
   };
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-      <span className="fact">{label}</span>
+      <span className="text-[0.95rem] leading-snug text-fg/75">{label}</span>
       <div ref={ref} role="radiogroup" aria-label={label} onKeyDown={onKeyDown} className="flex flex-wrap gap-1.5">
         {options.map((o) => (
           <button

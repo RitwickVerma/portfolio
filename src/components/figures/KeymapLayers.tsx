@@ -263,7 +263,7 @@ export default function KeymapLayers() {
               </p>
               <ol className="mt-1 font-mono text-[0.8rem] leading-relaxed">
                 {trace.map((t) => (
-                  <li key={t.layer} className={t.wins ? "text-fg" : "text-muted"}>
+                  <li key={t.layer} className={t.wins ? "text-fg" : "text-fg/75"}>
                     {t.layer} {map.layers[t.layer].name} {t.binding === null ? "&trans, falls through" : `&${t.binding}`}
                     {t.wins && " ← used"}
                   </li>

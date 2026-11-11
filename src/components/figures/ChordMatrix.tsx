@@ -50,7 +50,7 @@ export default function ChordMatrix({ cmp, rows }: { cmp: Comparison; rows: stri
 
   return (
     <div className="space-y-4">
-      <p className="fact max-w-[62ch]">
+      <p className="text-[0.95rem] leading-snug text-fg/75 max-w-[62ch]">
         Chart rows run down, timed lyric lines across. Each cell holds the best total score for the first i rows against the first j lines; the alignment reads its answer by walking back from the bottom right corner.
       </p>
       <Segmented<Method>
@@ -86,7 +86,7 @@ export default function ChordMatrix({ cmp, rows }: { cmp: Comparison; rows: stri
         <Key swatch={<span className="inline-block h-4 w-6 rounded-[2px] shadow-[inset_0_0_0_3px_var(--fg)]" />}>The selected cell, broken down in the three numbers</Key>
       </ul>
 
-      <p className="fact">The table scrolls sideways when it does not fit. Tap a cell to see its three numbers.</p>
+      <p className="text-[0.95rem] leading-snug text-fg/75">The table scrolls sideways when it does not fit. Tap a cell to see its three numbers.</p>
       <div className="flex flex-wrap items-start gap-x-6 gap-y-4">
         <div className="max-w-full overflow-x-auto" id={`${uid}-matrix`}>
           <table role="grid" aria-label="Score matrix: chart rows down, timed lines across" className="border-separate border-spacing-0 font-mono text-xs leading-none">
@@ -95,11 +95,11 @@ export default function ChordMatrix({ cmp, rows }: { cmp: Comparison; rows: stri
                 <th scope="col" className="min-w-11 px-1 pb-1">
                   <span className="sr-only">Rows against lines</span>
                 </th>
-                <th scope="col" className="min-w-11 px-0.5 pb-1 font-normal text-muted">
+                <th scope="col" className="min-w-11 px-0.5 pb-1 font-normal text-fg/75">
                   start
                 </th>
                 {LINES.map((l, j) => (
-                  <th key={j} scope="col" className="min-w-11 px-0.5 pb-1 font-normal text-muted" title={l.text}>
+                  <th key={j} scope="col" className="min-w-11 px-0.5 pb-1 font-normal text-fg/75" title={l.text}>
                     <span className="block text-fg">L{j + 1}</span>
                     <span className="block pt-0.5">{clock(l.t)}</span>
                   </th>
@@ -109,7 +109,7 @@ export default function ChordMatrix({ cmp, rows }: { cmp: Comparison; rows: stri
             <tbody>
               {Array.from({ length: n + 1 }, (_, i) => (
                 <tr key={i}>
-                  <th scope="row" className="pr-1.5 text-right font-normal text-muted" title={i > 0 ? rows[i - 1] : "no rows taken"}>
+                  <th scope="row" className="pr-1.5 text-right font-normal text-fg/75" title={i > 0 ? rows[i - 1] : "no rows taken"}>
                     <span className={i > 0 ? "text-fg" : ""}>{i === 0 ? "start" : `R${i}`}</span>
                   </th>
                   {Array.from({ length: m + 1 }, (_, j) => {
@@ -135,8 +135,8 @@ export default function ChordMatrix({ cmp, rows }: { cmp: Comparison; rows: stri
                         : step
                           ? "bg-hit/60 font-semibold text-fg"
                           : edge
-                            ? "bg-surface text-muted"
-                            : "text-muted";
+                            ? "bg-surface text-fg/75"
+                            : "text-fg/75";
                     const joint = method === "alignment" && step === 1;
                     const gridLine = step || isMine ? "" : "border-b border-r border-border";
                     const label = edge
@@ -168,7 +168,7 @@ export default function ChordMatrix({ cmp, rows }: { cmp: Comparison; rows: stri
         <Readout cmp={cmp} rows={rows} i={cell.i} j={cell.j} />
       </div>
 
-      <p className="fact max-w-[62ch]">
+      <p className="text-[0.95rem] leading-snug text-fg/75 max-w-[62ch]">
         Agreement, the alignment&rsquo;s own score applied to each method&rsquo;s pairs: alignment {f(cmp.alignmentRun.agreement)}, greedy scan {f(cmp.greedyRun.agreement)}.
       </p>
     </div>
@@ -192,7 +192,7 @@ function Readout({ cmp, rows, i, j }: { cmp: Comparison; rows: string[]; i: numb
   const edge = i === 0 || j === 0;
   let body: ReactNode;
   if (edge) {
-    body = <p className="fact">With no rows or no lines taken there is nothing to pair: value 0.00.</p>;
+    body = <p className="text-[0.95rem] leading-snug text-fg/75">With no rows or no lines taken there is nothing to pair: value 0.00.</p>;
   } else {
     const sim = dp.similarity[i - 1][j - 1];
     const sub = dp.substitution[i - 1][j - 1];
@@ -204,7 +204,7 @@ function Readout({ cmp, rows, i, j }: { cmp: Comparison; rows: string[]; i: numb
     const step = dp.step[i][j];
     body = (
       <>
-        <p className="fact leading-snug">
+        <p className="text-[0.95rem] leading-snug text-fg/75 leading-snug">
           Chart: &ldquo;{rows[i - 1]}&rdquo;
           <br />
           Lyric: &ldquo;{LINES[j - 1].text}&rdquo;
@@ -220,7 +220,7 @@ function Readout({ cmp, rows, i, j }: { cmp: Comparison; rows: string[]; i: numb
             </li>
           ))}
         </ul>
-        <p className="fact mt-1.5">
+        <p className="text-[0.95rem] leading-snug text-fg/75 mt-1.5">
           Cell value (the best of the three): <span className="font-semibold text-fg tabular-nums">{f(dp.value[i][j])}</span>
         </p>
       </>

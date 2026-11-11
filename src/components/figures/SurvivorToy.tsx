@@ -93,7 +93,7 @@ export default function SurvivorToy() {
               <polyline points={line(run.market, lo, hi)} fill="none" stroke="var(--muted)" strokeWidth={1.5} strokeDasharray="4 3" vectorEffect="non-scaling-stroke" />
               <polyline points={line(run.strategy, lo, hi)} fill="none" stroke="var(--fg)" strokeWidth={2.5} vectorEffect="non-scaling-stroke" />
             </svg>
-            <div className="fact absolute left-2 top-1 rounded-[3px] bg-background/85 px-1.5 py-0.5 leading-snug">
+            <div className="text-[0.95rem] leading-snug text-fg/75 absolute left-2 top-1 rounded-[3px] bg-background/85 px-1.5 py-0.5 leading-snug">
               <div className="text-fg">
                 <span aria-hidden="true">━ </span>In this world the rule: <span className="tabular-nums font-semibold">{end(run.strategy).toFixed(1)}×</span> in {years} years
               </div>
@@ -132,10 +132,10 @@ export default function SurvivorToy() {
             className="h-11 w-52 max-w-full accent-fg"
           />
         </div>
-        {slow === 0 ? <p className="fact mt-1">With nothing delisted there is nobody to leave out, and the two lists are the same list.</p> : null}
+        {slow === 0 ? <p className="text-[0.95rem] leading-snug text-fg/75 mt-1">With nothing delisted there is nobody to leave out, and the two lists are the same list.</p> : null}
         <table className="mt-3 w-full border-collapse text-[0.95rem]">
           <caption className="sr-only">Yearly return in the toy market, this world and the mean of {WORLDS} worlds</caption>
-          <thead className="fact text-left">
+          <thead className="text-[0.95rem] leading-snug text-fg/75 text-left">
             <tr>
               <th scope="col" className="border-b border-fg py-1.5 pr-3 font-normal"><span className="sr-only">Who</span></th>
               <th scope="col" className="border-b border-fg py-1.5 pr-3 text-right font-normal">This world</th>

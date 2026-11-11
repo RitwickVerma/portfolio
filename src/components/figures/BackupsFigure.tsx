@@ -42,7 +42,7 @@ export default function BackupsFigure() {
                 <span className={`font-semibold ${gone ? "line-through" : ""}`}>{copy.label}</span>
                 <span className={`block text-[0.95rem] ${on ? "" : "text-fg/75"}`}>Lives {copy.where}.</span>
               </span>
-              <span className={`wd-narrow text-[0.95rem] text-right ${on ? "font-bold" : gone ? "font-semibold" : "text-muted"}`}>{loss === null ? "intact" : state}</span>
+              <span className={`text-[0.95rem] text-right ${on ? "font-bold" : gone ? "font-semibold" : "text-fg/75"}`}>{loss === null ? "intact" : state}</span>
             </li>
           );
         })}

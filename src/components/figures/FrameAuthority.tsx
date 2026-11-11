@@ -567,7 +567,7 @@ export default function FrameAuthority() {
           </p>
           <p className="mt-1 text-[0.95rem] text-fg/80">In reach means at least 100 px of the window is over a screen and its top edge is on that screen.</p>
           {preset === "insists" && played.result.rule !== "insists" ? (
-            <p className="fact mt-1">Press “{BUTTON.kwin}” twice more, quickly: the third pull in a row is the window insisting.</p>
+            <p className="text-[0.95rem] leading-snug text-fg/75 mt-1">Press “{BUTTON.kwin}” twice more, quickly: the third pull in a row is the window insisting.</p>
           ) : null}
         </Verdict>
       ) : (
@@ -592,42 +592,42 @@ export default function FrameAuthority() {
         <Fold summary="Why: the six checks">
           {played && detail ? (
             <>
-              <p className="fact">{verdict === "revert" ? "Every check says pull." : "The classifier stopped at the highlighted check."}</p>
+              <p className="text-[0.95rem] leading-snug text-fg/75">{verdict === "revert" ? "Every check says pull." : "The classifier stopped at the highlighted check."}</p>
               <ol className="mt-1 border-t border-fg">
                 {detail.rows.map((row, i) => {
                   const decisive = verdict === "adopt" && i === detail.decided;
                   return (
                     <li key={row.q} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-0.5 py-2 border-b border-border">
-                      <span className="wd-narrow text-[0.95rem] leading-snug">{decisive ? <mark>{row.q}</mark> : row.q}</span>
-                      <span className="wd-narrow text-[0.95rem] font-semibold text-right">
-                        {row.answer === null ? <span className="font-normal text-muted">not asked</span> : decisive ? <mark>{row.answer}</mark> : row.answer}
+                      <span className="text-[0.95rem] leading-snug">{decisive ? <mark>{row.q}</mark> : row.q}</span>
+                      <span className="text-[0.95rem] font-semibold text-right">
+                        {row.answer === null ? <span className="font-normal text-fg/75">not asked</span> : decisive ? <mark>{row.answer}</mark> : row.answer}
                       </span>
-                      <span className="col-span-2 font-mono text-xs leading-snug text-muted [overflow-wrap:anywhere]">{row.numbers}</span>
+                      <span className="col-span-2 font-mono text-xs leading-snug text-fg/75 [overflow-wrap:anywhere]">{row.numbers}</span>
                     </li>
                   );
                 })}
               </ol>
             </>
           ) : (
-            <p className="fact">The checks and the numbers they compare appear here once the move is played.</p>
+            <p className="text-[0.95rem] leading-snug text-fg/75">The checks and the numbers they compare appear here once the move is played.</p>
           )}
         </Fold>
         <Fold summary="More controls">
           <div className="space-y-4">
-            <p id={hintId} className="fact max-w-[60ch]">
+            <p id={hintId} className="text-[0.95rem] leading-snug text-fg/75 max-w-[60ch]">
               Place the window by dragging it, or tab to it and use the arrow keys (Shift: 200 px), or type its place. On a phone a vertical swipe scrolls the page, so use the numbers for the height.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 wd-narrow text-[0.95rem]">
+              <label className="flex items-center gap-2 text-[0.95rem]">
                 x
                 <input type="number" step={STEP} value={frame.x} onChange={(e) => Number.isFinite(e.target.valueAsNumber) && place(e.target.valueAsNumber, frame.y)} className="w-24 min-h-11 sm:min-h-9 border border-fg bg-background px-2 font-mono text-sm" />
               </label>
-              <label className="flex items-center gap-2 wd-narrow text-[0.95rem]">
+              <label className="flex items-center gap-2 text-[0.95rem]">
                 y
                 <input type="number" step={STEP} value={frame.y} onChange={(e) => Number.isFinite(e.target.valueAsNumber) && place(frame.x, e.target.valueAsNumber)} className="w-24 min-h-11 sm:min-h-9 border border-fg bg-background px-2 font-mono text-sm" />
               </label>
             </div>
-            <label className="flex items-center gap-2 min-h-11 sm:min-h-9 wd-narrow text-[0.95rem]">
+            <label className="flex items-center gap-2 min-h-11 sm:min-h-9 text-[0.95rem]">
               <input type="checkbox" className="size-5 accent-[var(--accent)]" checked={scene.gone} onChange={(e) => change({ gone: e.target.checked })} />
               A second screen was just unplugged
             </label>
@@ -644,7 +644,7 @@ export default function FrameAuthority() {
           <div className="space-y-2">
             <Presets label="Test case" items={PRESETS} active={preset} onPick={choose} />
             {chosen && (
-              <p className="fact max-w-[62ch]">
+              <p className="text-[0.95rem] leading-snug text-fg/75 max-w-[62ch]">
                 From <span className="font-mono text-xs">logic.test.js</span>: &ldquo;{chosen.test}&rdquo;.
               </p>
             )}

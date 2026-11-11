@@ -143,7 +143,7 @@ export default function InfiniteCanvas() {
             <div key={w.title} className="absolute bg-background border-2 border-fg rounded-[5px] overflow-hidden" style={{ left: w.x, top: w.y, width: w.w, height: w.h }}>
               <div className="flex items-center justify-between px-3 h-8 border-b-2 border-fg">
                 <span className="wd-semi font-bold text-sm">{w.title}</span>
-                <span className="font-mono text-[10px] text-muted">
+                <span className="font-mono text-xs text-fg/75">
                   {w.x}, {w.y}
                 </span>
               </div>
@@ -168,12 +168,12 @@ export default function InfiniteCanvas() {
         </div>
       </div>
       <figcaption className="mt-3 flex flex-wrap items-baseline gap-x-5 gap-y-2">
-        <span className="fact flex-1 min-w-[16rem]">
+        <span className="text-[0.95rem] leading-snug text-fg/75 flex-1 min-w-[16rem]">
           Drag it. Each title bar shows its window&apos;s position, and those numbers never change: only the camera moves. Camera at{" "}
-          <span className="font-mono text-[0.7rem]">
+          <span className="font-mono text-xs">
             {Math.round(cam.x)}, {Math.round(cam.y)}
           </span>
-          , zoom <span className="font-mono text-[0.7rem]">{cam.zoom.toFixed(2)}</span>.
+          , zoom <span className="font-mono text-xs">{cam.zoom.toFixed(2)}</span>.
         </span>
         <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg max-sm:min-h-11 max-sm:min-w-11 max-sm:px-1" onClick={() => zoomBy(1.25)}>
           Zoom in
