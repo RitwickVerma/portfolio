@@ -91,12 +91,34 @@ export default function KeymapLayers() {
   const [stop, setStop] = useState(SCENARIOS.fn.look);
   const caps = useRef<(HTMLButtonElement | null)[]>([]);
   const scroller = useRef<HTMLDivElement>(null);
+  // Whether the board overflows its frame and how much of it is out of sight on each side; null until measured.
+  const [edges, setEdges] = useState<{ over: boolean; left: boolean; right: boolean } | null>(null);
 
   // Phones show part of the board: start on the key the first scenario is about.
   useEffect(() => {
     const box = scroller.current;
     const cap = caps.current[SCENARIOS.fn.look];
     if (box && cap) box.scrollLeft = cap.offsetLeft + cap.offsetWidth / 2 - box.clientWidth / 2;
+  }, []);
+
+  // The cue follows the scroll: a fade on each side that has more board behind it, and the hint only while the board overflows.
+  useEffect(() => {
+    const box = scroller.current;
+    if (!box) return;
+    const read = () =>
+      setEdges({
+        over: box.scrollWidth > box.clientWidth + 1,
+        left: box.scrollLeft > 1,
+        right: box.scrollLeft + box.clientWidth < box.scrollWidth - 1,
+      });
+    read();
+    box.addEventListener("scroll", read, { passive: true });
+    const ro = new ResizeObserver(read);
+    ro.observe(box);
+    return () => {
+      box.removeEventListener("scroll", read);
+      ro.disconnect();
+    };
   }, []);
 
   const map = MAPS[which];
@@ -178,6 +200,7 @@ export default function KeymapLayers() {
     >
       <Presets items={PRESETS} active={active} onPick={scenario} />
 
+      <div>
       <div className="relative" onKeyDown={onKeyDown} onKeyUp={onKeyUp} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDown(null); }}>
         <div ref={scroller} role="region" aria-label="Crush 80 keys. Scrolls sideways on a narrow screen." tabIndex={0} className="relative overflow-x-auto rounded-md glass outline-none focus-visible:ring-2 focus-visible:ring-accent">
           <div className="relative m-1 min-w-[640px] max-md:min-w-[720px]" style={{ aspectRatio: `${BOARD_W} / ${BOARD_H}` }}>
@@ -197,8 +220,11 @@ export default function KeymapLayers() {
             ))}
           </div>
         </div>
-        {/* Below a tablet the board scrolls sideways; the fade says so. */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-8 rounded-r-md bg-gradient-to-l from-background to-transparent md:hidden" />
+        {/* The board scrolls sideways when it does not fit; a fade on the side with more of it says so. Until measured, the right one shows below a tablet. */}
+        <div aria-hidden="true" className={`pointer-events-none absolute inset-y-0 right-0 w-8 rounded-r-md bg-gradient-to-l from-background to-transparent transition-opacity duration-[var(--dur-tap)] ${edges ? (edges.right ? "opacity-100" : "opacity-0") : "md:hidden"}`} />
+        <div aria-hidden="true" className={`pointer-events-none absolute inset-y-0 left-0 w-8 rounded-l-md bg-gradient-to-r from-background to-transparent transition-opacity duration-[var(--dur-tap)] ${edges?.left ? "opacity-100" : "opacity-0"}`} />
+      </div>
+      {(edges ? edges.over : true) && <p className={`mt-1.5 text-[0.8125rem] leading-snug text-fg/75 ${edges ? "" : "md:hidden"}`}>Swipe the board sideways</p>}
       </div>
 
       <Verdict tone={v.tone} title={v.title}>

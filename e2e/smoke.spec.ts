@@ -953,6 +953,24 @@ test.describe("crush80 note figures", () => {
     await expect(fig.getByRole("button", { name: /^Home on the Home key: Sends Home, from the base layer/ })).toHaveCount(1);
   });
 
+  test("the keyboard says it scrolls sideways only where it does", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(CRUSH_NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /Hold Fn and the same keys/ });
+    const board = fig.getByRole("region", { name: /Crush 80 keys/ });
+    expect(await board.evaluate((b) => b.scrollWidth > b.clientWidth)).toBe(true);
+    await expect(fig.getByText("Swipe the board sideways")).toBeVisible();
+    // The board opens on the middle of the keys, so there is more of it on both sides.
+    const fades = await board.evaluate((b) => [...b.parentElement!.querySelectorAll(":scope > div[aria-hidden]")].map((f) => getComputedStyle(f).opacity));
+    expect(fades).toEqual(["1", "1"]);
+    await board.evaluate((b) => (b.scrollLeft = b.scrollWidth));
+    await expect.poll(() => board.evaluate((b) => [...b.parentElement!.querySelectorAll(":scope > div[aria-hidden]")].map((f) => getComputedStyle(f).opacity))).toEqual(["0", "1"]);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    expect(await board.evaluate((b) => b.scrollWidth > b.clientWidth)).toBe(false);
+    await expect(fig.getByText("Swipe the board sideways")).toHaveCount(0);
+  });
+
   test("the layer figure answers to the visitor's own keys and walks with arrows", async ({ page }) => {
     await page.goto(CRUSH_NOTE);
     await page.waitForLoadState("networkidle");
