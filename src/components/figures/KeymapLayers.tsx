@@ -190,7 +190,7 @@ export default function KeymapLayers() {
             The rule is ZMK&rsquo;s: the board keeps a set of layers that are on, and a key is read from the highest one that has something on that key. A transparent key (<code className="font-mono text-[0.85em] [overflow-wrap:anywhere]">&amp;trans</code>) falls through to the layer below. Holding Fn turns layer 2 on, and Space on that layer turns on layer 4, so Fn then Space reads the number pad.
           </p>
           <p>
-            &ldquo;Old file&rdquo; isldquo;Before the fix&ldquo;Old file&rdquo; isrdquo; is <code className="font-mono text-[0.85em] [overflow-wrap:anywhere]">config/crush80.keymap</code> at {KEYMAP_BEFORE_FIX.commit}, the commit before b18bf3c. It had a conditional layer, a rule ZMK re-checks after every layer change, which kept layer 3 off unless Mac mode and Fn were both on. Holding right Win turned layer 3 on and the rule turned it off at once.
+            &ldquo;Before the fix&rdquo; is <code className="font-mono text-[0.85em] [overflow-wrap:anywhere]">config/crush80.keymap</code> at {KEYMAP_BEFORE_FIX.commit}, the commit before b18bf3c. It had a conditional layer, a rule ZMK re-checks after every layer change, which kept layer 3 off unless Mac mode and Fn were both on. Holding right Win turned layer 3 on and the rule turned it off at once.
           </p>
           <p>
             Both files are copied unedited into the site&rsquo;s tests, and a test parses them with a second reader and compares the result with the data this figure uses. Mac mode here is the resolver tapping M with Fn down, which is what the real key does. You can also hold F, N, W or P on your own keyboard (Fn, Fn+Space, right Win, right Win+Space) while the figure has focus, and tap M for Mac mode.
