@@ -2,13 +2,21 @@ import Link from "next/link";
 import { projects } from "@/lib/data";
 import { projectAnchor } from "@/lib/corpus";
 import Section from "@/components/Section";
-import Ambilight from "@/components/figures/Ambilight";
-import InfiniteCanvas from "@/components/figures/InfiniteCanvas";
+import LazyFigure from "@/components/LazyFigure";
+import { AmbilightStandin, CanvasStandin } from "@/components/FigurePlaceholders";
 
 /** Projects whose idea can be run on the page. */
 const FIGURES: Record<string, React.ReactNode> = {
-  "tizen-ambilight": <Ambilight />,
-  "kwin-canvas": <InfiniteCanvas />,
+  "tizen-ambilight": (
+    <LazyFigure name="ambilight">
+      <AmbilightStandin />
+    </LazyFigure>
+  ),
+  "kwin-canvas": (
+    <LazyFigure name="canvas">
+      <CanvasStandin />
+    </LazyFigure>
+  ),
 };
 
 type ProjectData = (typeof projects)[number];

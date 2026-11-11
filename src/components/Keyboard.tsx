@@ -1,4 +1,5 @@
-import Crush80 from "@/components/Crush80";
+import LazyFigure from "@/components/LazyFigure";
+import { CrushStandin } from "@/components/FigurePlaceholders";
 import Section from "@/components/Section";
 import { projectAnchor } from "@/lib/corpus";
 
@@ -21,7 +22,9 @@ export default function Keyboard() {
         </p>
       }
     >
-      <Crush80 />
+      <LazyFigure name="crush80">
+        <CrushStandin />
+      </LazyFigure>
     </Section>
   );
 }
