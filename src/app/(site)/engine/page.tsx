@@ -3,7 +3,6 @@ import { cardMetadata, OG_CARDS } from "@/lib/seo";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import XRay from "@/components/engine/XRay";
-import Benchmark from "@/components/engine/Benchmark";
 import ReplayLink from "@/components/engine/ReplayLink";
 import Section from "@/components/Section";
 import { buildCorpus } from "@/lib/corpus";
@@ -13,7 +12,7 @@ import { buildIndex, CONTROL, TREATMENT } from "@/lib/search";
 import { evaluate, JUDGMENTS, type QueryEval } from "@/lib/eval";
 
 const DESCRIPTION =
-  "How the search on ritwickverma.dev works: a query taken apart stage by stage, a control-against-treatment replay of judged queries, and a latency benchmark.";
+  "How the search on ritwickverma.dev works: a query taken apart stage by stage and a control-against-treatment replay of judged queries.";
 
 export const metadata: Metadata = {
   title: "The engine room",
@@ -117,7 +116,8 @@ export default function EnginePage() {
           <>
             <p>
               For each query I wrote down which documents ought to come back and how good an answer each is. The table replays all of them through plain
-              BM25 and through what the site runs. {changed} of {JUDGMENTS.length} come out differently.
+              BM25 and through what the site runs, over the same index the browser builds: {index.docs.length} documents and{" "}
+              {index.terms.length.toLocaleString("en-US")} distinct terms. {changed} of {JUDGMENTS.length} come out differently.
             </p>
             <p className="fact">
               I wrote the engine and the judgments both, so read this as a regression guard and not a benchmark. The same numbers run as a unit test, and a
@@ -141,6 +141,10 @@ export default function EnginePage() {
         <div data-replay-differ>
           <ReplayTable rows={differing} />
         </div>
+        <p className="mt-4 max-w-[72ch]" data-replay-summary>
+          Over all {JUDGMENTS.length} queries the first result is relevant {metrics[0].treatment} of the time against {metrics[0].control} for the control, mean
+          reciprocal rank is {metrics[1].treatment} against {metrics[1].control}, and nDCG at 5 is {metrics[2].treatment} against {metrics[2].control}.
+        </p>
         {agreeing.length > 0 && (
           <details className="mt-6" data-replay-agree>
             <summary className="link cursor-pointer inline-flex items-center min-h-11">
@@ -155,14 +159,6 @@ export default function EnginePage() {
           The control is BM25 over title, tags and text with equal weight and nothing else. The treatment adds field weights, the query rewriter, a nearest
           spelling for a word nothing matched, and a static rank per document. Click a query to take it apart above.
         </p>
-      </Section>
-
-      <Section
-        id="latency"
-        title="How fast, measured on your machine."
-        lede={<p>A number I measured on mine would tell you about my laptop. This one runs here.</p>}
-      >
-        <Benchmark />
       </Section>
 
       <Section id="source" title="All of it is a short read." lede={<p>Pure functions, no DOM, every behaviour above pinned by a test.</p>}>

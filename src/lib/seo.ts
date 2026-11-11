@@ -95,7 +95,7 @@ export const OG_CARDS = {
     eyebrow: "ritwickverma.dev/engine",
     name: "The engine room",
     line: "How the search on ritwickverma.dev works",
-    lineTwo: "A query taken apart stage by stage, a control-against-treatment replay of judged queries, and a latency benchmark.",
+    lineTwo: "A query taken apart stage by stage and a control-against-treatment replay of judged queries.",
   },
   design: {
     path: "/design/",

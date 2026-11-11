@@ -94,11 +94,24 @@ test.describe("engine room", () => {
     expect(widths.doc).toBeLessThanOrEqual(widths.view);
   });
 
-  test("the benchmark's throughput comes from search time, not wall time", async ({ page }) => {
+  test("the replay says its three metrics in a sentence, and they are the ones in the big numbers", async ({ browser }) => {
+    // Static HTML: the sentence must be there without JavaScript.
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
     await page.goto("/engine/");
-    await page.waitForLoadState("networkidle"); // the key handlers exist only after hydration
-    await page.getByRole("button", { name: /Run 6,000 queries/ }).click();
-    await expect(page.locator("#latency")).toContainText("ms of search time");
+    const sentence = (await page.locator("[data-replay-summary]").innerText()).replace(/\s+/g, " ");
+    const big = await page.locator("#replay dl dd").allInnerTexts();
+    expect(big).toHaveLength(3);
+    for (const dd of big) {
+      const m = /^(\S+) from (\S+) in the control$/.exec(dd.replace(/\s+/g, " ").trim());
+      expect(m, dd).not.toBeNull();
+      const [, treatment, control] = m!.map((x) => x.replace(/[.%]/g, "\\$&"));
+      expect(sentence, dd).toMatch(new RegExp(`${treatment}( of the time)? against ${control}`));
+    }
+    // The lede names the size of the index it ran over, and the page makes no latency claim.
+    await expect(page.locator("#replay")).toContainText(/over the same index the browser builds: \d+ documents and [\d,]+ distinct terms/);
+    await expect(page.locator("#latency")).toHaveCount(0);
+    await context.close();
   });
 });
 
