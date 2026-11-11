@@ -29,6 +29,21 @@ test.describe("homelab note figures", () => {
     await expect(verdict).toContainText("reports 1 difference");
   });
 
+  test("drift: a yes/no change is a real switch with a 44 px target", async ({ page }) => {
+    await page.goto(PATH);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /Change something by hand/ });
+    await fig.getByText("More controls").click();
+    const sw = fig.getByRole("switch", { name: "A password is left in a config" });
+    await expect(sw).toHaveAttribute("aria-checked", "false");
+    expect((await sw.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await sw.click();
+    await expect(sw).toHaveAttribute("aria-checked", "true");
+    await expect(fig.getByRole("status")).toContainText("You changed the lab");
+    await sw.press("Space");
+    await expect(sw).toHaveAttribute("aria-checked", "false");
+  });
+
   test("paging: the gate pays one page for a fault that lasts, the naive rule one per failure", async ({ page }) => {
     await page.goto(PATH);
     await page.waitForLoadState("networkidle");

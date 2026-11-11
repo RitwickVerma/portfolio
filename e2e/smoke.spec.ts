@@ -920,7 +920,10 @@ test.describe("crush80 note figures", () => {
     // M is Fn+M: Mac mode swaps Alt and Win.
     await page.keyboard.press("m");
     await fig.getByText("More controls").click();
-    await expect(fig.getByRole("radio", { name: "On" })).toHaveAttribute("aria-checked", "true");
+    const mac = fig.getByRole("switch", { name: "Mac mode" });
+    await expect(mac).toHaveAttribute("aria-checked", "true");
+    await mac.click();
+    await expect(mac).toHaveAttribute("aria-checked", "false");
   });
 
   test("the clock figure shows the rounding and its drift", async ({ page }) => {

@@ -5,7 +5,7 @@ import { KEYS, BOARD_W, BOARD_H, keyForCode } from "@/lib/crush80";
 import { KEYMAP_TODAY, KEYMAP_BEFORE_FIX } from "@/lib/crush80Keymaps";
 import { bindingAt, type KeymapData, type LayerEvent } from "@/lib/layers";
 import { HOLDS, RIGHT_WIN_KEY, boardState, capName, cells, holdForKey, keyTitle, neighbour, toggleMac, verdict, type Cell, type Dir, type Hold } from "@/lib/layerBoard";
-import { FigureFrame, Fold, Presets, Segmented, Verdict } from "./kit";
+import { FigureFrame, Fold, Presets, Segmented, Toggle, Verdict } from "./kit";
 
 // The real keymap, resolved by the real rule. Hold a layer key and every cap
 // shows what it now does; a yellow cap changed, and its small number is the
@@ -28,10 +28,6 @@ type Scenario = keyof typeof SCENARIOS;
 const PRESETS = (Object.keys(SCENARIOS) as Scenario[]).map((id) => ({ id, label: SCENARIOS[id].label }));
 
 const HOLD_OPTIONS = HOLDS.map((h) => ({ id: h.id, label: h.hint ? `${h.label} (${h.hint})` : h.label }));
-const MAC_OPTIONS = [
-  { id: "off" as const, label: "Off" },
-  { id: "on" as const, label: "On" },
-];
 const WHICH_OPTIONS = [
   { id: "today" as const, label: `Today, ${KEYMAP_TODAY.commit}` },
   { id: "before" as const, label: `Before the fix, ${KEYMAP_BEFORE_FIX.commit}` },
@@ -213,7 +209,7 @@ export default function KeymapLayers() {
         <Fold summary="More controls">
           <div className="space-y-3">
             <Segmented label="Hold" options={HOLD_OPTIONS} value={latched} onChange={setLatched} />
-            <Segmented label="Mac mode" options={MAC_OPTIONS} value={mac ? "on" : "off"} onChange={(m) => (m === "on") !== mac && setToggled((t) => toggleMac(map, t))} />
+            <Toggle label="Mac mode" checked={mac} onChange={(on) => on !== mac && setToggled((t) => toggleMac(map, t))} />
             <Segmented label="Keymap" options={WHICH_OPTIONS} value={which} onChange={setWhich} />
           </div>
         </Fold>
