@@ -4,12 +4,14 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import XRay from "@/components/engine/XRay";
 import ReplayLink from "@/components/engine/ReplayLink";
+import JudgeIt from "@/components/engine/JudgeIt";
 import Section from "@/components/Section";
 import { buildCorpus } from "@/lib/corpus";
 import { notes } from "@/lib/notes";
 import { noteText } from "@/lib/notes.server";
 import { buildIndex, CONTROL, TREATMENT } from "@/lib/search";
 import { evaluate, JUDGMENTS, type QueryEval } from "@/lib/eval";
+import { judgeRows } from "@/lib/judge";
 
 const DESCRIPTION =
   "How the search on ritwickverma.dev works: a query taken apart stage by stage and a control-against-treatment replay of judged queries.";
@@ -159,6 +161,22 @@ export default function EnginePage() {
           The control is BM25 over title, tags and text with equal weight and nothing else. The treatment adds field weights, the query rewriter, a nearest
           spelling for a word nothing matched, and a static rank per document. Click a query to take it apart above.
         </p>
+      </Section>
+
+      <Section
+        id="judge"
+        title="Grade it yourself; the numbers recompute from your grades."
+        lede={
+          <>
+            <p>
+              The weak point of the table above is that I wrote the judgments. So grade the results yourself: for each query, mark the rows relevant, partly or
+              not, and the page recomputes P@1, MRR and nDCG@5 from your grades for both rankers, beside mine.
+            </p>
+            <p className="fact">Your grades stay in this tab: nothing is sent anywhere, and you can copy them as JSON.</p>
+          </>
+        }
+      >
+        <JudgeIt first={judgeRows(index, JUDGMENTS[0], { treatment: TREATMENT, control: CONTROL })} />
       </Section>
 
       <Section id="source" title="All of it is a short read." lede={<p>Pure functions, no DOM, every behaviour above pinned by a test.</p>}>
