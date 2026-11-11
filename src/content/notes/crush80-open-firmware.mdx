@@ -2,6 +2,10 @@ import { KeymapLayers, ClockDrift } from "@/components/figures/lazy";
 
 <KeymapLayers />
 
+<Sources figure="keymap-layers" />
+
+import { Sources } from "@/components/figures/Sources";
+
 [crush80-zmk](https://gitlab.com/ritwick7/crush80-zmk) replaces the closed firmware of the Wobkey Crush 80, a good keyboard, with ZMK, installed over the keyboard's own USB cable.
 
 ## A conditional layer killed my right Win key
@@ -21,6 +25,8 @@ The LEDs went the same way. I saw SPI traffic in the binary and concluded the li
 Zephyr counts a 32 kHz clock and divides it into ticks with an integer division. At the default 10000 ticks a second that is 3.2 cycles, which became 3, so tapping terms, macro delays and idle timeouts ran short. Measured against the host over 60 s, the clock read 1.0665 times real time before the change and 0.9998 after. At 8000 ticks a second the division is exactly 4.
 
 <ClockDrift />
+
+<Sources figure="clock-drift" />
 
 ## 88 keys, 154 LEDs and one RISC-V chip
 

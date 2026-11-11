@@ -3,6 +3,10 @@ import LabTopology from "@/components/figures/LabTopology";
 
 <DriftFigure />
 
+<Sources figure="nightly-drift" />
+
+import { Sources } from "@/components/figures/Sources";
+
 The lab runs on one rule: **git is the source of truth, and CI tells me when reality disagrees.**
 
 ## One gateway stands in front of fifteen other guests
@@ -10,6 +14,8 @@ The lab runs on one rule: **git is the source of truth, and CI tells me when rea
 One Proxmox VE host. Fourteen LXC containers and two VMs. Only two hostnames face the internet; everything else is reachable over the VPN.
 
 <LabTopology />
+
+<Sources figure="lab-topology" />
 
 ## Declared, then imported
 
@@ -34,6 +40,8 @@ A health check runs every five minutes. Silent means healthy; it never prints a 
 
 <PagingFigure />
 
+<Sources figure="paging-rule" />
+
 Three rules shaped it, each dated in the script's header with the reason it was added:
 
 - **Confirmation gate.** A condition must fail two consecutive runs before it can page.
@@ -45,6 +53,8 @@ Three rules shaped it, each dated in the script's header with the reason it was 
 Proxmox Backup Server takes every guest nightly with a kept-copies schedule. Then restic copies the datastore off the host, to a different machine, on its own nightly timer. There is a written recovery playbook next to the restic password. The point of the second copy is that the first lives on the thing that would fail.
 
 <BackupsFigure />
+
+<Sources figure="backup-copies" />
 
 ## A coding agent did most of the typing
 
