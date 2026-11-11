@@ -7,6 +7,9 @@ import InfiniteCanvas from "@/components/figures/InfiniteCanvas";
 import ProjectFilter from "@/components/figures/ProjectFilter";
 import { Fold } from "@/components/figures/kit";
 import { categories } from "@/lib/projectFilter";
+import { BUILD_DATE } from "@/lib/data";
+import { livenessFor, livenessLine, lineText, type Generated } from "@/lib/liveness";
+import generated from "@/lib/liveness.generated.json";
 
 /** Projects whose idea can be run on the page. */
 const FIGURES: Record<string, React.ReactNode> = {
@@ -60,6 +63,39 @@ function Links({ project }: { project: ProjectData }) {
   );
 }
 
+/**
+ * "Last commit 3 days ago · CI passed · v1.4.0 · 0 stars · as of 11 Nov 2026", fetched from GitLab
+ * once, when the site was built (tools/liveness.mjs), never in the browser. Only the CI word takes a
+ * colour, and only because it is a measured state. Rows without a GitLab link have no line.
+ */
+function Liveness({ project }: { project: ProjectData }) {
+  if (!project.links.gitlab) return null;
+  const line = livenessLine(livenessFor(project.slug, generated as Generated, null, BUILD_DATE));
+  // A wrap never starts a line with a dot, and a count stays with its noun.
+  const glued = glueDots(lineText(line));
+  const text = line.stars ? glued.replace(line.stars, line.stars.replace(" ", "\u00a0")) : glued;
+  const tone = line.tone === "ok" ? "text-ok" : line.tone === "bad" ? "text-warn" : "";
+  // The CI word takes its colour; the date never breaks across lines. Everything else is plain text.
+  const marks = [
+    line.ci && { at: text.indexOf(line.ci), len: line.ci.length, cls: `${tone} font-semibold` },
+    line.asOf && { at: text.indexOf(line.asOf), len: line.asOf.length, cls: "whitespace-nowrap" },
+  ]
+    .filter((m): m is { at: number; len: number; cls: string } => Boolean(m) && (m as { at: number }).at >= 0)
+    .sort((x, y) => x.at - y.at);
+  const nodes: React.ReactNode[] = [];
+  let pos = 0;
+  for (const m of marks) {
+    nodes.push(text.slice(pos, m.at), <span key={m.at} className={m.cls}>{text.slice(m.at, m.at + m.len)}</span>);
+    pos = m.at + m.len;
+  }
+  nodes.push(text.slice(pos));
+  return (
+    <p className={meta} data-liveness={project.slug} data-source={line.snapshot ? "snapshot" : "api"}>
+      {nodes}
+    </p>
+  );
+}
+
 function Metric({ project, size }: { project: ProjectData; size: string }) {
   return (
     <div>
@@ -81,6 +117,7 @@ function Featured({ project }: { project: ProjectData }) {
         <p className="text-lg leading-snug">{project.description}</p>
         <p className="text-fg/80 max-w-[64ch]">{project.why}</p>
         <p className={meta}>{project.tech.join(", ")}</p>
+        <Liveness project={project} />
         <Links project={project} />
       </div>
       <div className="lg:col-span-3 lg:border-l lg:border-border lg:pl-8">
@@ -106,6 +143,7 @@ function Compact({ project }: { project: ProjectData }) {
         <span className="text-fg/80">{project.metric.label}</span>
       </p>
       <div className="mt-auto space-y-1">
+        <Liveness project={project} />
         <Fold summary="Why it is interesting">
           <p className="text-[0.95rem] text-fg/80">{project.why}</p>
           <p className={`${meta} mt-2`}>{project.tech.join(", ")}</p>

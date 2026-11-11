@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "liveness": "node tools/liveness.mjs",
+    "prebuild": "node tools/liveness.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
