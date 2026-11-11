@@ -18,7 +18,7 @@ There is a static rank as well: the eBay record is multiplied by 1.3, because it
 
 The strip of ticks under the box is the whole index, one tick per document; the ones that match light up, as tall as their score. The row of boxes under that is the query plan. Click a score and the result shows its arithmetic.
 
-It is not Cassini and has nothing of eBay's in it. It is the textbook version, built so every step can be seen. [The engine room](/engine/) takes a query apart stage by stage, replays a set of judged queries against a plain-BM25 control, and runs a latency benchmark in your tab. The relevance numbers on that page also run as a unit test, so a change that makes the ranking worse fails the build. I wrote the judgments myself, which makes them a regression guard and not a benchmark.
+It is not Cassini and has nothing of eBay's in it. It is the textbook version, built so every step can be seen. [The engine room](/engine/) takes a query apart stage by stage and replays a set of judged queries against a plain-BM25 control. The relevance numbers on that page also run as a unit test, so a change that makes the ranking worse fails the build. I wrote the judgments myself, which makes them a regression guard and not a benchmark.
 
 ## The figures
 

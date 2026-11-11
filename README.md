@@ -18,7 +18,7 @@ I worked on a search engine for 5.5 years, so the site is one.
   Ctrl K opens search on any page.
 - **The engine room** (`/engine`): one query taken apart stage by stage, a
   judged query set replayed against a plain-BM25 control with P@1, MRR and
-  nDCG, and a latency benchmark that runs in the reader's tab.
+  nDCG.
 - **Index**, the design language (`/design`): five rules, seven colours, one
   typeface at three widths, with live specimens.
 
