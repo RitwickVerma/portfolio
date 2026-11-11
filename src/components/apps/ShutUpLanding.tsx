@@ -263,15 +263,15 @@ export default function ShutUpLanding({ app }: { app: PublicApp }) {
           <div className={`${SECTION} grid items-center gap-12 lg:grid-cols-[0.85fr_1.15fr]`}>
             <div>
               <p className={EYEBROW}>Since 2016</p>
-              <h2 className={H2}>A college project that 27,000 people installed.</h2>
+              <h2 className={H2}>A college project with 26,000+ downloads.</h2>
               <p className={LEAD}>
-                ShutUp! began as a college project in 2016 and reached 27,000 installs at 4.7★ on Google Play. In 2026 it was rebuilt
+                ShutUp! began as a college project in 2016 and reached 26,000+ downloads at 4.3★ on Google Play. In 2026 it was rebuilt
                 from scratch for modern Android, keeping the idea and the blue.
               </p>
               <dl className="mt-8 grid max-w-sm grid-cols-2 gap-3">
                 {[
-                  ["27,000", "installs"],
-                  ["4.7★", "on Google Play"],
+                  ["26,000+", "downloads"],
+                  ["4.3★", "on Google Play"],
                 ].map(([v, l]) => (
                   <div key={l} className="rounded-[24px] bg-[var(--accent-soft)] px-5 py-4">
                     <dt className="sr-only">{l}</dt>

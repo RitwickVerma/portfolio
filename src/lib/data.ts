@@ -55,8 +55,8 @@ export const projects: Project[] = [
     title: "kwin-canvas",
     description:
       "An infinite window canvas for KDE Plasma, built only on KWin's public scripting API: no patched compositor, no private headers.",
-    role: "Fork maintainer, 40 commits ahead, proposed upstream in stages",
-    metric: { value: "374", label: "scenarios against a nested KWin, none failing. REUSE lint in CI" },
+    role: "Fork maintainer, 344 commits ahead, proposed upstream in stages",
+    metric: { value: "123", label: "scenarios against a nested KWin, 903 checks passing in the last full run. REUSE lint in CI" },
     why: "Every window stays an ordinary KWin window at an ordinary position, so fullscreen apps keep direct scanout. The canvas only moves a camera over them. Written by an agent under my direction, and the README says so.",
     tech: ["KWin", "QML", "JavaScript", "Plasma 6"],
     links: { gitlab: "https://gitlab.com/ritwick7/kwin-canvas" },
