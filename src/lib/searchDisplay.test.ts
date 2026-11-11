@@ -99,7 +99,7 @@ describe("query language, the cases the review broke", () => {
 
 describe("tokenizer, the cases the review broke", () => {
   it("a comma joins digits only as a thousands separator", () => {
-    expect(tokenize("50,000 queries")).toEqual(["50000", "query"]);
+    expect(tokenize("50,000 queries")).toEqual(["50000", "queri"]);
     expect(tokenize("1,234,567")).toEqual(["1234567"]);
     expect(tokenize("2020,2021,2022")).toEqual(["2020", "2021", "2022"]);
   });

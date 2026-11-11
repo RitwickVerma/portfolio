@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { EXAMPLE_QUERIES, STARTING_POINTS } from "@/lib/corpus";
+import { completions, applyCompletion, type Completion } from "@/lib/complete";
 import { search, type DocKind, type SearchHit, type SearchResult } from "@/lib/search";
 import { useSearchIndex, timed } from "@/lib/useSearchIndex";
 import { CorpusMap, PlanChips, ResultRow, hrefFor } from "@/components/search/parts";
-import { SHOWN, SHOWN_PHONE, rowsInView, nextSelection, firstRevealed, reselect } from "@/lib/searchUi";
+import { SHOWN, SHOWN_PHONE, rowsInView, nextSelection, firstRevealed, reselect, takesCompletion } from "@/lib/searchUi";
 
 // The hero. A working search engine over everything on this site: type, and
 // lib/search.ts parses, rewrites, retrieves and ranks in the browser. Before
@@ -56,6 +57,8 @@ export default function Search() {
   const [selectedRaw, setSelected] = useState(-1);
   const [openId, setOpenId] = useState<string | null>(null);
   const [help, setHelp] = useState(false);
+  /** True while the demo has typed part of its word: completions would flash and move the page under it. */
+  const [demoing, setDemoing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   /** True once the visitor has touched the box; the demo never types over them. */
   const touched = useRef(false);
@@ -112,6 +115,7 @@ export default function Search() {
     touched.current = true;
     if (demoPartial.current) {
       demoPartial.current = false;
+      setDemoing(false);
       executeRef.current("", { syncUrl: false });
     }
   }, []);
@@ -142,6 +146,7 @@ export default function Search() {
             if (touched.current) return;
             const typed = DEMO_QUERY.slice(0, i);
             demoPartial.current = i < DEMO_QUERY.length;
+            setDemoing(demoPartial.current);
             if (demoPartial.current) {
               textRef.current = typed;
               setText(typed);
@@ -180,6 +185,9 @@ export default function Search() {
   const facets = result ? (Object.entries(result.facets) as [DocKind, number][]).sort((a, b) => b[1] - a[1]) : [];
   const facetTotal = facets.reduce((n, [, c]) => n + c, 0);
   const activeKinds = result?.parsed.kinds ?? [];
+  // Words that finish the one being typed, from the index's own vocabulary.
+  const offered = useMemo(() => (demoing ? [] : completions(index, text)), [index, text, demoing]);
+  const offeredNote = offered.length > 0 ? `${offered.length} ${offered.length === 1 ? "completion" : "completions"}: ${offered.map((c) => c.word).join(", ")}. Tab takes ${offered[0].word}.` : "";
 
   useEffect(() => {
     selectedId.current = selected >= 0 ? (visible[selected]?.doc.id ?? null) : null;
@@ -205,8 +213,20 @@ export default function Search() {
     inputRef.current?.focus();
   };
 
+  const accept = (c: Completion) => {
+    take();
+    execute(applyCompletion(textRef.current, c.word));
+    inputRef.current?.focus();
+  };
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    const box = e.currentTarget;
+    const caret = { start: box.selectionStart, end: box.selectionEnd, length: box.value.length };
+    const mods = { shift: e.shiftKey, ctrl: e.ctrlKey, meta: e.metaKey, alt: e.altKey, composing: e.nativeEvent.isComposing };
+    if (takesCompletion(e.key, caret, offered.length, mods, selected)) {
+      e.preventDefault();
+      accept(offered[0]);
+    } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       if (rows === 0) return;
       e.preventDefault();
       const next = nextSelection(selected, e.key, rows);
@@ -282,6 +302,27 @@ export default function Search() {
         )}
       </form>
 
+      {offered.length > 0 && (
+        <div role="group" aria-label="Complete the word" className="mt-3 flex flex-wrap items-baseline gap-x-1 gap-y-1">
+          <span className="fact mr-2" aria-hidden="true">
+            Complete
+          </span>
+          {offered.map((c) => (
+            <button
+              key={c.term}
+              type="button"
+              onClick={() => accept(c)}
+              className="text-sm px-2 py-1 rounded-[var(--r-chip)] text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+            >
+              {c.word}
+            </button>
+          ))}
+          <kbd className="hidden sm:inline ml-1" title="Tab or the right arrow at the end of the box takes the first">
+            Tab
+          </kbd>
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap items-baseline gap-x-1 gap-y-1">
         <span className="fact mr-2">Try</span>
         {EXAMPLE_QUERIES.map((q) => (
@@ -332,6 +373,11 @@ export default function Search() {
           </p>
         </dl>
       )}
+
+      {/* Not role=status: the results line below is the page's one status. */}
+      <p className="sr-only" aria-live="polite" data-testid="completion-status">
+        {offeredNote}
+      </p>
 
       <p className="sr-only" role="status" aria-live="polite">
         {selected >= 0 && visible[selected]

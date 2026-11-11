@@ -21,13 +21,14 @@ npm run build      # static export -> out/
 **A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
-Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 31 files / 543 tests pass.
+Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 35 files / 666 tests pass.
 ```bash
 npm run lint && npm run typecheck && npm test   # exactly what the CI `check` job runs
 npm run test:watch
 ```
 - `src/lib/notes.test.ts` fails if `src/content/notes/*.mdx` and the registry in `src/lib/notes.ts` disagree.
 - `src/lib/status.test.ts` runs `tools/status-from-api.sh` via `sh` against `tools/fixtures/` (env `PVE_FIXTURE_DIR`, `OUT`) and feeds the result through `parseStatus`. No network.
+- `src/lib/stem.test.ts` pins the Porter2 stemmer (Snowball vectors, the pairs earlier stemmers got wrong, the SITE_STEMS exceptions) and checks that every term in the index highlights a word on its page; `complete.test.ts` and `rewrites.test.ts` cover completions and the rewrite table's targets.
 - `src/lib/search.test.ts` pins the tokenizer, query language (phrases, `-term`, `kind:`, `tech:`), rewriter, spelling fallback, ranking and the score breakdown (the parts must multiply back to the score).
 - `src/lib/corpus.test.ts` checks the corpus against the real data: every note section is a document whose anchor the page renders, and `WORK_HEADLINES` matches the generated `lib/resume.ts` bullets in count.
 - `src/lib/eval.test.ts` is the relevance guard: the judged queries in `lib/eval.ts` must all return a relevant first result under `TREATMENT`, nDCG@5 must stay at 0.9 or better, and `TREATMENT` must beat `CONTROL`. A ranking change that fails this needs either a fix or a conscious edit to the judgments.
@@ -66,7 +67,8 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 | `src/lib/search.ts` | The search engine, pure and dependency-free: query parser, tokenizer (folds accents: "résumé" is "resume") and stemmer, rewriter, prefix and fuzzy expansion, inverted index with per-field counts, BM25 with field boosts and a static-rank prior, per-hit `explain`, highlight and snippet helpers. `TREATMENT` is what the site runs; `CONTROL` is plain BM25. |
 | `src/lib/corpus.ts` | Builds the search documents from `lib/data`, `lib/resume`, `lib/notes` and (when given) the notes' sections; owns `WORK_HEADLINES`, the priors, starting points and example queries. The Work section renders from `workRoles` here. |
 | `src/lib/eval.ts` | The judged query set and the metrics (P@1, MRR, nDCG@5). Read by `/engine` at build and by `eval.test.ts`. |
-| `src/lib/searchUi.ts` | The hero box's rules that need no DOM: rows visible at a width, arrow-key clamping, where focus goes after Show all, keeping a selection through a re-rank. |
+| `src/lib/searchUi.ts` | The hero box's rules that need no DOM: rows visible at a width, arrow-key clamping, where focus goes after Show all, keeping a selection through a re-rank, which key takes a completion. |
+| `src/lib/complete.ts` | Completions for the word being typed: up to five words from the index vocabulary (shown as the corpus's commonest surface form of each stem, `index.forms`), by document frequency; applying one to the query. |
 | `src/lib/useSearchIndex.ts` | Client store: one index per tab, record first, full text after idle. |
 | `src/lib/frameAuthority.ts`, `kwinFigure.ts` | A TypeScript port (GPL-2.0-or-later, header names the source) of kwin-canvas's `inReach`, `isPull` and `fightStep` plus a readout of the numbers they compare; and the figure's state machine with its stand-in for KWin's reachability rule and the presets cited from the project's unit tests. Their tests pin the readout to the port and the stand-in to the measured numbers. |
 | `src/lib/timeline.ts`, `slug.ts`, `themeSwitch.ts` | Period parser for the career strip; heading slugs shared by MDX and the index; the light/dark switch. |

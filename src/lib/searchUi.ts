@@ -29,3 +29,21 @@ export function reselect(ids: string[], selectedId: string | null, rows: number)
   const at = ids.indexOf(selectedId);
   return at >= 0 && at < rows ? at : -1;
 }
+
+/**
+ * Whether a key in the box takes the first completion: Tab or ArrowRight with the caret at the very end
+ * (nothing selected, no modifier, no result row chosen), and a completion on offer. Anything else keeps
+ * its usual job, so Tab still leaves the box when there is nothing to complete and Shift+Tab always does.
+ */
+export function takesCompletion(
+  key: string,
+  caret: { start: number | null; end: number | null; length: number },
+  offered: number,
+  mods: { shift?: boolean; ctrl?: boolean; meta?: boolean; alt?: boolean; composing?: boolean } = {},
+  selectedRow = -1,
+): boolean {
+  if (key !== "Tab" && key !== "ArrowRight") return false;
+  if (offered <= 0 || selectedRow >= 0) return false;
+  if (mods.shift || mods.ctrl || mods.meta || mods.alt || mods.composing) return false;
+  return caret.start === caret.length && caret.end === caret.length;
+}

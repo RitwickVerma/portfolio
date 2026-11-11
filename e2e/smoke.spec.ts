@@ -17,6 +17,8 @@ const SHUTUP = "/notes/shutup-wave-or-reach/";
 const ALIGN_NOTE = "/notes/chordist-chart-alignment/";
 /** Scanned by axe as well: the home page with a query on it shows facets, plan chips and scores the idle page does not. */
 const WITH_QUERY = { name: "home with a query", path: "/?q=testing" } as const;
+/** A query still growing, so the completion chips are on the page for the axe scan. */
+const WITH_COMPLETIONS = { name: "home with completions offered", path: "/?q=fitm" } as const;
 const PAGES = [
   { name: "home", path: "/" },
   { name: "engine", path: "/engine/" },
@@ -403,6 +405,69 @@ test.describe("search", () => {
     await page.locator("#q").pressSequentially("fitment");
     await expect(page.getByText(/ranked in your browser/)).toBeVisible();
     await context.close();
+  });
+
+  test("completions: fitm offers fitment, Tab takes it and the results are ranked", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const box = page.locator("#q");
+    const chips = page.getByRole("group", { name: "Complete the word" });
+    // A fill before hydration is overwritten, so fill until the chip is there.
+    await expect(async () => {
+      await box.fill("fitm");
+      await expect(chips.getByRole("button", { name: "fitment" })).toBeVisible({ timeout: 500 });
+    }).toPass();
+    // The word, not the stem, and the count is announced once for the set.
+    await expect(page.getByTestId("completion-status")).toHaveText(/^1 completion: fitment\./);
+    await box.press("Tab");
+    await expect(box).toHaveValue("fitment ");
+    await expect(box).toBeFocused();
+    await expect(page.locator("#hits > li").first()).toContainText(/fitment/i);
+    await expect(chips).toHaveCount(0);
+    await expect(page).toHaveURL(/\?q=fitment/);
+  });
+
+  test("completions: a chip is a button that replaces the last word, and ArrowRight at the end takes the first", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const box = page.locator("#q");
+    const chips = page.getByRole("group", { name: "Complete the word" });
+    await expect(async () => {
+      await box.fill("reverse eng");
+      await expect(chips.getByRole("button", { name: "engineering" })).toBeVisible({ timeout: 500 });
+    }).toPass();
+    await chips.getByRole("button", { name: "engineering" }).click();
+    await expect(box).toHaveValue("reverse engineering ");
+    await expect(page.locator("#hits > li").first()).toContainText(/reverse|engineer/i);
+    await expect(chips).toHaveCount(0);
+
+    await expect(async () => {
+      await box.fill("fitm");
+      await expect(chips.getByRole("button", { name: "fitment" })).toBeVisible({ timeout: 500 });
+    }).toPass();
+    // ArrowRight inside the text moves the caret as usual; at the end it takes the completion.
+    await box.press("ArrowLeft");
+    await box.press("ArrowRight");
+    await expect(box).toHaveValue("fitm");
+    await box.press("ArrowRight");
+    await expect(box).toHaveValue("fitment ");
+  });
+
+  test("completions: with nothing to complete, Tab leaves the box as it always did", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const box = page.locator("#q");
+    await expect(async () => {
+      await box.fill("c++");
+      await expect(page.locator("#hits > li").first()).toBeVisible({ timeout: 500 });
+    }).toPass();
+    await expect(page.getByRole("group", { name: "Complete the word" })).toHaveCount(0);
+    await box.press("Tab");
+    await expect(box).not.toBeFocused();
+    await expect(box).toHaveValue("c++");
   });
 });
 
@@ -880,7 +945,7 @@ test.describe("resume print", () => {
 });
 
 test.describe("accessibility", () => {
-  for (const { name, path } of [...PAGES, WITH_QUERY]) {
+  for (const { name, path } of [...PAGES, WITH_QUERY, WITH_COMPLETIONS]) {
     for (const scheme of ["light", "dark"] as const) {
       test(`axe finds no violations on ${name}, ${scheme}`, async ({ browser, browserName }) => {
         test.skip(browserName !== "chromium", "axe results do not depend on the engine; run once");
@@ -890,6 +955,8 @@ test.describe("accessibility", () => {
         await page.goto(path);
         await page.waitForLoadState("networkidle");
         if (path.includes("?q=")) await expect(page.locator("#hits > li").first()).toBeVisible();
+        // The scan must see the chips, or this entry proves nothing.
+        if (path === WITH_COMPLETIONS.path) await expect(page.getByRole("group", { name: "Complete the word" })).toBeVisible();
         const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();
         expect(violations.map((v) => `${v.id} (${v.impact}): ${v.help} -> ${v.nodes.map((n) => n.target.join(" ")).slice(0, 4).join(" | ")}`)).toEqual([]);
         await context.close();
@@ -1031,9 +1098,9 @@ test.describe("crush80 note figures", () => {
     const board = fig.getByRole("region", { name: /Crush 80 keys/ });
     expect(await board.evaluate((b) => b.scrollWidth > b.clientWidth)).toBe(true);
     await expect(fig.getByText("Swipe the board sideways")).toBeVisible();
-    // The board opens on the middle of the keys, so there is more of it on both sides.
-    const fades = await board.evaluate((b) => [...b.parentElement!.querySelectorAll(":scope > div[aria-hidden]")].map((f) => getComputedStyle(f).opacity));
-    expect(fades).toEqual(["1", "1"]);
+    // The board opens on the middle of the keys, so there is more of it on both sides. The fades
+    // transition in, so poll: WebKit read one of them at 0.59 when asked straight after load.
+    await expect.poll(() => board.evaluate((b) => [...b.parentElement!.querySelectorAll(":scope > div[aria-hidden]")].map((f) => getComputedStyle(f).opacity))).toEqual(["1", "1"]);
     await board.evaluate((b) => (b.scrollLeft = b.scrollWidth));
     await expect.poll(() => board.evaluate((b) => [...b.parentElement!.querySelectorAll(":scope > div[aria-hidden]")].map((f) => getComputedStyle(f).opacity))).toEqual(["0", "1"]);
     await page.setViewportSize({ width: 1440, height: 900 });
