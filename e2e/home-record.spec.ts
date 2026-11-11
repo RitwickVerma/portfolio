@@ -249,3 +249,11 @@ test.describe("homelab", () => {
     await expect(page.locator("#homelab figure").first()).toContainText("declares 14 of 16 guests");
   });
 });
+
+test.describe("contact", () => {
+  test("claims no reply time", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("#contact")).toContainText("I read everything that comes in.");
+    await expect(page.locator("#contact")).not.toContainText("within a day");
+  });
+});

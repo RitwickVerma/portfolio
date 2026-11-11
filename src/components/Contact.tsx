@@ -30,8 +30,8 @@ export default function Contact() {
         </p>
         <div className="mt-10 grid lg:grid-cols-12 gap-x-8 gap-y-6">
           <p className="lg:col-span-5 text-fg/85 max-w-[52ch]">
-            {location ? `Based in ${location}. ` : ""}I read everything that comes in and reply within a day. The resume is
-            one page; the notes are the long version.
+            {location ? `Based in ${location}. ` : ""}I read everything that comes in. The resume is one page; the notes
+            are the long version.
           </p>
           <ul className="lg:col-span-4">
             {profiles.map((p) => (
