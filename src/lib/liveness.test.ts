@@ -294,10 +294,11 @@ describe("the line", () => {
     expect(line(null).tone).toBe("quiet");
     expect(lineText(line(null))).not.toContain("CI");
   });
-  it("one star is singular, zero is shown", () => {
+  it("one star is singular, zero is left out, more is plural", () => {
     const stars = (n: number) => livenessLine(livenessFor("a", { ...gen, projects: { a: { ...gen.projects.a, stars: n } } })).stars;
     expect(stars(1)).toBe("1 star");
-    expect(stars(0)).toBe("0 stars");
+    expect(stars(0)).toBe("");
+    expect(stars(7)).toBe("7 stars");
   });
   it("kept or snapshot data ends with (snapshot)", () => {
     const prev: Generated = { ...gen, projects: { a: { ...gen.projects.a, source: "previous", asOf: "2026-10-01" } } };

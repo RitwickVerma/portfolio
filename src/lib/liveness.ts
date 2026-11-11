@@ -134,7 +134,8 @@ export function livenessLine(l: Liveness): LivenessLine {
     ci: l.pipeline ? `CI ${l.pipeline}` : "",
     tone: l.pipeline === "passed" ? "ok" : l.pipeline === "failed" ? "bad" : "quiet",
     tag: l.tag ?? "",
-    stars: l.stars === null ? "" : l.stars === 1 ? "1 star" : `${l.stars} stars`,
+    // Zero is left out: "0 stars" on every row is a count of nothing, read as a verdict. One or more is a fact.
+    stars: !l.stars ? "" : l.stars === 1 ? "1 star" : `${l.stars} stars`,
     asOf: l.asOf ? `as of ${dateLabel(l.asOf)}` : "",
     snapshot: l.source !== "api",
   };
