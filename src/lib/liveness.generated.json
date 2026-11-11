@@ -1,0 +1,45 @@
+{
+  "fetchedAt": "2026-11-11T10:37:10.629Z",
+  "projects": {
+    "shutup": {
+      "lastCommit": "2026-10-23T08:57:46.000Z",
+      "pipeline": "failed",
+      "tag": "v2.0.6",
+      "stars": 0,
+      "source": "api",
+      "asOf": "2026-11-11"
+    },
+    "tizen-ambilight": {
+      "lastCommit": "2026-10-25T06:51:18.000Z",
+      "pipeline": null,
+      "tag": "v1.0.0",
+      "stars": 0,
+      "source": "api",
+      "asOf": "2026-11-11"
+    },
+    "kwin-canvas": {
+      "lastCommit": "2026-11-09T03:51:31.000Z",
+      "pipeline": "passed",
+      "tag": null,
+      "stars": 0,
+      "source": "api",
+      "asOf": "2026-11-11"
+    },
+    "crush80-firmware": {
+      "lastCommit": "2026-10-18T00:50:10.000Z",
+      "pipeline": "passed",
+      "tag": null,
+      "stars": 0,
+      "source": "api",
+      "asOf": "2026-11-11"
+    },
+    "sudostamp": {
+      "lastCommit": "2026-10-25T06:46:44.000Z",
+      "pipeline": "passed",
+      "tag": "v1.4.0",
+      "stars": 0,
+      "source": "api",
+      "asOf": "2026-11-11"
+    }
+  }
+}
