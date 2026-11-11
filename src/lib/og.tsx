@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { ReactNode } from "react";
 import { ImageResponse } from "next/og";
 import { BG, FG, MUTED, ACCENT, HIT, INK } from "./theme";
 
@@ -21,9 +22,62 @@ export type OgText = {
   nameSize?: number;
   line: string;
   lineTwo: string;
+  /** A figure panel (about 1056×236, from ogFigures.tsx). When given, the card is laid out around it. */
+  figure?: ReactNode;
 };
 
-export function renderOg({ eyebrow, name, nameSize = 124, line, lineTwo }: OgText) {
+const FOOTER = (compact: boolean) => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      border: `3px solid ${FG}`,
+      borderRadius: 8,
+      padding: compact ? "9px 22px" : "14px 22px",
+      fontSize: compact ? 26 : 28,
+    }}
+  >
+    <div style={{ display: "flex", color: MUTED }}>Search my record</div>
+    <div style={{ display: "flex", color: ACCENT }}>ritwickverma.dev</div>
+  </div>
+);
+
+/** A note's card with its lead figure: title, picture, name. The summary is the muted line under the picture. */
+function renderFigureOg({ eyebrow, name, nameSize = 56, line, lineTwo, figure }: OgText) {
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          background: BG,
+          color: FG,
+          fontFamily: "Archivo",
+          padding: "22px 72px 34px",
+          borderTop: `14px solid ${FG}`,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", fontSize: 24, color: MUTED }}>{eyebrow}</div>
+          <div style={{ display: "flex", fontSize: 28, background: HIT, color: INK, padding: "2px 10px" }}>{line}</div>
+        </div>
+        <div style={{ display: "flex", fontSize: nameSize, fontWeight: 800, lineHeight: 1.04, letterSpacing: -1.5 }}>{name}</div>
+        <div style={{ display: "flex" }}>{figure}</div>
+        <div style={{ display: "flex", fontSize: 22, color: MUTED, lineHeight: 1.25 }}>{lineTwo}</div>
+        {FOOTER(true)}
+      </div>
+    ),
+    { width: 1200, height: 630, fonts: FONTS },
+  );
+}
+
+export function renderOg(text: OgText) {
+  if (text.figure) return renderFigureOg(text);
+  const { eyebrow, name, nameSize = 124, line, lineTwo } = text;
   const big = nameSize >= 100;
   return new ImageResponse(
     (
@@ -65,20 +119,7 @@ export function renderOg({ eyebrow, name, nameSize = 124, line, lineTwo }: OgTex
           </div>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            border: `3px solid ${FG}`,
-            borderRadius: 8,
-            padding: "14px 22px",
-            fontSize: 28,
-          }}
-        >
-          <div style={{ display: "flex", color: MUTED }}>Search my record</div>
-          <div style={{ display: "flex", color: ACCENT }}>ritwickverma.dev</div>
-        </div>
+        {FOOTER(false)}
       </div>
     ),
     { width: 1200, height: 630, fonts: FONTS },
