@@ -4,6 +4,9 @@ import { projectAnchor } from "@/lib/corpus";
 import Section from "@/components/Section";
 import Ambilight from "@/components/figures/Ambilight";
 import InfiniteCanvas from "@/components/figures/InfiniteCanvas";
+import ProjectFilter from "@/components/figures/ProjectFilter";
+import { Fold } from "@/components/figures/kit";
+import { categories } from "@/lib/projectFilter";
 
 /** Projects whose idea can be run on the page. */
 const FIGURES: Record<string, React.ReactNode> = {
@@ -98,13 +101,15 @@ function Compact({ project }: { project: ProjectData }) {
         </p>
       </header>
       <p className="leading-snug">{project.description}</p>
-      <p className="text-[0.95rem] text-fg/80">{project.why}</p>
       <p className="text-[0.95rem]">
         <span className="wd-narrow font-black text-lg mr-1.5">{project.metric.value}</span>
         <span className="text-fg/80">{project.metric.label}</span>
       </p>
-      <div className="mt-auto pt-1 space-y-1.5">
-        <p className={meta}>{project.tech.join(", ")}</p>
+      <div className="mt-auto space-y-1">
+        <Fold summary="Why it is interesting">
+          <p className="text-[0.95rem] text-fg/80">{project.why}</p>
+          <p className={`${meta} mt-2`}>{project.tech.join(", ")}</p>
+        </Fold>
         <Links project={project} />
       </div>
     </article>
@@ -112,8 +117,13 @@ function Compact({ project }: { project: ProjectData }) {
 }
 
 export default function Projects() {
-  const featured = projects.filter((p) => p.featured);
-  const rest = projects.filter((p) => !p.featured);
+  const items = projects.map((p) => ({
+    slug: p.slug,
+    category: p.category,
+    featured: p.featured,
+    node: p.featured ? <Featured project={p} /> : <Compact project={p} />,
+  }));
+  const cats = categories(projects).map((c) => ({ ...c, label: CATEGORY_LABEL[c.id] }));
   return (
     <Section
       id="projects"
@@ -131,16 +141,7 @@ export default function Projects() {
         </>
       }
     >
-      <div className="border-b border-border">
-        {featured.map((p) => (
-          <Featured key={p.slug} project={p} />
-        ))}
-      </div>
-      <div className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-x-8">
-        {rest.map((p) => (
-          <Compact key={p.slug} project={p} />
-        ))}
-      </div>
+      <ProjectFilter categories={cats} items={items} featuredClass="border-b border-border" restClass="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-x-8" />
     </Section>
   );
 }

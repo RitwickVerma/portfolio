@@ -203,7 +203,7 @@ export function buildCorpus(noteTexts: NoteText[] = []): SearchDoc[] {
       kind: "Page",
       title: "Email is the fastest way to reach me",
       context: experiences[0].location ?? "",
-      text: "I read everything that comes in and reply within a day.",
+      text: "I read everything that comes in. The resume is one page; the notes are the long version.",
       keywords: ["email", "contact", "LinkedIn", "GitHub", "GitLab"],
       href: "/#contact",
     },

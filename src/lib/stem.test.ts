@@ -87,7 +87,7 @@ describe("highlight and the stemmer agree over the whole corpus", () => {
     for (const t of seen) if (!proven.has(t)) missing.push(t);
     expect(missing).toEqual([]);
     expect(proven.size).toBeGreaterThan(1000);
-  });
+  }, 60_000); // every term against every page word: 5.9 s on the shared CI runner, over vitest's 5 s default
 
   it("highlight marks every inflection of a Porter2 stem and nothing that merely shares letters", () => {
     const segs = highlight("Tuning the tune; a tuner. Notes, not a note: paging pages.", [stem("tune")]);
