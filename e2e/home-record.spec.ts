@@ -153,3 +153,56 @@ test.describe("skills with evidence", () => {
     await ctx.close();
   });
 });
+
+test.describe("projects", () => {
+  test("compact rows show title, line and metric; why is folded", async ({ page }) => {
+    await page.goto("/");
+    const row = page.locator("#p-sudostamp");
+    await expect(row).toContainText("18 of 18");
+    const why = row.getByText("The phone speaks two ssh-agent messages");
+    await expect(why).toBeHidden();
+    await row.getByText("Why it is interesting").click();
+    await expect(why).toBeVisible();
+  });
+
+  test("the filter hides the rows of other categories, and All brings them back", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const radios = page.getByRole("radiogroup", { name: "Show" });
+    await expect(radios.getByRole("radio", { name: /^All 10/ })).toHaveAttribute("aria-checked", "true");
+    const total = await page.locator("#projects article").count();
+    expect(total).toBe(10);
+    await radios.getByRole("radio", { name: "Galaxy Fold" }).click();
+    await expect(page.locator("#projects article:visible")).toHaveCount(1);
+    await expect(page.locator("#p-kaeru")).toBeVisible();
+    await expect(page.locator("#projects [aria-live]").first()).toContainText("1 of 10 projects");
+    // A category of featured rows leaves no empty compact grid behind.
+    await radios.getByRole("radio", { name: "Android" }).click();
+    await expect(page.locator("#p-shutup")).toBeVisible();
+    await expect(page.locator("#p-kaeru")).toBeHidden();
+    await radios.getByRole("radio", { name: /^All/ }).click();
+    await expect(page.locator("#projects article:visible")).toHaveCount(10);
+  });
+
+  test("following a link to a filtered-out row shows it", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await page.getByRole("radiogroup", { name: "Show" }).getByRole("radio", { name: "Android" }).click();
+    await expect(page.locator("#p-kaeru")).toBeHidden();
+    await page.evaluate(() => {
+      window.location.hash = "#p-kaeru";
+    });
+    await expect(page.locator("#p-kaeru")).toBeVisible();
+    await expect(page.getByRole("radiogroup", { name: "Show" }).getByRole("radio", { name: /^All/ })).toHaveAttribute("aria-checked", "true");
+  });
+
+  test("without JavaScript every project is listed and no chips are drawn", async ({ browser }) => {
+    const ctx = await browser.newContext({ javaScriptEnabled: false });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    await expect(page.locator("#projects article")).toHaveCount(10);
+    await expect(page.locator("#projects article:visible")).toHaveCount(10);
+    await expect(page.getByRole("radiogroup", { name: "Show" })).toHaveCount(0);
+    await ctx.close();
+  });
+});
