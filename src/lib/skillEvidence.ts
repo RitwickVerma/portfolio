@@ -29,11 +29,22 @@ export interface SkillGroup {
   skills: SkillCount[];
 }
 
-/** Count every skill of every group against `index`, which is the whole index. */
+/**
+ * Count every skill of every group against `index`, which is the whole index. Within a group the
+ * chips come most results first (ties keep the data file's order): read as a row of numbers, the
+ * data file's order looked random (18, 11, 11, 6, 43), and a number a reader cannot see the order of
+ * reads as noise.
+ */
 export function skillEvidence(groups: { label: string; items: readonly string[] }[], index: SearchIndex): { groups: SkillGroup[]; documents: number } {
   return {
     documents: index.docs.length,
-    groups: groups.map((g) => ({ label: g.label, skills: g.items.map((s) => countSkill(s, index)) })),
+    groups: groups.map((g) => ({
+      label: g.label,
+      skills: g.items
+        .map((s, i) => ({ c: countSkill(s, index), i }))
+        .sort((a, b) => b.c.count - a.c.count || a.i - b.i)
+        .map((x) => x.c),
+    })),
   };
 }
 

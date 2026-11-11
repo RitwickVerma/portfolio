@@ -48,8 +48,15 @@ describe("skill counts over the real index", () => {
   const result = skillEvidence(groups, index);
   const all = result.groups.flatMap((g) => g.skills);
 
-  it("covers every skill in the data file, in its order", () => {
-    expect(result.groups.map((g) => g.skills.map((s) => s.skill))).toEqual(groups.map((g) => [...g.items]));
+  it("covers every skill in the data file, most results first, ties in the data file's order", () => {
+    expect(result.groups.map((g) => [...g.skills.map((s) => s.skill)].sort())).toEqual(groups.map((g) => [...g.items].sort()));
+    for (const [gi, g] of result.groups.entries()) {
+      for (let i = 1; i < g.skills.length; i++) {
+        const a = g.skills[i - 1], b = g.skills[i];
+        expect(a.count).toBeGreaterThanOrEqual(b.count);
+        if (a.count === b.count) expect(groups[gi].items.indexOf(a.skill)).toBeLessThan(groups[gi].items.indexOf(b.skill));
+      }
+    }
   });
 
   it("reports the documents of the whole index", () => {
