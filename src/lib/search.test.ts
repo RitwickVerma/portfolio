@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  buildIndex, search, planQuery, parseQuery, tokenize, stem, highlight, snippet, editDistance, nearestTerms,
+  buildIndex, search, planQuery, parseQuery, tokenize, stem, highlight, snippet, WORD, editDistance, nearestTerms,
   scoreLine, CONTROL, TREATMENT, PHRASE_BONUS, type SearchDoc,
 } from "./search";
 import { buildCorpus } from "./corpus";
@@ -262,6 +262,29 @@ describe("spelling", () => {
 });
 
 describe("highlight and snippet", () => {
+  it("highlights .NET and ASP.NET as one run each", () => {
+    const segs = highlight("Built ASP.NET and .NET services", ["dotnet"]);
+    expect(segs.filter((s) => s.hit).map((s) => s.text)).toEqual(["ASP.NET", ".NET"]);
+    expect(segs.map((s) => s.text).join("")).toBe("Built ASP.NET and .NET services");
+    // The same token, closed by sentence punctuation.
+    expect(highlight("Written in .NET.", ["dotnet"]).filter((s) => s.hit).map((s) => s.text)).toEqual([".NET"]);
+    expect(highlight("(ASP.NET, VB.NET)", ["dotnet"]).filter((s) => s.hit).map((s) => s.text)).toEqual(["ASP.NET", "VB.NET"]);
+  });
+
+  it("a full stop still ends a word: \"end. Next\" splits, and so do \"end.Next\" and \"ebay.com\"", () => {
+    expect(Array.from("The end. Next".matchAll(WORD), (m) => m[0])).toEqual(["The", "end", "Next"]);
+    expect(Array.from("end.Next".matchAll(WORD), (m) => m[0])).toEqual(["end", "Next"]);
+    expect(Array.from("ebay.com and 1.04".matchAll(WORD), (m) => m[0])).toEqual(["ebay", "com", "and", "1", "04"]);
+    const segs = highlight("The end. Next", ["next"]);
+    expect(segs.filter((s) => s.hit).map((s) => s.text)).toEqual(["Next"]);
+    expect(segs.map((s) => s.text).join("")).toBe("The end. Next");
+  });
+
+  it("only .NET is joined: \".network\" and a lone \"net\" are ordinary words", () => {
+    expect(Array.from("a .network and the net".matchAll(WORD), (m) => m[0])).toEqual(["a", "network", "and", "the", "net"]);
+    expect(highlight("a .network", ["dotnet"]).some((s) => s.hit)).toBe(false);
+  });
+
   it("marks every inflection of a matched stem, and nothing else", () => {
     const segs = highlight("Failures are never cached. The cache is per request.", ["cach"]);
     expect(segs.filter((s) => s.hit).map((s) => s.text)).toEqual(["cached", "cache"]);

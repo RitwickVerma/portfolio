@@ -85,8 +85,7 @@ describe("highlight and the stemmer agree over the whole corpus", () => {
       }
     }
     for (const t of seen) if (!proven.has(t)) missing.push(t);
-    // ".NET" is a real gap: WORD has no dot, so the token "dotnet" never meets the page word (fixed with WORD).
-    expect(missing).toEqual(["dotnet"]);
+    expect(missing).toEqual([]);
     expect(proven.size).toBeGreaterThan(1000);
   });
 

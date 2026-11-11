@@ -21,13 +21,14 @@ npm run build      # static export -> out/
 **A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
-Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 31 files / 543 tests pass.
+Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 35 files / 666 tests pass.
 ```bash
 npm run lint && npm run typecheck && npm test   # exactly what the CI `check` job runs
 npm run test:watch
 ```
 - `src/lib/notes.test.ts` fails if `src/content/notes/*.mdx` and the registry in `src/lib/notes.ts` disagree.
 - `src/lib/status.test.ts` runs `tools/status-from-api.sh` via `sh` against `tools/fixtures/` (env `PVE_FIXTURE_DIR`, `OUT`) and feeds the result through `parseStatus`. No network.
+- `src/lib/stem.test.ts` pins the Porter2 stemmer (Snowball vectors, the pairs earlier stemmers got wrong, the SITE_STEMS exceptions) and checks that every term in the index highlights a word on its page; `complete.test.ts` and `rewrites.test.ts` cover completions and the rewrite table's targets.
 - `src/lib/search.test.ts` pins the tokenizer, query language (phrases, `-term`, `kind:`, `tech:`), rewriter, spelling fallback, ranking and the score breakdown (the parts must multiply back to the score).
 - `src/lib/corpus.test.ts` checks the corpus against the real data: every note section is a document whose anchor the page renders, and `WORK_HEADLINES` matches the generated `lib/resume.ts` bullets in count.
 - `src/lib/eval.test.ts` is the relevance guard: the judged queries in `lib/eval.ts` must all return a relevant first result under `TREATMENT`, nDCG@5 must stay at 0.9 or better, and `TREATMENT` must beat `CONTROL`. A ranking change that fails this needs either a fix or a conscious edit to the judgments.

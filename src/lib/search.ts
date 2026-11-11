@@ -740,8 +740,13 @@ export interface Segment {
  * A word, with C++/C# kept whole and thousands separators kept inside numbers. Accented Latin
  * letters (and combining marks) belong to the word, so "résumé" is one run of text and the
  * highlight covers it; `tokenize` folds it when the run is compared with a stem.
+ *
+ * ".NET" and "ASP.NET" are one run, as the tokenizer's literal (`.net` at the end of a word) makes
+ * them one token: without the first alternative the dot split them and the term "dotnet" never
+ * met the page. Only .NET is joined. A dot anywhere else still ends the word, so a sentence's
+ * full stop, "ebay.com" and "end.Next" keep the runs they always had.
  */
-export const WORD = /[A-Za-z0-9\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u0300-\u036F\u1E00-\u1EFF]+(?:,\d{3}(?!\d))*(?:\+\+|#)?/g;
+export const WORD = /[A-Za-z0-9\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u0300-\u036F\u1E00-\u1EFF]*\.[Nn][Ee][Tt](?![A-Za-z0-9])|[A-Za-z0-9\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u0300-\u036F\u1E00-\u1EFF]+(?:,\d{3}(?!\d))*(?:\+\+|#)?/g;
 
 /** Split text into runs, marking the words whose stem is in `stems`. */
 export function highlight(text: string, stems: Iterable<string>): Segment[] {
