@@ -6,6 +6,7 @@ import { KEYMAP_TODAY } from "./crush80Keymaps";
 import { boardState, cells } from "./layerBoard";
 import { bindingAt } from "./layers";
 import { services } from "./data";
+import { UNDECLARED } from "./drift";
 import { PQ_PEAK, REF_WHITE, pqToNits } from "./pq";
 import { initialFigure, ruleSentence, MONITOR as KWIN_MONITOR } from "./kwinFigure";
 import { alignDetail } from "./chordAlign";
@@ -20,7 +21,7 @@ import { COMPUTER_NAME, EXAMPLE, clockText, timeline, type Row } from "./sudosta
 // an absolutely placed flex <div> over it. Colours come from theme.ts.
 
 export const PANEL_W = 1056;
-export const PANEL_H = 236;
+export const PANEL_H = 260;
 
 export interface OgFigure {
   /** About PANEL_W × PANEL_H, satori-safe. */
@@ -180,29 +181,31 @@ function homelab(): OgFigure {
   const gateway = services.find((s) => s.name === "Gateway");
   const guests = services.filter((s) => s !== gateway);
   const parts = (gateway?.description ?? "").split(/,\s*|\s+and\s+/).filter(Boolean);
-  const cols = 4;
+  const declared = services.length - UNDECLARED.length;
+  const cols = 5;
   const rows = Math.ceil(guests.length / cols);
-  const gx = 392;
-  const gw = PANEL_W - gx;
+  const gx = 396;
+  const gw = 304;
   const gap = 6;
   const inner = 9;
-  const cw = (gw - 2 * inner - (cols - 1) * gap) / cols;
   const stripH = 46;
-  const ch = (PANEL_H - stripH - 16 - 2 * inner - (rows - 1) * gap) / rows;
-  const gh = 2 * inner + rows * ch + (rows - 1) * gap;
+  const cw = (gw - 2 * inner - (cols - 1) * gap) / cols;
+  const gh = PANEL_H - stripH - 18;
+  const ch = (gh - 2 * inner - (rows - 1) * gap) / rows;
   const midY = gh / 2;
   const boxH = gh - 8;
   const boxY = midY - boxH / 2;
-  const sy = gh + 16;
+  const sy = gh + 18;
   const at = (i: number) => ({ x: gx + inner + (i % cols) * (cw + gap), y: inner + Math.floor(i / cols) * (ch + gap) });
+  const nx = gx + gw + 52;
   return {
     figure: (
       <Panel>
         <Shapes>
           <rect x={gx + 1} y={1} width={gw - 2} height={gh - 2} rx={6} fill="none" stroke={MUTED} strokeWidth={2} strokeDasharray="8 6" />
-          <rect x={148} y={boxY} width={206} height={boxH} fill={FG} />
+          <rect x={148} y={boxY} width={200} height={boxH} fill={FG} />
           {arrow(100, midY, 140, midY)}
-          {arrow(360, midY, 384, midY)}
+          {arrow(358, midY, 388, midY)}
           {guests.map((g, i) => (
             <rect key={g.ct} x={at(i).x} y={at(i).y} width={cw} height={ch} rx={3} fill={BG} stroke={FG} strokeWidth={2} />
           ))}
@@ -214,18 +217,18 @@ function homelab(): OgFigure {
         <Txt x={0} y={midY + 12} size={22} color={MUTED}>web or VPN</Txt>
         <Txt x={164} y={boxY + 10} size={30} bold color={BG}>Gateway</Txt>
         {parts.map((p, i) => (
-          <Txt key={p} x={164} y={boxY + 52 + i * 28} size={22} color={BG}>
+          <Txt key={p} x={164} y={boxY + 56 + i * 32} size={22} color={BG}>
             {p}
           </Txt>
         ))}
-        {guests.map((g, i) => (
-          <Txt key={`n${g.ct}`} x={at(i).x + 6} y={at(i).y + (ch - 18) / 2} size={18} bold>
-            {g.name}
-          </Txt>
-        ))}
+        <Txt x={nx} y={0} size={110} bold>{`${services.length}`}</Txt>
+        <Txt x={nx} y={122} size={26} color={MUTED}>guests</Txt>
+        <Txt x={nx} y={152} size={22} color={MUTED}>incl. gateway</Txt>
+        <Txt x={nx + 168} y={0} size={110} bold color={ACCENT}>{`${declared}`}</Txt>
+        <Txt x={nx + 168} y={122} size={26} color={MUTED}>declared in</Txt>
+        <Txt x={nx + 168} y={152} size={26} color={MUTED}>OpenTofu</Txt>
         <Txt x={16} y={sy + (stripH - 22) / 2} size={22} bold>Git repository</Txt>
         <Txt x={306} y={sy + (stripH - 22) / 2} size={22} color={MUTED}>nightly CI commits what changed</Txt>
-        <Txt x={gx} y={sy + (stripH - 22) / 2} w={gw} size={22} color={MUTED} align="right">{`gateway + ${guests.length} guests`}</Txt>
       </Panel>
     ),
   };
@@ -238,7 +241,7 @@ const CODE_MAX = 1023;
 
 function tizen(): OgFigure {
   const L = 150;
-  const T = 8;
+  const T = 46;
   const W = 520;
   const H = PANEL_H - T - 40;
   const px = (code: number) => L + (code / CODE_MAX) * W;
@@ -254,7 +257,7 @@ function tizen(): OgFigure {
   const nf = (n: number) => Math.round(n).toLocaleString("en-US");
   const rx = L + W + 56;
   const blockA = 4;
-  const blockB = 4 + 112;
+  const blockB = 4 + Math.round(PANEL_H / 2);
   return {
     figure: (
       <Panel>
@@ -268,15 +271,15 @@ function tizen(): OgFigure {
           <circle cx={px(whiteCode)} cy={py(line)} r={8} fill={BG} stroke={MUTED} strokeWidth={3} />
           <circle cx={rx - 24} cy={blockA + 66} r={9} fill={HIT} stroke={FG} strokeWidth={3} />
           <circle cx={rx - 24} cy={blockB + 66} r={8} fill={BG} stroke={MUTED} strokeWidth={3} />
-          <line x1={L + 16} y1={T + 14} x2={L + 56} y2={T + 14} stroke={FG} strokeWidth={6} />
-          <line x1={L + 16} y1={T + 48} x2={L + 56} y2={T + 48} stroke={MUTED} strokeWidth={3} strokeDasharray="10 7" />
+          <line x1={L} y1={12} x2={L + 40} y2={12} stroke={FG} strokeWidth={6} />
+          <line x1={L + 270} y1={12} x2={L + 310} y2={12} stroke={MUTED} strokeWidth={3} strokeDasharray="10 7" />
         </Shapes>
         <Txt x={0} y={T - 2} w={L - 16} size={22} color={MUTED} align="right">{`${nf(PQ_PEAK)} nits`}</Txt>
         <Txt x={0} y={T + H - 20} w={L - 16} size={22} color={MUTED} align="right">0</Txt>
         <Txt x={L} y={T + H + 10} size={22} color={MUTED}>0</Txt>
         <Txt x={L} y={T + H + 10} w={W} size={22} color={MUTED} align="right">{`code ${CODE_MAX}`}</Txt>
-        <Txt x={L + 68} y={T + 2} size={24} bold>PQ, the real curve</Txt>
-        <Txt x={L + 68} y={T + 36} size={24} color={MUTED}>{"the old decoder's line"}</Txt>
+        <Txt x={L + 50} y={1} size={22} bold>PQ, the real curve</Txt>
+        <Txt x={L + 320} y={1} size={22} color={MUTED}>{"the old decoder's line"}</Txt>
         <Txt x={rx} y={blockA} size={22} color={MUTED}>{`at code ${whiteCode}, PQ is`}</Txt>
         <Txt x={rx} y={blockA + 34} size={54} bold>{`${nf(real)} nits`}</Txt>
         <Txt x={rx} y={blockB} size={22} color={MUTED}>the straight line says</Txt>
@@ -307,13 +310,14 @@ function kwin(): OgFigure {
       <Panel>
         <Shapes>
           <rect x={mon.x + 2} y={mon.y + 2} width={mon.w - 4} height={mon.h - 4} fill={BG} />
+          <rect x={mon.x + 12} y={mon.y + 12} width={mon.w - 24} height={mon.h - 24} fill="none" stroke={MUTED} strokeOpacity={0.4} strokeWidth={2} />
           <rect x={ghost.x} y={ghost.y} width={ghost.w} height={ghost.h} fill={HIT} />
           <rect x={mon.x + 2} y={mon.y + 2} width={mon.w - 4} height={mon.h - 4} fill="none" stroke={FG} strokeWidth={4} />
           <rect x={ghost.x} y={ghost.y} width={ghost.w} height={ghost.h} fill="none" stroke={FG} strokeWidth={3} strokeDasharray="9 6" />
           <rect x={solid.x} y={solid.y} width={solid.w} height={solid.h} fill={FG} />
           {arrow(ghostLeft ? ghost.x + ghost.w + 16 : ghost.x - 16, arrowY, ghostLeft ? solid.x - 18 : solid.x + solid.w + 18, solid.y + solid.h / 2, ACCENT, 4)}
         </Shapes>
-        <Txt x={mon.x + 18} y={mon.y + mon.h - 44} size={26} color={MUTED} bold>{`monitor ${KWIN_MONITOR.width} × ${KWIN_MONITOR.height}`}</Txt>
+        <Txt x={mon.x + 22} y={mon.y + 24} size={20} color={MUTED}>{`monitor ${KWIN_MONITOR.width}x${KWIN_MONITOR.height}`}</Txt>
         <Txt x={mon.x + mon.w + 14} y={below} size={26} bold>KWin put it here</Txt>
         <Txt x={solid.x - 360} y={below} w={solid.w + 360} size={26} bold align="right">
           {played.result.verdict === "revert" ? "the canvas puts it back" : "the canvas adopts it"}
@@ -349,13 +353,13 @@ function chordist(): OgFigure {
             )),
           )}
           {unmatched.map((j) => (
-            <rect key={`u${j}`} x={gx + j * cell - 3} y={-1} width={cell + 2} height={n * cell + 2} fill="none" stroke={MUTED} strokeWidth={3} strokeDasharray="7 5" />
+            <rect key={`u${j}`} x={gx + j * cell - 3} y={-1} width={cell + 2} height={n * cell + 2} fill="none" stroke={MUTED} strokeWidth={6} strokeDasharray="12 7" />
           ))}
           {a.match.map((j, i) =>
-            j === null ? null : <rect key={`m${i}`} x={gx + j * cell - 2} y={i * cell - 2} width={cell + 2} height={cell + 2} fill="none" stroke={ACCENT} strokeWidth={4} />,
+            j === null ? null : <rect key={`m${i}`} x={gx + j * cell - 2} y={i * cell - 2} width={cell + 2} height={cell + 2} fill="none" stroke={ACCENT} strokeWidth={7} />,
           )}
-          <rect x={rx} y={PANEL_H - 68} width={24} height={24} fill="none" stroke={ACCENT} strokeWidth={4} />
-          <rect x={rx} y={PANEL_H - 32} width={24} height={24} fill="none" stroke={MUTED} strokeWidth={3} strokeDasharray="7 5" />
+          <rect x={rx} y={PANEL_H - 68} width={24} height={24} fill="none" stroke={ACCENT} strokeWidth={6} />
+          <rect x={rx + 5} y={PANEL_H - 36} width={14} height={32} fill="none" stroke={MUTED} strokeWidth={5} strokeDasharray="9 5" />
         </Shapes>
         <Txt x={rx} y={0} size={88} bold>{`${matched}`}</Txt>
         <Txt x={rx} y={94} size={28}>{`of ${n} rows land on their own line,`}</Txt>
@@ -376,7 +380,8 @@ function shutup(): OgFigure {
   const L = 220;
   const W = PANEL_W - L - 8;
   const x = (ms: number) => L + (Math.min(ms, axisMs) / axisMs) * W;
-  const lanes = { prox: 54, jolt: 112, band: 170 };
+  const extra = PANEL_H - 236;
+  const lanes = { prox: 54 + Math.round(extra / 3), jolt: 112 + Math.round((extra * 2) / 3), band: 170 + extra };
   const ticks: number[] = [];
   for (let t = 0; t <= axisMs; t += 1000) ticks.push(t);
   const o = out.outcome;

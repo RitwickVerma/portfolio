@@ -8,6 +8,7 @@ import { KEYMAP_TODAY } from "./crush80Keymaps";
 import { boardState, cells } from "./layerBoard";
 import { bindingAt } from "./layers";
 import { services } from "./data";
+import { UNDECLARED } from "./drift";
 import { alignDetail } from "./chordAlign";
 import { GRACE_ROWS, GRACE_LINES } from "./chordAlignFixture";
 import { initialFigure, ruleSentence } from "./kwinFigure";
@@ -48,6 +49,14 @@ describe("card figures", () => {
     });
   }
 
+  for (const slug of NOTES) {
+    it(`${slug}: no text under 16 px`, () => {
+      const sizes = [...markup(slug).matchAll(/font-size:(\d+(?:\.\d+)?)px/g)].map((m) => Number(m[1]));
+      expect(sizes.length).toBeGreaterThan(0);
+      expect(Math.min(...sizes)).toBeGreaterThanOrEqual(16);
+    });
+  }
+
   it("plutus: the four percentages are the ones plutusResults exports, formatted the same way", () => {
     const t = text("plutus-what-the-backtest-cannot-tell-you");
     const expected = [...UNIVERSES.map((u) => pctText(u.cagr)), pctText(SPY.cagr)];
@@ -67,13 +76,18 @@ describe("card figures", () => {
     expect((markup("crush80-open-firmware").match(new RegExp(`fill="${HIT}"`, "gi")) ?? []).length).toBe(changed + 1);
   });
 
-  it("homelab: the guest count is read from the data, and every guest is drawn", () => {
+  it("homelab: guest and declared counts are read from the data, every guest is a plain box", () => {
     const t = text("homelab-git-is-the-truth");
-    const others = services.filter((x) => x.name !== "Gateway").length;
-    expect(t).toContain(`gateway + ${others} guests`);
-    for (const s of services.filter((x) => x.name !== "Gateway")) expect(t).toContain(s.name);
-    // The only number on the card is the count.
-    expect(numbersIn(t)).toEqual([String(others)]);
+    const others = services.filter((x) => x.name !== "Gateway");
+    const declared = services.length - UNDECLARED.length;
+    expect(declared).toBeLessThan(services.length);
+    // The only numbers on the card are the two counts; the guest tiles carry no names.
+    expect(numbersIn(t)).toEqual([String(services.length), String(declared)]);
+    for (const s of others) expect(t).not.toContain(s.name);
+    // The gateway keeps its own four names.
+    for (const p of services.find((x) => x.name === "Gateway")!.description.split(/,\s*|\s+and\s+/)) expect(t).toContain(p);
+    // One tile per guest, plus the gateway box, the You-side strip box and the dashed group frame.
+    expect((markup("homelab-git-is-the-truth").match(/<rect /g) ?? []).length).toBe(others.length + 3);
   });
 
   it("tizen: the readout is pqToNits at the code where it reaches diffuse white", () => {

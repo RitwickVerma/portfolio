@@ -22,7 +22,7 @@ export type OgText = {
   nameSize?: number;
   line: string;
   lineTwo: string;
-  /** A figure panel (about 1056×236, from ogFigures.tsx). When given, the card is laid out around it. */
+  /** A figure panel (about 1056×260, from ogFigures.tsx). When given, the card is laid out around it. */
   figure?: ReactNode;
 };
 
@@ -43,6 +43,11 @@ const FOOTER = (compact: boolean) => (
   </div>
 );
 
+/** The slim footer of a figure card: the address, nothing else, so the picture keeps the room. */
+const SLIM_FOOTER = (
+  <div style={{ display: "flex", fontSize: 24, color: ACCENT, lineHeight: 1 }}>ritwickverma.dev</div>
+);
+
 /** A note's card with its lead figure: title, picture, name. The summary is the muted line under the picture. */
 function renderFigureOg({ eyebrow, name, nameSize = 56, line, lineTwo, figure }: OgText) {
   return new ImageResponse(
@@ -57,7 +62,7 @@ function renderFigureOg({ eyebrow, name, nameSize = 56, line, lineTwo, figure }:
           background: BG,
           color: FG,
           fontFamily: "Archivo",
-          padding: "22px 72px 34px",
+          padding: "22px 72px 28px",
           borderTop: `14px solid ${FG}`,
         }}
       >
@@ -65,10 +70,10 @@ function renderFigureOg({ eyebrow, name, nameSize = 56, line, lineTwo, figure }:
           <div style={{ display: "flex", fontSize: 24, color: MUTED }}>{eyebrow}</div>
           <div style={{ display: "flex", fontSize: 28, background: HIT, color: INK, padding: "2px 10px" }}>{line}</div>
         </div>
-        <div style={{ display: "flex", fontSize: nameSize, fontWeight: 800, lineHeight: 1.04, letterSpacing: -1.5 }}>{name}</div>
+        <div style={{ display: "flex", fontSize: nameSize, fontWeight: 800, lineHeight: 1.04, letterSpacing: -1.5, textWrap: "balance" }}>{name}</div>
         <div style={{ display: "flex" }}>{figure}</div>
         <div style={{ display: "flex", fontSize: 22, color: MUTED, lineHeight: 1.25 }}>{lineTwo}</div>
-        {FOOTER(true)}
+        {SLIM_FOOTER}
       </div>
     ),
     { width: 1200, height: 630, fonts: FONTS },
@@ -105,6 +110,7 @@ export function renderOg(text: OgText) {
               fontWeight: 800,
               lineHeight: big ? 0.95 : 1.08,
               letterSpacing: big ? -5 : -1.5,
+              textWrap: big ? "wrap" : "balance",
             }}
           >
             {name}
