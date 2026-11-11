@@ -24,6 +24,8 @@ interface Entry {
   detail: string;
   period: string;
   company?: string;
+  /** Where pressing the bar goes: the Work section's heading for this eBay role. Only the eBay roles have one. */
+  href?: string;
   start: number;
   end: number;
 }
@@ -39,12 +41,15 @@ export default function Timeline() {
     const label = e.school.split(",")[0].replace("University of California", "UC Irvine").replace(" Institute of Science and Technology", "");
     return { label, full: label, detail: e.degree, period: e.period, ...parsePeriod(e.period, now) };
   });
+  // experiences lists the eBay roles first, newest first, in the order lib/corpus's workRoles are rendered.
+  const ebayRoles = experiences.filter((e) => e.company === "eBay");
   const work: Entry[] = experiences.map((e) => ({
     label: e.company === "eBay" ? e.role.replace("Software Engineer", "eBay, SE") : e.company,
     full: e.company === "eBay" ? `eBay, ${e.role}` : e.company,
     detail: e.role,
     period: e.period,
     company: e.company,
+    href: e.company === "eBay" ? `#work-role-${ebayRoles.indexOf(e)}` : undefined,
     ...parsePeriod(e.period, now),
   }));
   const years = Array.from({ length: to - from + 1 }, (_, i) => from + i);
@@ -66,15 +71,26 @@ export default function Timeline() {
             <ol key={li} className={`relative ${li ? "mt-3 pt-3 border-t border-border" : ""}`}>
               {lane.map((s) => {
                 const bar = li ? "border-[1.5px] border-fg" : s.company === "eBay" ? "bg-fg" : "bg-fg/45";
-                return (
-                  <li key={`${s.label}${s.start}`} className="py-1.5" title={s.detail}>
+                const inner = (
+                  <>
                     <p className="flex items-baseline justify-between gap-3 leading-tight">
                       <span className="text-[0.95rem] font-semibold bg-background pr-1">{s.full}</span>
                       <span className="fact whitespace-nowrap bg-background pl-1">{s.period}</span>
                     </p>
                     <span className="relative block h-3 mt-1.5">
-                      <span className={`absolute inset-y-0 min-w-[5px] ${bar}`} style={{ left: `${pct(s.start)}%`, width: `${pct(s.end) - pct(s.start)}%` }} />
+                      <span className={`absolute inset-y-0 min-w-[5px] ${bar} ${s.href ? "group-hover:bg-accent" : ""}`} style={{ left: `${pct(s.start)}%`, width: `${pct(s.end) - pct(s.start)}%` }} />
                     </span>
+                  </>
+                );
+                return (
+                  <li key={`${s.label}${s.start}`} className="py-1.5" title={s.detail}>
+                    {s.href ? (
+                      <a href={s.href} aria-label={`${s.full}, ${s.period}: go to its rows`} className="group block min-h-11 -my-1 py-1">
+                        {inner}
+                      </a>
+                    ) : (
+                      inner
+                    )}
                   </li>
                 );
               })}
@@ -93,7 +109,7 @@ export default function Timeline() {
       </div>
 
       {/* Strip: desktop */}
-      <svg viewBox={`0 0 ${W} ${H}`} className="hidden lg:block w-full h-auto" role="img" aria-labelledby="timeline-title">
+      <svg viewBox={`0 0 ${W} ${H}`} className="hidden lg:block w-full h-auto" role="group" aria-labelledby="timeline-title">
         <title id="timeline-title">{title}</title>
 
         {years.map((y) => (
@@ -119,17 +135,34 @@ export default function Timeline() {
           const y = TOP + LANE + GAP;
           const w = Math.max(x(s.end) - x(s.start) - 2, 5);
           const ebay = s.company === "eBay";
-          return (
-            <g key={`${s.label}${s.start}`}>
-              <rect x={x(s.start)} y={y} width={w} height={LANE} fill="var(--fg)" fillOpacity={ebay ? 1 : 0.45} stroke="var(--bg)" strokeWidth={2}>
+          const bar = (
+            <>
+              <rect
+                x={x(s.start)}
+                y={y}
+                width={w}
+                height={LANE}
+                fill="var(--fg)"
+                fillOpacity={ebay ? 1 : 0.45}
+                stroke="var(--bg)"
+                strokeWidth={2}
+                className={s.href ? "group-hover:fill-accent" : undefined}
+              >
                 <title>{`${s.company}: ${s.detail}`}</title>
               </rect>
               {ebay && (
-                <text x={x(s.start) + 8} y={y + 21} fontSize={13} fill="var(--bg)" fontWeight={700}>
+                <text x={x(s.start) + 8} y={y + 21} fontSize={13} fill="var(--bg)" fontWeight={700} textDecoration={s.href ? "underline" : undefined}>
                   {s.label}
                 </text>
               )}
-            </g>
+            </>
+          );
+          return s.href ? (
+            <a key={`${s.label}${s.start}`} href={s.href} aria-label={`${s.label}. ${s.detail}, ${s.period}. Go to its rows.`} className="group cursor-pointer">
+              {bar}
+            </a>
+          ) : (
+            <g key={`${s.label}${s.start}`}>{bar}</g>
           );
         })}
         {/* The day of the build: the right edge of the last bar. Ink and dashed, not blue: blue is somewhere you can go. */}
@@ -137,7 +170,7 @@ export default function Timeline() {
         <line x1={x(now)} x2={x(now)} y1={TOP + LANE + GAP - 5} y2={AXIS_Y} stroke="var(--fg)" strokeWidth={2} strokeDasharray="3 3" />
       </svg>
       <figcaption className="fact mt-2">
-        To scale, from the dates on this page. Outlined: study. Solid: eBay. Grey: the three internships. Dashed: the day this page was built.
+        To scale, from the dates on this page. Outlined: study. Solid: eBay (press a bar to go to its rows). Grey: the three internships. Dashed: the day this page was built.
       </figcaption>
     </figure>
   );

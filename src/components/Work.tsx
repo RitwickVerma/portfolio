@@ -2,35 +2,8 @@ import { experiences, education, skills } from "@/lib/data";
 import { workRoles } from "@/lib/corpus";
 import Section from "@/components/Section";
 import Timeline from "@/components/Timeline";
-
-// The replay bullet's two numbers, drawn to scale. They are read out of the
-// bullet itself so the figure cannot disagree with the sentence beside it.
-function ReplayFigure({ text }: { text: string }) {
-  const m = text.match(/from (\d+) to (\d+)/);
-  if (!m) return null;
-  const [before, after] = [Number(m[1]), Number(m[2])];
-  const rows = [
-    { label: "New errors, first replay", value: before },
-    { label: "After the root-cause fix", value: after },
-  ];
-  return (
-    <figure className="mt-4 max-w-md" aria-label={`New errors in the replay: ${before} before the fix, ${after} after`}>
-      {/* The bar sits in its own grid cell so its width is exactly value / before of the track: as a flex
-          sibling of the number it shrank, and the two bars stopped being to scale (22:1 on a phone, not 27.8:1). */}
-      {rows.map((r) => (
-        <div key={r.label} className="grid sm:grid-cols-[11.5rem_1fr] items-center gap-x-3 gap-y-0.5 py-1.5">
-          <span className="wd-narrow text-sm text-muted">{r.label}</span>
-          <span className="grid grid-cols-[minmax(0,1fr)_2.5rem] items-center gap-2">
-            <span className="block h-3">
-              <span className="block h-full bg-fg" style={{ width: `${(r.value / before) * 100}%` }} />
-            </span>
-            <span className="font-mono text-xs">{r.value}</span>
-          </span>
-        </div>
-      ))}
-    </figure>
-  );
-}
+import WorkFigure from "@/components/figures/WorkFigures";
+import { Fold } from "@/components/figures/kit";
 
 const meta = "fact";
 
@@ -51,7 +24,8 @@ export default function Work() {
       <div className="space-y-14">
         {workRoles.map((r) => (
           <div key={r.role} className="grid lg:grid-cols-12 gap-x-8 gap-y-4">
-            <header className="lg:col-span-3">
+            {/* The timeline's eBay bars link here: the role's heading, then its rows. */}
+            <header id={`work-role-${workRoles.indexOf(r)}`} className="landing lg:col-span-3">
               <div className="lg:sticky lg:top-20">
                 <h3 className="wd-semi text-xl font-bold leading-tight">{r.role.split(", ")[0]}</h3>
                 <p className={`${meta} mt-1`}>{[r.role.split(", ")[1], "eBay", r.location].filter(Boolean).join(", ")}</p>
@@ -64,7 +38,7 @@ export default function Work() {
                   <h4 className="text-lg font-semibold leading-snug">{item.headline}</h4>
                   <div>
                     <p className="text-fg/85 max-w-[64ch]">{item.text}</p>
-                    {/replayed/.test(item.text) ? <ReplayFigure text={item.text} /> : null}
+                    <WorkFigure text={item.text} />
                   </div>
                 </li>
               ))}
@@ -73,22 +47,40 @@ export default function Work() {
         ))}
       </div>
 
-      <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-12 gap-x-8 gap-y-10">
-        <div id="earlier" className="landing lg:col-span-4">
+      <div className="mt-16 grid lg:grid-cols-12 gap-x-8 gap-y-12">
+        <div id="earlier" className="landing lg:col-span-7">
           <h3 className="wd-semi text-xl font-bold mb-3">Before eBay</h3>
-          <ul className="space-y-3">
+          <ol className="border-b border-border">
             {earlier.map((e) => (
-              <li key={e.company}>
-                <p className="font-semibold leading-snug">
-                  {e.company} <span className={`${meta} font-normal`}>{e.period}</span>
-                </p>
-                <p className="text-[0.95rem] text-fg/80">{e.description.join(" ")}</p>
+              <li key={e.company} className="border-t border-border py-3 grid sm:grid-cols-[8.5rem_1fr] gap-x-6 gap-y-1">
+                <p className={meta}>{e.period}</p>
+                <div>
+                  <p className="font-semibold leading-snug">{e.company}</p>
+                  <p className={meta}>{e.role}</p>
+                  <ul className="mt-1.5 flex flex-wrap gap-1.5" aria-label={`${e.company}: stack`}>
+                    {e.tech.map((t) => (
+                      <li key={t} className="rounded-[var(--r-chip)] border border-border px-2 py-0.5 wd-narrow text-sm text-fg/85">
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </li>
             ))}
-          </ul>
+          </ol>
+          <Fold summary="What I built at each">
+            <ul className="space-y-3 pt-2">
+              {earlier.map((e) => (
+                <li key={e.company}>
+                  <p className="font-semibold leading-snug">{e.company}</p>
+                  <p className="text-[0.95rem] text-fg/80 max-w-[64ch]">{e.description.join(" ")}</p>
+                </li>
+              ))}
+            </ul>
+          </Fold>
         </div>
 
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-5">
           <h3 className="wd-semi text-xl font-bold mb-3">Education</h3>
           <ul className="space-y-3">
             {education.map((ed) => (
@@ -101,7 +93,7 @@ export default function Work() {
           </ul>
         </div>
 
-        <div id="skills" className="landing md:col-span-2 lg:col-span-5">
+        <div id="skills" className="landing lg:col-span-12">
           <h3 className="wd-semi text-xl font-bold mb-3">What I work in</h3>
           <dl className="space-y-3">
             {[
