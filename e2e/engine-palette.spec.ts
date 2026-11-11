@@ -115,6 +115,29 @@ test.describe("engine room", () => {
   });
 });
 
+test.describe("design page", () => {
+  test("the parts and the tokens are one table of at most twelve rows", async ({ page }) => {
+    await page.goto("/design/");
+    const table = page.locator("#tokens table");
+    await expect(table).toHaveCount(1);
+    await expect(table.locator("thead th").first()).toHaveText("Name");
+    const rows = await table.locator("tbody tr").count();
+    expect(rows).toBeGreaterThanOrEqual(8);
+    expect(rows).toBeLessThanOrEqual(12);
+    // Every row names a token and says one thing; the old demo blocks are gone.
+    await expect(page.locator("#parts")).toHaveCount(0);
+    await expect(page.locator("main mark")).toHaveCount(0);
+    await expect(page.locator("#tokens .btn")).toHaveCount(0);
+  });
+
+  test("the five rules, the colour contrasts and the width slider are still there", async ({ page }) => {
+    await page.goto("/design/");
+    await expect(page.locator("#rules h3")).toHaveCount(5);
+    await expect(page.locator("#colour li", { hasText: "Highlighter" }).first()).toContainText(": 1");
+    await expect(page.locator("#type input[type=range]").first()).toBeVisible();
+  });
+});
+
 test.describe("command palette", () => {
   test("Esc closes it even with text in the box", async ({ page }) => {
     await page.goto("/design/");

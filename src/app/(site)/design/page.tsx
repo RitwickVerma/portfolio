@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { cardMetadata, OG_CARDS } from "@/lib/seo";
 import Section from "@/components/Section";
 import WidthSpecimen from "@/components/design/WidthSpecimen";
@@ -9,7 +10,7 @@ import { workRoles } from "@/lib/corpus";
 const CURRENT_ROLE = `${workRoles[0].role}, ${workRoles[0].period}`;
 
 const DESCRIPTION =
-  "Index, the design language of ritwickverma.dev: five rules, the colour and type tokens, the components, and what is allowed to move.";
+  "Index, the design language of ritwickverma.dev: five rules, seven colours and their contrast, one typeface at three widths, and a table of tokens and parts.";
 
 export const metadata: Metadata = {
   title: "The design language",
@@ -42,6 +43,20 @@ const TYPE = [
   { name: "Reading", cls: "text-base text-fg/85", sample: "Added a per-request cache to the path that retries searches returning too few results.", spec: "100% width, 16 px on 1.6, at most 68 characters a line." },
   { name: "Fact", cls: "fact", sample: CURRENT_ROLE, spec: "78% width, 15 px, graphite. Dates, roles, stacks." },
   { name: "Code", cls: "font-mono text-xs", sample: "cach  rewrit  50000  cpp", spec: "Martian Mono, 11 to 12 px. Stems, ids, numbers in the plan." },
+];
+
+// Name, token, one line. The parts and the tokens in one list: nothing here is a component that only decorates.
+const PARTS: [string, string, ReactNode][] = [
+  ["Page", "--page", "78 rem wide, 20 to 32 px gutters, a 12-column grid inside. Text columns stop at 68 characters."],
+  ["Row", "--border", "The unit of content: a hairline at 16% ink, a fact in the margin, the thing itself. 2 px full ink above a section and around anything you type into."],
+  ["Match", "--hit", "Ink on the highlighter in both themes: search, a note you arrive at from a result, a pressed key."],
+  ["Plan term", ".term[data-source]", "The border says where a term came from: typed, in a phrase, rewritten, completed, respelled, excluded, or a filter."],
+  ["Button", ".btn, kbd", "Solid is the one thing to do here. Text actions are underlined facts."],
+  ["Measured bar", "--fg", "A bar is always a number from the data, drawn to scale, with the number next to it."],
+  ["Radius", "--r-chip, --r-box", "3 px on chips and keys, 6 px on fields and figures. Nothing is a pill, nothing is a circle but the theme switch."],
+  ["Tap", "--dur-tap", "120 ms. Hover and press."],
+  ["Settle", "--dur-settle", <>320 ms on <span className="whitespace-nowrap">cubic-bezier(0.22,</span> 1, 0.36, 1). A result row or a tick in the corpus map finding its place.</>],
+  ["Mark", "--dur-mark", "2.4 s. The highlighter on the row you landed on, fading out."],
 ];
 
 function Swatches({ palette, name }: { palette: Palette; name: string }) {
@@ -147,113 +162,55 @@ export default function DesignPage() {
         </ul>
       </Section>
 
-      <Section id="parts" title="A small set of parts." lede={<p>Each one exists because something on the site needed it. There is no component that only decorates.</p>}>
-        <ul className="border-b border-border">
-          {[
-            {
-              name: "Row",
-              what: "The unit of content: a hairline, a fact in the margin, the thing itself.",
-              demo: (
-                <div className="border-t border-border py-3 grid grid-cols-[6rem_1fr] gap-x-6">
-                  <span className="fact">eBay</span>
-                  <span>
-                    <span className="link font-semibold">A per-request cache on the search retry path</span>
-                    <span className="fact block">{CURRENT_ROLE}</span>
+      <Section
+        id="tokens"
+        title="Each part and token exists because something on the site needed it."
+        lede={<p>All of it lives at the top of one stylesheet, and the colours are mirrored in TypeScript for the things CSS cannot reach.</p>}
+      >
+        <table className="w-full border-collapse text-left">
+          <thead>
+            <tr className="fact border-b border-fg">
+              <th scope="col" className="font-normal py-2 pr-4 w-[6.5rem] sm:w-[9rem]">
+                Name
+              </th>
+              <th scope="col" className="font-normal py-2 pr-4 w-[13rem] max-sm:hidden">
+                Token
+              </th>
+              <th scope="col" className="font-normal py-2">
+                What it does
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {PARTS.map(([name, token, what]) => {
+              // Each token is one unbreakable piece: a wrapped "--r-" reads as a typo.
+              const pieces = token.split(", ").map((t, i, all) => (
+                <span key={t}>
+                  <span className="inline-block whitespace-nowrap">
+                    {t}
+                    {i < all.length - 1 ? "," : ""}
                   </span>
-                </div>
-              ),
-            },
-            {
-              name: "Match",
-              what: "Ink on the highlighter, in both themes. Used by search, by the notes when you arrive from a result, and by a pressed key.",
-              demo: (
-                <p>
-                  Failures are never <mark>cached</mark>. The <mark>cache</mark> lives for one request.
-                </p>
-              ),
-            },
-            {
-              name: "Plan terms",
-              what: "The border says where a term came from: typed, in a phrase, rewritten, completed, respelled, excluded, or a filter.",
-              demo: (
-                <p className="flex flex-wrap gap-1.5">
-                  {[
-                    ["typed", "cach"],
-                    ["phrase", "traffic"],
-                    ["rewrite", "latency"],
-                    ["prefix", "replay"],
-                    ["fuzzy", "fitment"],
-                    ["excluded", "plutus"],
-                    ["filter", "note"],
-                  ].map(([source, term]) => (
-                    <span key={source} className="term" data-source={source}>
-                      {term}
-                      <span>{source}</span>
+                  {i < all.length - 1 ? " " : ""}
+                </span>
+              ));
+              return (
+                <tr key={name} className="border-b border-border align-baseline">
+                  <th scope="row" className="font-semibold py-2.5 pr-4 text-left align-baseline">
+                    {name}
+                  </th>
+                  <td className="font-mono text-xs text-muted py-2.5 pr-4 max-sm:hidden">{pieces}</td>
+                  <td className="text-fg/85 py-2.5">
+                    <p className="max-w-[68ch]">{what}</p>
+                    {/* On a phone the token moves under the sentence: a third column would leave the sentence no width. */}
+                    <span className="sm:hidden block font-mono text-xs text-muted mt-1" aria-hidden="true">
+                      {pieces}
                     </span>
-                  ))}
-                </p>
-              ),
-            },
-            {
-              name: "Buttons",
-              what: "Solid is the one thing to do here. Text actions are underlined facts.",
-              demo: (
-                <p className="flex flex-wrap items-center gap-3">
-                  <span className="btn">Email me</span>
-                  <span className="fact underline decoration-fg/30 underline-offset-4">Clear</span>
-                  <kbd>Ctrl K</kbd>
-                </p>
-              ),
-            },
-            {
-              name: "Measured bar",
-              what: "A bar is always a number from the data, drawn to scale, with the number next to it.",
-              demo: (
-                <div className="max-w-sm space-y-1.5">
-                  {[
-                    ["New errors, first replay", 167],
-                    ["After the root-cause fix", 6],
-                  ].map(([label, n]) => (
-                    <div key={label} className="grid grid-cols-[10rem_1fr] items-center gap-3">
-                      <span className="fact !text-sm">{label}</span>
-                      <span className="flex items-center gap-2">
-                        <span className="h-3 bg-fg" style={{ width: `${Math.max(2, (Number(n) / 167) * 100)}%` }} />
-                        <span className="font-mono text-xs">{n}</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ),
-            },
-          ].map((p) => (
-            <li key={p.name} className="border-t border-border py-6 grid lg:grid-cols-12 gap-x-8 gap-y-3">
-              <div className="lg:col-span-4">
-                <h3 className="text-xl font-semibold">{p.name}</h3>
-                <p className="text-fg/80 max-w-[40ch] mt-1">{p.what}</p>
-              </div>
-              <div className="lg:col-span-8">{p.demo}</div>
-            </li>
-          ))}
-        </ul>
-      </Section>
-
-      <Section id="tokens" title="Shape, space and time are tokens too." lede={<p>All of it lives at the top of one stylesheet, and the colours are mirrored in TypeScript for the things CSS cannot reach.</p>}>
-        <dl className="border-b border-border">
-          {[
-            ["Page", "--page", "78 rem wide, 20 to 32 px gutters, a 12-column grid inside. Text columns stop at 68 characters."],
-            ["Rules", "--border", "1 px at 16% ink between rows. 2 px full ink above a section and around anything you type into."],
-            ["Radius", "--r-chip, --r-box", "3 px on chips and keys, 6 px on fields and figures. Nothing is a pill, nothing is a circle but the theme switch."],
-            ["Tap", "--dur-tap", "120 ms. Hover and press."],
-            ["Settle", "--dur-settle", "320 ms on cubic-bezier(0.22, 1, 0.36, 1). A result row or a tick in the corpus map finding its place."],
-            ["Mark", "--dur-mark", "2.4 s. The highlighter on the row you landed on, fading out."],
-          ].map(([name, token, what]) => (
-            <div key={name} className="border-t border-border py-2.5 grid sm:grid-cols-[9rem_11rem_1fr] gap-x-6">
-              <dt className="font-semibold">{name}</dt>
-              <dd className="font-mono text-xs text-muted pt-1">{token}</dd>
-              <dd className="text-fg/85">{what}</dd>
-            </div>
-          ))}
-        </dl>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </Section>
     </>
   );
