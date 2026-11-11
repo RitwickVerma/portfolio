@@ -325,7 +325,7 @@ export function parseQuery(query: string): ParsedQuery {
 
 // What a visitor types on the left, the words this site actually uses on the
 // right. Rewrites score at REWRITE_WEIGHT, so an exact match always wins.
-const REWRITES_RAW: Record<string, string> = {
+export const REWRITES_RAW: Record<string, string> = {
   infra: "homelab proxmox opentofu docker ci",
   infrastructure: "homelab proxmox opentofu docker ci",
   devops: "homelab opentofu ci docker gitops",
@@ -368,6 +368,23 @@ const REWRITES_RAW: Record<string, string> = {
   debug: "traced root cause",
   troubleshooting: "traced root cause",
   observability: "gatus dozzle health",
+
+  // Added after auditing the table against the corpus (see rewrites.test.ts, which keeps each target alive).
+  // Each key is a word a hiring manager types that no document uses; each target is a word a document does use.
+  // None of them claims experience: they send the visitor to the nearest thing the record says.
+  reliability: "backup recovery gatus paging", // the homelab note's backups, restores and paging; the gatus health checks
+  sre: "backup recovery gatus paging", // same documents, for the job title
+  oncall: "paging alert gatus", // "Paging without noise" in the homelab note
+  frontend: "react typescript tailwind html css", // the colophon's stack sections; typescript is also in the languages list
+  web: "html javascript typescript browser", // what this site and the notes' figures are written in and run on
+  algorithm: "greedy alignment classifier limiter", // the ported algorithms: Chordist's greedy alignment, kwin-canvas's classifier, SudoStamp's limiter
+  marketplace: "ebay motors fitment buyer", // eBay Motors fitment is the marketplace work
+  ecommerce: "ebay motors fitment buyer",
+  auth: "sso authelia", // Authelia single sign-on in front of the homelab
+  authentication: "sso authelia",
+  elasticsearch: "search engine cassini retrieval", // the engine I worked on is eBay's own (Cassini), not Lucene; these are its words
+  lucene: "search engine cassini retrieval",
+  solr: "search engine cassini retrieval",
 };
 
 const REWRITES = new Map<string, string[]>(
