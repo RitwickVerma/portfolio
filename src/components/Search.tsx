@@ -53,7 +53,7 @@ export default function Search() {
   const [text, setText] = useState("");
   const [run, setRun] = useState<Run>(null);
   const [all, setAll] = useState(false);
-  const [selected, setSelected] = useState(-1);
+  const [selectedRaw, setSelected] = useState(-1);
   const [openId, setOpenId] = useState<string | null>(null);
   const [help, setHelp] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -174,6 +174,8 @@ export default function Search() {
   const visible = all ? hits : hits.slice(0, SHOWN);
   /** What can be seen at this width: the phone hides rows the list still holds. */
   const rows = rowsInView(hits.length, all, wide);
+  // The selection, kept inside the rows on screen: rotating a phone or the full index arriving can leave fewer rows than the index held.
+  const selected = Math.min(selectedRaw, rows - 1);
   const respelled = result?.plan.filter((t) => t.source === "fuzzy") ?? [];
   const facets = result ? (Object.entries(result.facets) as [DocKind, number][]).sort((a, b) => b[1] - a[1]) : [];
   const facetTotal = facets.reduce((n, [, c]) => n + c, 0);
@@ -216,6 +218,10 @@ export default function Search() {
     } else if (e.key === "Escape" && text) {
       e.preventDefault();
       execute("");
+    } else if (e.key === "Escape" && selected >= 0) {
+      // Nothing typed, but a starting point is selected: Esc lets go of it.
+      e.preventDefault();
+      setSelected(-1);
     }
   };
 

@@ -54,6 +54,8 @@ export default function Palette() {
     return q ? ACTIONS.filter((a) => a.label.toLowerCase().includes(q)) : ACTIONS;
   }, [text]);
   const count = hits.length + actions.length;
+  /** The selection, kept inside the list: the list can shrink under it when the full index arrives while the palette is open. */
+  const sel = count > 0 ? Math.min(selected, count - 1) : 0;
 
   const open = useCallback(() => {
     const d = dialogRef.current;
@@ -101,12 +103,12 @@ export default function Palette() {
     } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       if (count === 0) return;
-      const next = (selected + (e.key === "ArrowDown" ? 1 : -1) + count) % count;
+      const next = (sel + (e.key === "ArrowDown" ? 1 : -1) + count) % count;
       setSelected(next);
       document.getElementById(`palette-${next}`)?.scrollIntoView({ block: "nearest" });
     } else if (e.key === "Enter") {
       e.preventDefault();
-      choose(selected);
+      choose(sel);
     }
   };
 
@@ -143,7 +145,7 @@ export default function Palette() {
           aria-expanded={count > 0}
           aria-autocomplete="list"
           aria-controls="palette-list"
-          aria-activedescendant={count > 0 ? `palette-${selected}` : undefined}
+          aria-activedescendant={count > 0 ? `palette-${sel}` : undefined}
           autoComplete="off"
           autoCapitalize="none"
           spellCheck={false}
@@ -154,7 +156,7 @@ export default function Palette() {
 
       <ul id="palette-list" role="listbox" aria-label="Results" hidden={count === 0} className="overflow-y-auto -mt-px">
         {hits.map((hit, i) => (
-          <li key={hit.doc.id} role="option" id={`palette-${i}`} aria-selected={i === selected} className={`${row} group cursor-pointer`} onClick={() => choose(i)} onMouseMove={() => setSelected(i)}>
+          <li key={hit.doc.id} role="option" id={`palette-${i}`} aria-selected={i === sel} className={`${row} group cursor-pointer`} onClick={() => choose(i)} onMouseMove={() => setSelected(i)}>
             <span className="fact group-aria-selected:!text-background/70 pt-0.5">{hit.doc.kind}</span>
             <span className="min-w-0">
               <span className="block font-semibold leading-snug">
@@ -169,7 +171,7 @@ export default function Palette() {
         {actions.map((a, n) => {
           const i = hits.length + n;
           return (
-            <li key={a.label} role="option" id={`palette-${i}`} aria-selected={i === selected} className={`${row} group cursor-pointer`} onClick={() => choose(i)} onMouseMove={() => setSelected(i)}>
+            <li key={a.label} role="option" id={`palette-${i}`} aria-selected={i === sel} className={`${row} group cursor-pointer`} onClick={() => choose(i)} onMouseMove={() => setSelected(i)}>
               <span className="fact group-aria-selected:!text-background/70">{a.hint}</span>
               <span>{a.label}</span>
             </li>

@@ -38,7 +38,8 @@ const SQUEEZE = 0.2;
 const mx = (x: number) => (x <= BREAK ? x : BREAK + (x - BREAK) * SQUEEZE);
 const unmx = (x: number) => (x <= BREAK ? x : BREAK + (x - BREAK) / SQUEEZE);
 const VB = { x: -600, y: -800, w: 4100, h: 2750 };
-const LIMIT = { x0: -500, x1: 4300, y0: -300, y1: 1100 };
+// x0 is -450, not -500: the corner dot's ring is 150 wide and the drawing starts at -600, so at -500 the ring was cut off.
+const LIMIT = { x0: -450, x1: 4300, y0: -300, y1: 1100 };
 // The squeeze line is drawn only above the screen's own height; below it a tint says the same, so a label can sit beside a window over there.
 const BREAK_TOP = -450;
 const BREAK_BOTTOM = 1930;
