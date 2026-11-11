@@ -108,3 +108,48 @@ test.describe("before eBay", () => {
     await expect(earlier.getByText("Room (SQLite)")).toBeVisible();
   });
 });
+
+test.describe("skills with evidence", () => {
+  test("each chip carries the number of results its own search gives, and links to that search", async ({ page }) => {
+    await page.goto("/");
+    const skills = page.locator("#skills");
+    await expect(skills).toContainText("results when searched");
+    // The legend names the dashed chip only when the page has one.
+    const unseen = await skills.locator("a[data-unseen]").count();
+    if (unseen > 0) await expect(skills).toContainText("Dashed: listed, not found in the record.");
+    else await expect(skills).not.toContainText("Dashed");
+    const cache = skills.getByRole("link", { name: /^Request caching \d+ results when searched$/ });
+    await expect(cache).toHaveAttribute("href", "/?q=Request%20caching");
+    await expect(skills.getByRole("link", { name: /^C\+\+ \d+ results when searched$/ })).toHaveAttribute("href", "/?q=C%2B%2B");
+    // The skills the literal count left at zero now say what searching finds.
+    for (const name of ["Search & retrieval", "Query rewriting", "Distributed systems", "Traffic replay & A/B testing"]) {
+      const chip = skills.getByRole("link", { name: new RegExp(`^${name.replace(/[&/]/g, "\\$&")} [1-9]\\d* results? when searched$`) });
+      await expect(chip, name).toHaveCount(1);
+    }
+    // Every skill of the data file is on the page, counted or marked: 26 chips.
+    await expect(skills.locator("dd a")).toHaveCount(26);
+  });
+
+  test("the number on a chip is the number of results pressing it gives", async ({ page }) => {
+    for (const name of ["Request caching", "Query rewriting", "C++"]) {
+      await page.goto("/");
+      const chip = page.locator("#skills dd a").filter({ hasText: new RegExp(`^${name.replace(/\+/g, "\\+")}\\d`) });
+      await expect(chip).toHaveCount(1);
+      const shown = Number(await chip.locator(".tabular-nums").textContent());
+      await chip.click();
+      await expect(page).toHaveURL(/\?q=/);
+      // The number was counted over the full index (the notes' sections), so wait for it to land.
+      await expect(page.getByText(/indexed in this tab in/)).toBeVisible();
+      await expect(page.locator("[role=status]").filter({ hasText: /documents match/ }), name).toHaveText(new RegExp(`^${shown} of \\d+ documents match`));
+      await expect(page.locator("#hits > li").first()).toBeVisible();
+    }
+  });
+
+  test("the counts are in the server HTML", async ({ browser }) => {
+    const ctx = await browser.newContext({ javaScriptEnabled: false });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    await expect(page.locator("#skills").getByRole("link", { name: /^Request caching \d+ results when searched$/ })).toBeVisible();
+    await ctx.close();
+  });
+});

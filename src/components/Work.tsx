@@ -1,8 +1,9 @@
-import { experiences, education, skills } from "@/lib/data";
+import { experiences, education } from "@/lib/data";
 import { workRoles } from "@/lib/corpus";
 import Section from "@/components/Section";
 import Timeline from "@/components/Timeline";
 import WorkFigure from "@/components/figures/WorkFigures";
+import SkillEvidence from "@/components/figures/SkillEvidence";
 import { Fold } from "@/components/figures/kit";
 
 const meta = "fact";
@@ -93,21 +94,7 @@ export default function Work() {
           </ul>
         </div>
 
-        <div id="skills" className="landing lg:col-span-12">
-          <h3 className="wd-semi text-xl font-bold mb-3">What I work in</h3>
-          <dl className="space-y-3">
-            {[
-              { label: "Languages I write myself", items: skills.languages },
-              { label: "Domains", items: skills.domains },
-              { label: "Tools and platforms", items: skills.tools },
-            ].map((g) => (
-              <div key={g.label}>
-                <dt className={meta}>{g.label}</dt>
-                <dd className="text-fg/90">{g.items.join(", ")}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
+        <SkillEvidence />
       </div>
     </Section>
   );
