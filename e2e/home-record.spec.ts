@@ -181,8 +181,11 @@ test.describe("projects", () => {
     await radios.getByRole("radio", { name: "Android" }).click();
     await expect(page.locator("#p-shutup")).toBeVisible();
     await expect(page.locator("#p-kaeru")).toBeHidden();
-    await radios.getByRole("radio", { name: /^All/ }).click();
-    await expect(page.locator("#projects article:visible")).toHaveCount(10);
+    // Pressed until it takes: under load WebKit dropped one click here and the count stayed at the Android rows.
+    await expect(async () => {
+      await radios.getByRole("radio", { name: /^All/ }).click();
+      await expect(page.locator("#projects article:visible")).toHaveCount(10, { timeout: 2_000 });
+    }).toPass({ timeout: 15_000 });
   });
 
   test("following a link to a filtered-out row shows it", async ({ page }) => {
@@ -216,8 +219,11 @@ test.describe("homelab", () => {
     const line = fig.locator("[aria-live=polite]");
     await expect(line).toContainText("Press a guest");
     const vault = fig.getByRole("button", { name: /^Vaultwarden/ });
-    await vault.click();
-    await expect(vault).toHaveAttribute("aria-pressed", "true");
+    // networkidle is not hydration: press until the handler answers (WebKit under load lost the first click).
+    await expect(async () => {
+      await vault.click();
+      await expect(vault).toHaveAttribute("aria-pressed", "true", { timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
     await expect(line).toContainText("Vaultwarden, CT104");
     await expect(line).toContainText("Password manager");
     await expect(line).toContainText("Rust, Docker");

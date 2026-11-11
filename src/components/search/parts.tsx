@@ -233,7 +233,9 @@ export function ResultRow({
           onClick={onToggle}
           aria-expanded={open}
           // Wide: score, bar and "Why?" stacked. Phone: just "Why?", a 44 px target; the score is still read aloud.
-          className="w-11 sm:w-[4.5rem] max-sm:min-h-11 max-sm:flex max-sm:items-start max-sm:justify-end max-sm:pt-1 self-start sm:pt-2 text-right group"
+          // 45 px, not 44: the .fact lines above it are 24.3167 px tall, so the button starts at a fractional offset,
+          // and Firefox then reports a 44 px box as 43.9999 px. One extra pixel keeps the target at 44 wherever it lands.
+          className="w-11 sm:w-[4.5rem] max-sm:min-h-[45px] max-sm:flex max-sm:items-start max-sm:justify-end max-sm:pt-1 self-start sm:pt-2 text-right group"
         >
           {/* No aria-label: the name is built from the content, so what is seen is what is announced. */}
           <span className="sr-only">Score </span>
