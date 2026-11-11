@@ -29,13 +29,13 @@ export const LIGHT: Palette = {
   OK: "#17643a",
 };
 
-/** For visitors whose OS asks for dark. Same roles, same highlighter. */
+/** For visitors whose OS asks for dark. Same roles; the highlighter is a step toward amber, which sits quieter on the near-black page and still carries INK at 13:1. */
 export const DARK: Palette = {
   BG: "#0f1317",
   FG: "#e8ebe6",
   MUTED: "#97a1a6",
   ACCENT: "#9db4ff",
-  HIT: "#ffe45c",
+  HIT: "#ffd84a",
   WARN: "#ff8a7a",
   OK: "#7fd69b",
 };
