@@ -95,14 +95,39 @@ export function Explain({ hit }: { hit: SearchHit }) {
   const sum = terms.reduce((s, t) => s + t.score, 0);
   const line = scoreLine(hit);
   const num = "text-right font-mono text-[0.7rem] py-1 pl-3";
+  const found = (t: (typeof terms)[number]) =>
+    t.tf
+      .map((n, i) => (n > 0 ? `${FIELD_NAMES[i]}${n > 1 ? ` ×${n}` : ""}` : ""))
+      .filter(Boolean)
+      .join(", ");
   return (
-    <div className="mt-3 border border-border rounded-[var(--r-box)] p-3 sm:p-4 bg-surface max-w-[44rem] overflow-x-auto">
+    <div data-explain className="mt-3 border border-border rounded-[var(--r-box)] p-3 sm:p-4 bg-surface max-w-[44rem] overflow-x-auto">
       {line.listedByFilter ? (
         <p className="fact mb-2">Why it is here. No term scored: the filter alone lists it, so its base is 1.</p>
       ) : (
-        <>
+        <div className="@container">
           <p className="fact mb-2">Why it ranks here. Each row is one term: weight × idf × how often it appears, damped for length.</p>
-          <table className="w-full border-collapse min-w-[26rem]">
+          {/* Narrow panel (a phone): one stacked item per term, so every number is on screen. The table needs 26rem. */}
+          <ol className="@min-[26rem]:hidden" aria-label="Score by term">
+            {terms.map((t) => (
+              <li key={t.term} className="border-t border-border py-2">
+                <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="term" data-source={t.source}>
+                    {t.term}
+                  </span>
+                  <span className="fact">{found(t)}</span>
+                </p>
+                <p className="mt-1 font-mono text-[0.7rem] leading-relaxed">
+                  {t.weight.toFixed(2)} <span className="text-muted">weight</span> × {t.idf.toFixed(2)} <span className="text-muted">idf</span> ×{" "}
+                  {(t.score / (t.weight * t.idf)).toFixed(2)} <span className="text-muted">saturation</span> = <span className="font-bold">{t.score.toFixed(2)}</span>
+                </p>
+                <div className="mt-1 h-2 bg-fg/10" aria-hidden="true">
+                  <div className="h-full bg-fg" style={{ width: `${Math.max(3, (t.score / sum) * 100)}%` }} />
+                </div>
+              </li>
+            ))}
+          </ol>
+          <table className="w-full border-collapse min-w-[26rem] hidden @min-[26rem]:table">
             <thead>
               <tr className="fact text-left">
                 <th className="font-normal py-1">Term</th>
@@ -121,12 +146,7 @@ export function Explain({ hit }: { hit: SearchHit }) {
                       {t.term}
                     </span>
                   </td>
-                  <td className="py-1 pl-3 fact">
-                    {t.tf
-                      .map((n, i) => (n > 0 ? `${FIELD_NAMES[i]}${n > 1 ? ` ×${n}` : ""}` : ""))
-                      .filter(Boolean)
-                      .join(", ")}
-                  </td>
+                  <td className="py-1 pl-3 fact">{found(t)}</td>
                   <td className={num}>{t.weight.toFixed(2)}</td>
                   <td className={num}>{t.idf.toFixed(2)}</td>
                   <td className={num}>{t.score.toFixed(2)}</td>
@@ -137,7 +157,7 @@ export function Explain({ hit }: { hit: SearchHit }) {
               ))}
             </tbody>
           </table>
-        </>
+        </div>
       )}
       {/* Every number is printed as the engine holds it to three decimals, so the line multiplies back by hand. */}
       <p className="mt-2 pt-2 border-t border-fg font-mono text-[0.7rem] leading-relaxed">
