@@ -4,7 +4,7 @@ This page says what on the site is mine, what is machine-made under my direction
 
 A static site. `next build` with `output: "export"` produces plain HTML, JavaScript and CSS, served as static files. There is no server runtime, no database, no cookies and no analytics. Every request goes to this origin. Fonts are self-hosted at build. The source is public on [GitLab](https://gitlab.com/ritwick7/portfolio).
 
-It is served by Cloudflare Pages. It used to be served from my own rack (CT114, behind the same Traefik gateway as everything else I run), and moved in October 2026 so a static site would stop holding 2 GB of homelab RAM just to build itself. That container is gone now. A push to `master` runs lint, typecheck and tests in GitLab CI on my own runner; if those pass, the same job builds the export and deploys it.
+It is served by Cloudflare Pages. It used to be served from my own rack (CT114, behind the same Traefik gateway as everything else I run), and moved in October 2026 so a static site would stop holding 2 GB of homelab RAM just to build itself. That container is gone now. A push to `master` runs lint, typecheck and unit tests in GitLab CI on my own runner, and a second job loads the built site in three browsers; if both pass, a third builds the export and deploys it.
 
 ## The search box
 
@@ -40,7 +40,7 @@ I build with an AI pair programmer, and most of the current version's code, the 
 
 The design language has a name, Index, and [a page of its own](/design/) with the rules, the tokens and live specimens. In short: rows instead of cards, one typeface used at three widths, and colour that means something. Blue is a place you can go, yellow is something the engine found, and green and red appear only beside a number that changed.
 
-Almost nothing moves by itself. On first load the search box types one query to show that it works, unless you got there first or your OS asks for reduced motion, in which case it stays still. Result rows settle in as the ranking changes, and the row you jump to from a result is marked with the highlighter for a moment. The ambilight figure plays until you pause it, stops when it is off screen, and is a still frame under reduced motion.
+Almost nothing moves by itself. On first load the search box types one query to show that it works, unless you got there first or your OS asks for reduced motion, in which case it stays still. Result rows settle in as the ranking changes, and the row you jump to from a result is marked with the highlighter for a moment. The ambilight figure on the home page plays until you pause it, stops when it is off screen, and is a still frame under reduced motion; the one in its note waits for you to press Play.
 
 The page follows your OS between a light and a dark palette, and the switch in the nav overrides it. A test checks both palettes for contrast: body text and links clear WCAG AAA, everything else clears AA. Keyboard users get a skip link, a visible focus ring on everything, `/` to jump to the search box, arrow keys through results, and Ctrl K or Cmd K for search on any page. The result count is announced to screen readers as it changes. Without JavaScript the home page is still complete: the box shows a fixed list of starting points and every section below it is plain HTML.
 

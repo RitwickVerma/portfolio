@@ -49,7 +49,7 @@ WLED's realtime DRGB protocol is last-packet-wins, so exactly one sender may own
 
 **Installing over a capturing app wedges the TV.** `tizen install` SIGKILLs the running app, and killed mid-capture it can leave the scaler allocated: every later capture returns -2 until the TV is power-cycled. Three out of three deploys, which is why a `pause` token exists.
 
-**Letterbox detection should be off on at least this panel.** The plane carries no letterbox rows, so the row test can only produce false positives: I watched it crop 25% of the picture. One flag drives both axes, so it needs two switches.
+**Letterbox detection should be off on at least this panel.** The plane carries no letterbox rows, so the row test can only produce false positives: I watched it crop 25% of the picture. One flag drove both axes; there is now a switch for each, and row detection is off by default.
 
 **There is no auto-restart on crash.** That is on purpose: resuming on a timer risks installing over a live capture, which is worse than a dark strip.
 
