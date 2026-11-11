@@ -32,7 +32,7 @@ describe("tokenize", () => {
   });
 
   it("drops thousands separators so a number is one term", () => {
-    expect(tokenize("50,000 queries, 2,549 tests")).toEqual(["50000", "query", "2549", "test"]);
+    expect(tokenize("50,000 queries, 2,549 tests")).toEqual(["50000", "queri", "2549", "test"]);
   });
 
   it("drops stopwords and splits on punctuation", () => {
@@ -47,7 +47,7 @@ describe("stem", () => {
     ["cache", "cach"],
     ["tests", "test"],
     ["testing", "test"],
-    ["queries", "query"],
+    ["queries", "queri"],
     ["running", "run"],
     ["replayed", "replay"],
     ["rewriting", "rewrit"],

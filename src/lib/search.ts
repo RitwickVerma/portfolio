@@ -47,28 +47,160 @@ const LITERALS: [RegExp, string][] = [
 ];
 
 /**
- * A deliberately small suffix stripper: plurals, -ing, -ed, a trailing e. It is not consistent
- * across every form of a word ("bias" and "biased" do not meet, nor "tune" and "tuning"). Two
- * attempts to fix that were measured over the site's whole vocabulary and reverted: stripping
- * -ing and -ed before plurals split "settings" from "setting", "findings" from "finding" and
- * "released" from "release"; stripping the e from four-letter words merged "note" with "not"
- * and "page" with "paging". A real stemmer is the fix, not another rule here.
+ * The English (Porter2) stemmer, written from Martin Porter's published Snowball description
+ * ("The English (Porter2) stemming algorithm"). It is not the 1980 Porter stemmer, whose
+ * inconsistencies it fixes; it is what Lucene's and Elasticsearch's "english" analyzers run.
+ *
+ *   prelude   a y that starts the word or follows a vowel is a consonant (written Y while stemming)
+ *   regions   R1 is what follows the first non-vowel after a vowel, R2 the same again inside R1
+ *   step 1    plurals (sses, ies, s), then -ed and -ing with the repair of what is left (hop|ping -> hop,
+ *             hop|ing -> hope), then a final y -> i
+ *   steps 2-4 derivational endings (-ization, -ational, -ful, -ness, -ment, -ive ...), each removed only
+ *             where it lies inside R1 or R2, so a short stem is never eaten
+ *   step 5    a final e or ll
+ *
+ * Literal: a token with a digit in it (years, "50000", "k8s", "ct101") and the three tokens the tokenizer
+ * builds out of punctuation (cpp, csharp, dotnet) are returned as they are.
+ *
+ * Two exception tables sit in front of the algorithm. Snowball's own (skis, dying, news ...) are words
+ * its authors know it gets wrong. SITE_STEMS is this site's: every word of the corpus vocabulary was
+ * stemmed with the old rules and with these, and the pairs that met only under Porter2 were judged by
+ * hand. The ones that are different words (engine/engineer, intern/internal, universe/university,
+ * position/positive, product/production, access/accessibility, spy/SPI, page/paging) are pinned apart; a few inflections the
+ * algorithm leaves split (add/added, tv/tvs, build/built, do/does) are pinned together. Earlier stemmers
+ * here were reverted for merging "note" with "not" and splitting "settings" from "setting"; stem.test.ts
+ * keeps both pairs, and a vocabulary-wide check lives in search.test.ts.
  */
+const SNOWBALL_EXCEPTIONS: Record<string, string> = {
+  skis: "ski", skies: "sky", dying: "die", lying: "lie", tying: "tie",
+  idly: "idl", gently: "gentl", ugly: "ugli", early: "earli", only: "onli", singly: "singl",
+  sky: "sky", news: "news", howe: "howe", atlas: "atlas", cosmos: "cosmos", bias: "bias", andes: "andes",
+};
+/**
+ * Pinned by measurement over the corpus vocabulary (see the comment above `stem`). Each pattern covers
+ * the word and its regular inflections, so a later note that says "engineers" lands with "engineering".
+ * First: words Porter2 would merge with a different word. Then: inflections it leaves apart.
+ */
+const SITE_STEMS: [RegExp, string][] = [
+  [/^engineer(?:s|ed|ing|ings)?$/, "engineer"], // not "engine": a search engine is not an engineer
+  [/^internal(?:s|ly)?$/, "internal"], // not "intern": the internship query must not find "internal"
+  [/^universit(?:y|ies)$/, "university"], // not "universe"
+  [/^positive(?:s|ly)?$/, "positive"], // not "position"
+  [/^accessib(?:ility|le|ly)$/, "accessib"], // accessibility is not the chip that "accesses" memory
+  [/^productions?$/, "production"], // production traffic is not the eBay product
+  [/^(?:spy|spies)$/, "spy"], // the ticker SPY is not the SPI bus ("spi")
+  [/^paging$/, "paging"], // paging an on-call phone is not a web page
+  [/^add(?:ed|ing)$/, "add"], // Porter2 leaves "added" at "ad"
+  [/^does$/, "do"],
+  [/^goes$/, "go"],
+  [/^tvs$/, "tv"], // no vowel before the s, so rule 1a keeps it
+  [/^built$/, "build"],
+];
+
+/** After step 1a these are returned as they are. */
+const AFTER_1A = new Set(["inning", "outing", "canning", "herring", "earring", "proceed", "exceed", "succeed"]);
+
+const isVowel = (c: string | undefined) => c !== undefined && "aeiouy".includes(c);
+const DOUBLES = ["bb", "dd", "ff", "gg", "mm", "nn", "pp", "rr", "tt"];
+const LI_ENDING = "cdeghkmnrt";
+
+/** Start index of the region that follows the first non-vowel after a vowel, searching from `from`. */
+function regionAfter(w: string, from: number): number {
+  for (let i = from + 1; i < w.length; i++) if (!isVowel(w[i]) && isVowel(w[i - 1])) return i + 1;
+  return w.length;
+}
+
+/** The word ends in a short syllable: non-vowel, vowel, non-vowel that is not w, x or Y; or a vowel and a non-vowel alone. */
+function endsShort(w: string): boolean {
+  const n = w.length;
+  if (n === 2) return isVowel(w[0]) && !isVowel(w[1]);
+  return n >= 3 && !isVowel(w[n - 3]) && isVowel(w[n - 2]) && !isVowel(w[n - 1]) && !"wxY".includes(w[n - 1]);
+}
+
+/** The longest of `list` that `w` ends with, or "". */
+function longest(w: string, list: readonly string[]): string {
+  let best = "";
+  for (const s of list) if (s.length > best.length && w.endsWith(s)) best = s;
+  return best;
+}
+
+const STEP2: Record<string, string> = {
+  tional: "tion", enci: "ence", anci: "ance", abli: "able", entli: "ent", izer: "ize", ization: "ize",
+  ational: "ate", ation: "ate", ator: "ate", alism: "al", aliti: "al", alli: "al", fulness: "ful",
+  ousli: "ous", ousness: "ous", iveness: "ive", iviti: "ive", biliti: "ble", bli: "ble", ogi: "og",
+  fulli: "ful", lessli: "less", li: "",
+};
+const STEP2_KEYS = Object.keys(STEP2);
+const STEP3: Record<string, string> = {
+  tional: "tion", ational: "ate", alize: "al", icate: "ic", iciti: "ic", ical: "ic", ful: "", ness: "", ative: "",
+};
+const STEP3_KEYS = Object.keys(STEP3);
+const STEP4 = ["al", "ance", "ence", "er", "ic", "able", "ible", "ant", "ement", "ment", "ent", "ism", "ate", "iti", "ous", "ive", "ize", "ion"];
+const STEP1B = ["eed", "eedly", "ed", "edly", "ing", "ingly"];
+
 export function stem(word: string): string {
-  let w = word;
-  if (/^\d/.test(w)) return w;
-  if (w.length > 4 && w.endsWith("ies")) w = `${w.slice(0, -3)}y`;
-  else if (w.length > 4 && /(ss|x|z|ch|sh)es$/.test(w)) w = w.slice(0, -2);
-  else if (w.length > 3 && w.endsWith("s") && !/(ss|us|is)$/.test(w)) w = w.slice(0, -1);
+  if (/\d/.test(word) || word === "cpp" || word === "csharp" || word === "dotnet") return word;
+  if (word.length <= 2) return word;
+  const exception = SNOWBALL_EXCEPTIONS[word];
+  if (exception !== undefined) return exception;
+  for (const [pattern, pinned] of SITE_STEMS) if (pattern.test(word)) return pinned;
 
-  const before = w;
-  if (w.length > 5 && w.endsWith("ing")) w = w.slice(0, -3);
-  else if (w.length > 4 && w.endsWith("ed")) w = w.slice(0, -2);
-  // "running" -> "runn" -> "run"; keep ll/ss/zz ("install", "pass").
-  if (w !== before && /([^aeiouylsz])\1$/.test(w)) w = w.slice(0, -1);
+  // Prelude.
+  let w = word[0] === "y" ? "Y" : word[0];
+  for (let i = 1; i < word.length; i++) w += word[i] === "y" && isVowel(word[i - 1]) ? "Y" : word[i];
 
-  if (w.length > 4 && w.endsWith("e")) w = w.slice(0, -1);
-  return w;
+  let r1 = regionAfter(w, 0);
+  if (/^(gener|commun|arsen)/.test(w)) r1 = /^commun/.test(w) ? 6 : 5;
+  const r2 = regionAfter(w, r1);
+  const inR1 = (suffix: string) => w.length - suffix.length >= r1;
+  const inR2 = (suffix: string) => w.length - suffix.length >= r2;
+  const cut = (suffix: string, to = "") => (w = w.slice(0, w.length - suffix.length) + to);
+
+  // Step 1a.
+  const s1a = longest(w, ["sses", "ied", "ies", "us", "ss", "s"]);
+  if (s1a === "sses") cut(s1a, "ss");
+  else if (s1a === "ied" || s1a === "ies") cut(s1a, w.length > 4 ? "i" : "ie");
+  else if (s1a === "s" && [...w.slice(0, -2)].some((c) => isVowel(c))) cut(s1a);
+  if (AFTER_1A.has(w)) return w;
+
+  // Step 1b.
+  const s1b = longest(w, STEP1B);
+  if (s1b === "eed" || s1b === "eedly") {
+    if (inR1(s1b)) cut(s1b, "ee");
+  } else if (s1b && [...w.slice(0, w.length - s1b.length)].some((c) => isVowel(c))) {
+    cut(s1b);
+    if (/(at|bl|iz)$/.test(w)) w += "e";
+    else if (DOUBLES.some((d) => w.endsWith(d))) w = w.slice(0, -1);
+    else if (r1 >= w.length && endsShort(w)) w += "e";
+  }
+
+  // Step 1c.
+  if (w.length > 2 && (w.endsWith("y") || w.endsWith("Y")) && !isVowel(w[w.length - 2])) cut("y", "i");
+
+  // Step 2.
+  const s2 = longest(w, STEP2_KEYS);
+  if (s2 && inR1(s2)) {
+    if (s2 === "ogi") {
+      if (w[w.length - 4] === "l") cut(s2, "og");
+    } else if (s2 === "li") {
+      if (LI_ENDING.includes(w[w.length - 3] ?? "")) cut(s2);
+    } else cut(s2, STEP2[s2]);
+  }
+
+  // Step 3.
+  const s3 = longest(w, STEP3_KEYS);
+  if (s3 && inR1(s3) && (s3 !== "ative" || inR2(s3))) cut(s3, STEP3[s3]);
+
+  // Step 4.
+  const s4 = longest(w, STEP4);
+  if (s4 && inR2(s4) && (s4 !== "ion" || "st".includes(w[w.length - 4] ?? ""))) cut(s4);
+
+  // Step 5.
+  if (w.endsWith("e")) {
+    if (inR2("e") || (inR1("e") && !endsShort(w.slice(0, -1)))) cut("e");
+  } else if (w.endsWith("ll") && inR2("l")) cut("l");
+
+  return w.replace(/Y/g, "y");
 }
 
 /**
