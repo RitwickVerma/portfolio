@@ -2,6 +2,10 @@ import { UniverseSwitch, SurvivorToy, BootstrapPath } from "@/components/figures
 
 <UniverseSwitch />
 
+<Sources figure="universe-switch" />
+
+import { Sources } from "@/components/figures/Sources";
+
 Plutus is my research harness for systematic US-equity strategies. Across 30+ experiments on point-in-time data, with bootstrap confidence intervals, I found no edge that held up.
 
 ## Pick the list afterwards and any rule looks skilful
@@ -9,6 +13,8 @@ Plutus is my research harness for systematic US-equity strategies. Across 30+ ex
 The last strategy standing has a backtest Sharpe of 1.04 against 0.63 for SPY, and that number comes from a biased backtest. The one result that reproduced in every configuration was smaller drawdowns, not higher returns. Choose from the stocks that are still around and the ones that failed are missing, which are the ones a rule would have lost money on.
 
 <SurvivorToy />
+
+<Sources figure="survivor-toy" />
 
 ## The first bot lost to SPY, so I kept the one signal that worked
 
@@ -42,6 +48,8 @@ From January 2007 to October 2026, 1,107 tickers, $100k start, 10 bps per side, 
 **It is one path.** A stationary block bootstrap of daily returns puts the Sharpe's 95% interval at [0.62, 1.47] and the CAGR's at [+13.5%, +39.8%]. The median bootstrapped drawdown is −37%; the fifth percentile is −52%.
 
 <BootstrapPath />
+
+<Sources figure="bootstrap-path" />
 
 The strategy family, momentum plus trend filter plus vol targeting, was chosen from the literature rather than fitted here. The defaults were still picked knowing this history. That is selection, and it does not wash out.
 

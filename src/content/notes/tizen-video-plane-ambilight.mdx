@@ -2,6 +2,10 @@ import { Ambilight, PqToLed, Ceiling } from "@/components/figures/lazy";
 
 <Ambilight note />
 
+<Sources figure="ambilight-strip" />
+
+import { Sources } from "@/components/figures/Sources";
+
 The usual ambilight is an HDMI splitter feeding a capture card feeding a small computer. So I went the other way. The TV is a Samsung S84F on Tizen 9, and a .NET app running *on the TV* can read the TV's own memory. [TizenAmbilight](https://gitlab.com/ritwick7/TizenAmbilight) reads the decoded video frame, reduces it to perimeter colours, and drives a WLED strip over UDP. One process, one hop, 20 to 25 frames a second.
 
 ## The frame that follows the film
@@ -25,6 +29,8 @@ The video plane carries HDR codes in PQ, SMPTE ST 2084. Decode those as if they 
 
 <PqToLed />
 
+<Sources figure="pq-to-led" />
+
 - **Tone-map the luma, then scale R, G and B by that one factor.** Doing it per channel invents saturation: +18% mean, and a hue shift on the most saturated zones.
 - **Convert BT.2020 to 709.** Feeding 2020 triples straight through renders them less saturated; converting measured a +63% chroma spread. Out-of-gamut colours are desaturated by the smallest amount, not clamped.
 
@@ -33,6 +39,8 @@ The video plane carries HDR codes in PQ, SMPTE ST 2084. Decode those as if they 
 A streaming app answers -4: the plane is withheld, and the app does not try to get around that. After three in a row it falls back to the TV's own colour meter, which returns the mean colour of one small block of the screen. The TV reports 2 measure slots and a 20 ms settle time, so a finer picture is a slower one.
 
 <Ceiling />
+
+<Sources figure="fallback-ceiling" />
 
 The frame rate you see is interpolation; the real rate is how often each spot is read.
 
