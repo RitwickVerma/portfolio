@@ -223,7 +223,8 @@ function along(spec: Spec, ppu: number, from: number, dir: 1 | -1, y: number, ay
 /** How badly a place breaks the rules: 0 is clear. */
 function faults(c: Placed, lines: Seg[], solids: Box[], taken: Box[]): number {
   const b = { x0: c.box.x0 - 15, x1: c.box.x1 + 15, y0: c.box.y0 - 15, y1: c.box.y1 + 15 };
-  return (inside(c.box) ? 0 : 8) + 4 * lines.filter((l) => hits(l, b)).length + 3 * solids.filter((o) => overlap(o, b)).length + 3 * taken.filter((o) => overlap(o, b)).length;
+  // Outside the drawing is clipped text: worse than any number of crossings.
+  return (inside(c.box) ? 0 : 100) + 4 * lines.filter((l) => hits(l, b)).length + 3 * solids.filter((o) => overlap(o, b)).length + 3 * taken.filter((o) => overlap(o, b)).length;
 }
 
 /** The first of some places that is clear; when none is, the least bad. */
@@ -431,10 +432,26 @@ export default function FrameAuthority() {
   const squeezeAt = farSide ? fixed(BREAK - 40, VB.y + 20, 1, 0, SPEC.squeeze, ppu) : null;
   const taken: Box[] = squeezeAt ? [squeezeAt.box] : [];
   const winSpec: Spec = { lines: [played && ghost ? `Window ${verdict === "revert" ? "put back at" : "kept at"} ${at(frame)}` : `Window at ${at(frame)}`] };
-  const winAt = settle(boxOf(winRect), winSpec, ppu, lines, solids, taken);
-  taken.push(winAt.box);
+  let winAt = settle(boxOf(winRect), winSpec, ppu, lines, solids, taken);
   const ghostSpec: Spec | null = played && ghost ? { lines: [verdict === "revert" ? `${GHOST[played.actor]} ${at(ghost)}` : `Was at ${at(ghost)}`] } : null;
-  const ghostAt = ghostSpec && ghostRect ? settle(boxOf(ghostRect), ghostSpec, ppu, lines, solids, taken) : null;
+  let ghostAt = ghostSpec && ghostRect ? settle(boxOf(ghostRect), ghostSpec, ppu, lines, solids, [...taken, winAt.box]) : null;
+  // When the window and its ghost sit so close that no clear spot is left for the second label, the
+  // two sentences share one label beside the window. One label that can be read beats two that cross.
+  if (ghostAt && ghostSpec) {
+    const apart = faults(winAt, lines, solids, taken) + faults(ghostAt, lines, solids, [...taken, winAt.box]);
+    if (apart > 0) {
+      const merged = settle(boxOf(winRect), { lines: [...winSpec.lines, ...ghostSpec.lines] }, ppu, lines, solids, taken);
+      if (faults(merged, lines, solids, taken) < apart) {
+        winAt = merged;
+        ghostAt = null;
+      } else if (faults(winAt, lines, solids, taken) === 0) {
+        // No room for the second sentence anywhere near: the verdict below carries both positions, so the
+        // ghost goes unlabelled rather than labelled across the window.
+        ghostAt = null;
+      }
+    }
+  }
+  taken.push(winAt.box);
   if (ghostAt) taken.push(ghostAt.box);
   // The fixed furniture of the drawing takes what is left: its usual corner first, then the others.
   const above = MONITOR.y - 60;
