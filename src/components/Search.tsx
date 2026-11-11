@@ -5,8 +5,13 @@ import Link from "next/link";
 import { EXAMPLE_QUERIES, STARTING_POINTS } from "@/lib/corpus";
 import { completions, applyCompletion, type Completion } from "@/lib/complete";
 import { search, type DocKind, type SearchHit, type SearchResult } from "@/lib/search";
+import { answers } from "@/lib/answers";
+import { understand } from "@/lib/understanding";
+import { BUILD_DATE } from "@/lib/data";
 import { useSearchIndex, timed } from "@/lib/useSearchIndex";
 import { CorpusMap, PlanChips, ResultRow, hrefFor } from "@/components/search/parts";
+import { AnswerRow } from "@/components/search/AnswerRow";
+import { UnderstandingLine } from "@/components/search/Understanding";
 import { SHOWN, SHOWN_PHONE, rowsInView, nextSelection, firstRevealed, reselect, takesCompletion } from "@/lib/searchUi";
 
 // The hero. A working search engine over everything on this site: type, and
@@ -181,7 +186,9 @@ export default function Search() {
   const rows = rowsInView(hits.length, all, wide);
   // The selection, kept inside the rows on screen: rotating a phone or the full index arriving can leave fewer rows than the index held.
   const selected = Math.min(selectedRaw, rows - 1);
-  const respelled = result?.plan.filter((t) => t.source === "fuzzy") ?? [];
+  // Computed as of the build, the date the rest of the page counts its own dates to; neither touches the ranking.
+  const answer = useMemo(() => (result ? answers(result.query, BUILD_DATE) : null), [result]);
+  const understood = useMemo(() => (result ? understand(index, result, answer) : []), [index, result, answer]);
   const facets = result ? (Object.entries(result.facets) as [DocKind, number][]).sort((a, b) => b[1] - a[1]) : [];
   const facetTotal = facets.reduce((n, [, c]) => n + c, 0);
   const activeKinds = result?.parsed.kinds ?? [];
@@ -383,11 +390,15 @@ export default function Search() {
         {selected >= 0 && visible[selected]
           ? `Result ${selected + 1} of ${rows}: ${visible[selected].doc.title}. Enter opens it.`
           : result
-            ? `${result.hits.length} of ${result.total} documents match`
+            ? `${answer ? `Answer: ${answer.answer} ` : ""}${result.hits.length} of ${result.total} documents match`
             : ""}
       </p>
 
-      <div className="mt-6">
+      {/* The line keeps its room when empty, so what the engine did with the words never moves the page. */}
+      <UnderstandingLine items={understood} query={result?.query ?? ""} />
+      {answer && <AnswerRow answer={answer} />}
+
+      <div className="mt-3">
         <CorpusMap index={index} hits={result ? result.hits : []} />
         <p className="fact !text-xs mt-1 sm:hidden">One tick per document, grouped by kind. Lit ticks match.</p>
       </div>
@@ -407,12 +418,6 @@ export default function Search() {
           )}
         </div>
 
-        {respelled.length > 0 && (
-          <p className="pb-3 text-[0.95rem]">
-            Nothing here is spelt <span className="font-semibold">{[...new Set(respelled.map((t) => t.from))].join(", ")}</span>. Showing the nearest
-            spelling: <mark>{respelled.map((t) => t.term).join(", ")}</mark>.
-          </p>
-        )}
         {result && result.parsed.unknownKinds.length > 0 && (
           <p className="pb-3 text-[0.95rem] text-warn">
             There is no kind called {result.parsed.unknownKinds.join(", ")}. Try work, ebay, earlier, project, note, lab, skills, education or page.
