@@ -15,7 +15,7 @@ function Stage({ n, name, what, children }: { n: number; name: string; what: str
   return (
     <li className="border-t border-border py-6 grid lg:grid-cols-12 gap-x-8 gap-y-3">
       <div className="lg:col-span-3">
-        <h3 className="wd-semi text-xl font-bold leading-tight">
+        <h3 className="wd-semi text-xl font-bold leading-tight text-balance">
           <span className="font-mono text-xs font-normal text-muted mr-2">{n}</span>
           {name}
         </h3>
@@ -121,7 +121,7 @@ export default function XRay() {
       </div>
 
       <ol className="border-b border-border">
-        <Stage n={1} name="Parse" what="Lowercase, split, drop stopwords, strip suffixes. Quotes, a leading minus and kind: or tech: are read first.">
+        <Stage n={1} name="Your words are cut down to stems." what="Lowercase, split, drop stopwords, strip suffixes. Quotes, a leading minus and kind: or tech: are read first.">
           {words.length === 0 ? (
             <p className="fact">Nothing to parse yet.</p>
           ) : (
@@ -158,7 +158,7 @@ export default function XRay() {
           )}
         </Stage>
 
-        <Stage n={2} name="Rewrite and expand" what={`Add the site's words for yours at ${REWRITE_WEIGHT}, complete the word still being typed at ${PREFIX_WEIGHT}, respell a word nothing matched at ${FUZZY_WEIGHT}.`}>
+        <Stage n={2} name="The engine adds words you did not type." what={`Add the site's words for yours at ${REWRITE_WEIGHT}, complete the word still being typed at ${PREFIX_WEIGHT}, respell a word nothing matched at ${FUZZY_WEIGHT}.`}>
           {treatment.plan.length === 0 && !filtered ? (
             <p className="fact">No terms.</p>
           ) : (
@@ -176,7 +176,7 @@ export default function XRay() {
           )}
         </Stage>
 
-        <Stage n={3} name="Rank" what="BM25 per term across title, tags and text, summed, then multiplied by the document's static rank. Each bar is split by term.">
+        <Stage n={3} name="Each score is a sum you can check." what="BM25 per term across title, tags and text, summed, then multiplied by the document's static rank. Each bar is split by term.">
           {treatment.hits.length === 0 ? (
             <p>No document matches. That is a result too.</p>
           ) : (
@@ -218,7 +218,7 @@ export default function XRay() {
           )}
         </Stage>
 
-        <Stage n={4} name="Control against treatment" what="The same query through plain BM25 with nothing added, beside what the site runs. One query, both rankers.">
+        <Stage n={4} name="Plain BM25 ranks the same query differently." what="The same query through plain BM25 with nothing added, beside what the site runs. One query, both rankers.">
           <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6">
             <div>
               <p className="fact mb-1.5">Control: BM25 only, {control.hits.length} match{control.hits.length === 1 ? "" : "es"}</p>

@@ -103,7 +103,7 @@ export default function EnginePage() {
 
       <Section
         id="xray"
-        title="One query, taken apart."
+        title="Every rank here is arithmetic you can read, term by term."
         lede={<p>Type anything. Each stage shows what the engine holds at that point, down to the arithmetic behind every score.</p>}
       >
         <XRay />
@@ -111,7 +111,7 @@ export default function EnginePage() {
 
       <Section
         id="replay"
-        title={`${JUDGMENTS.length} judged queries, replayed against a control.`}
+        title={`On my ${JUDGMENTS.length} judged queries the ranking beats plain BM25.`}
         lede={
           <>
             <p>

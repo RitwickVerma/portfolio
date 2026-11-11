@@ -115,6 +115,17 @@ test.describe("engine room", () => {
   });
 });
 
+test.describe("headings are claims", () => {
+  for (const path of ["/engine/", "/design/"]) {
+    test(`every section and stage heading on ${path} is a sentence`, async ({ page }) => {
+      await page.goto(path);
+      const headings = await page.locator("main h2, main h3").allInnerTexts();
+      expect(headings.length).toBeGreaterThan(4);
+      for (const h of headings) expect(h.trim(), "a claim is a sentence, not a label").toMatch(/[a-z0-9)][.]$/);
+    });
+  }
+});
+
 test.describe("design page", () => {
   test("the parts and the tokens are one table of at most twelve rows", async ({ page }) => {
     await page.goto("/design/");

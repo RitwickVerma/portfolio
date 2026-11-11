@@ -29,8 +29,8 @@ const ROLES: { key: keyof Palette; name: string; token: string; use: string; on:
 ];
 
 const RULES = [
-  ["Rows, not cards.", "Content is an entry in an index: a hairline above it, facts beside it, no box around it. A heavy rule starts a section. The only boxes are things you operate: the search field, a figure, the palette."],
-  ["One typeface, three widths.", "Expanded says who or what. Regular is for reading. Condensed carries facts. Monospace is for code, ids and the query plan, and for nothing else."],
+  ["Content is rows, not cards.", "Content is an entry in an index: a hairline above it, facts beside it, no box around it. A heavy rule starts a section. The only boxes are things you operate: the search field, a figure, the palette."],
+  ["One typeface carries three widths.", "Expanded says who or what. Regular is for reading. Condensed carries facts. Monospace is for code, ids and the query plan, and for nothing else."],
   ["Colour means something.", "Blue is a place you can go. Yellow is a match. Green and red appear only next to a number that changed. If a colour is not doing one of those jobs it is not on the page."],
   ["Headings are claims.", "A section's heading is one sentence that could be wrong, and the section is the evidence for it. No labels above headings, no capitals for emphasis, no numbering unless the content is a sequence."],
   ["Nothing moves unless you did something.", "Three animations answer something you did: results settle when the ranking changes, a row is marked when you land on it, and the palette settles open. Three more play unprompted, and are this rule's exceptions: the search box types one query on first load to show that it works, the keyboard demo types by itself until you focus it, and the ambilight simulation plays while it is on screen. All of them stop under reduced motion."],
