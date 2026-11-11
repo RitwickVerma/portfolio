@@ -185,6 +185,51 @@ test.describe("the frame-authority figure", () => {
     expect(problems).toEqual([]);
   });
 
+  for (const width of [390, 1440]) {
+    test(`every label sits beside its shape, clear of every line, at ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(FIGURE_NOTE);
+      await page.waitForLoadState("networkidle");
+      const figure = page.locator("figure").first();
+      await page.evaluate(() => document.querySelectorAll("figure details").forEach((d) => ((d as HTMLDetailsElement).open = true)));
+      // The corner dot is a ring with a dark centre, and the window carries a drag cue.
+      const dot = await figure.locator("svg circle").evaluateAll((cs) => cs.map((c) => c.getBoundingClientRect().width));
+      expect(Math.max(...dot)).toBeGreaterThanOrEqual(20);
+      await expect(figure.getByText("Drag the window", { exact: true })).toBeVisible();
+      for (const name of ["Pulled in from far away", "80 px over to 100", "A top above the screen", "A move on the screen", "A resize", "A sub-pixel snap", "A monitor went away", "A window that insists"]) {
+        await figure.getByRole("button", { name, exact: true }).first().click();
+        const found = await figure.evaluate((fig) => {
+          const svg = fig.querySelector("svg")!;
+          const sb = svg.getBoundingClientRect();
+          const labels = [...fig.querySelectorAll("span[aria-hidden='true'].absolute")].map((e) => ({ t: e.textContent ?? "", r: e.getBoundingClientRect(), fs: parseFloat(getComputedStyle(e).fontSize) }));
+          const edges: { x0: number; y0: number; x1: number; y1: number }[] = [];
+          for (const e of svg.querySelectorAll("rect,line")) {
+            if (e.tagName === "rect" && (!e.getAttribute("stroke") || e.getAttribute("fill") === "transparent" || e.getAttribute("stroke") === "var(--accent)")) continue;
+            const b = e.getBoundingClientRect();
+            if (e.tagName === "line") edges.push({ x0: b.left, y0: b.top, x1: b.right, y1: b.bottom });
+            else edges.push({ x0: b.left, y0: b.top, x1: b.right, y1: b.top }, { x0: b.left, y0: b.bottom, x1: b.right, y1: b.bottom }, { x0: b.left, y0: b.top, x1: b.left, y1: b.bottom }, { x0: b.right, y0: b.top, x1: b.right, y1: b.bottom });
+          }
+          const bad: string[] = [];
+          labels.forEach((l, i) => {
+            if (l.fs < 12) bad.push(`${l.t}: ${l.fs}px`);
+            if (l.r.left < sb.left - 1 || l.r.right > sb.right + 1) bad.push(`${l.t}: outside the drawing`);
+            for (const e of edges) {
+              const flat = e.y0 === e.y1;
+              const upright = e.x0 === e.x1;
+              const hit = flat ? e.y0 > l.r.top && e.y0 < l.r.bottom && e.x1 > l.r.left && e.x0 < l.r.right : upright ? e.x0 > l.r.left && e.x0 < l.r.right && e.y1 > l.r.top && e.y0 < l.r.bottom : false;
+              if (hit) bad.push(`${l.t}: crosses a line`);
+            }
+            labels.slice(i + 1).forEach((o) => {
+              if (l.r.left < o.r.right && o.r.left < l.r.right && l.r.top < o.r.bottom && o.r.top < l.r.bottom) bad.push(`${l.t} overlaps ${o.t}`);
+            });
+          });
+          return bad;
+        });
+        expect(found, name).toEqual([]);
+      }
+    });
+  }
+
   test("a window that insists is kept on the third move, and a pause starts the chain again", async ({ page }) => {
     await page.goto(FIGURE_NOTE);
     await page.waitForLoadState("networkidle");
