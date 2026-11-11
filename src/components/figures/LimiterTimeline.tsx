@@ -38,7 +38,7 @@ const req = (from: Computer, answer: Answer, gapMs: number, extra: Partial<Reque
 
 /** Each one-tap scenario is a list of requests fed to the same replay. */
 const SCENARIOS: Record<PresetId, RequestInput[]> = {
-  // A computer you denied retries from a new address every time. The figure opens on the first request alone.
+  // A computer you denied retries from a new address every time. The figure opens on this one, already played.
   rotate: [req("b", "deny", 0, { fresh: true }), req("b", "deny", 5_000, { fresh: true }), req("b", "deny", 5_000, { fresh: true }), req("b", "deny", 5_000, { fresh: true })],
   // You approve, and the next two arrive straight behind it.
   quick: [req("a", "approve", 0), req("a", "approve", 0), req("a", "approve", 0)],
@@ -89,7 +89,7 @@ function Log({ rows, keying }: { rows: Row[]; keying: Keying }) {
   const other = keying === "computer" ? "Old way" : "New way";
   return (
     <div>
-      <div aria-hidden="true" className={`fact grid ${COLS} gap-x-2 pl-3 pb-1 border-b border-border`}>
+      <div aria-hidden="true" className={`text-[0.95rem] leading-snug text-fg/75 grid ${COLS} gap-x-2 pl-3 pb-1 border-b border-border`}>
         <span>Time</span>
         <span>
           <span className="sm:hidden">From</span>
@@ -114,13 +114,13 @@ function Log({ rows, keying }: { rows: Row[]; keying: Keying }) {
                 <span className="sr-only sm:not-sr-only">{COMPUTER_NAME[r.from]}</span>
               </span>
               <span className={`font-semibold leading-snug ${o.tone === "ok" ? "text-ok" : ""}`}>{o.word}</span>
-              <span className="col-start-3 fact leading-snug">
+              <span className="col-start-3 text-[0.95rem] leading-snug text-fg/75 leading-snug">
                 address <span className="font-mono text-[0.75rem] text-fg">{r.address}</span>
                 {r.payload !== 32 ? `, ${r.payload} bytes` : ""}
                 {r.reason ? `. ${upper(r.reason)}.` : ""}
               </span>
               {differs && (
-                <span className={`col-start-3 fact leading-snug ${costly ? "text-warn" : "text-ok"}`}>
+                <span className={`col-start-3 text-[0.95rem] leading-snug text-fg/75 leading-snug ${costly ? "text-warn" : "text-ok"}`}>
                   {costly ? `${other}: the phone would stay silent here.` : `${other}: you would be asked here.`}
                 </span>
               )}
@@ -134,8 +134,8 @@ function Log({ rows, keying }: { rows: Row[]; keying: Keying }) {
 
 export default function LimiterTimeline() {
   const [keying, setKeying] = useState<Keying>("computer");
-  const [inputs, setInputs] = useState<RequestInput[]>(SCENARIOS.rotate.slice(0, 1));
-  const [preset, setPreset] = useState<PresetId | null>(null);
+  const [inputs, setInputs] = useState<RequestInput[]>(SCENARIOS.rotate);
+  const [preset, setPreset] = useState<PresetId | null>("rotate");
   const [from, setFrom] = useState<Computer>("b");
   const [fresh, setFresh] = useState(true);
   const [payload, setPayload] = useState(32);
@@ -208,7 +208,7 @@ export default function LimiterTimeline() {
       <Presets label="Try" items={PRESETS} active={preset} onPick={set} />
       <Segmented<Keying> label="The phone counts requests" options={KEYING} value={keying} onChange={setKeying} />
 
-      <div ref={logRef}>{rows.length === 0 ? <p className="fact">Pick a scenario above, or send your own request below.</p> : <Log rows={rows} keying={keying} />}</div>
+      <div ref={logRef}>{rows.length === 0 ? <p className="text-[0.95rem] leading-snug text-fg/75">Pick a scenario above, or send your own request below.</p> : <Log rows={rows} keying={keying} />}</div>
 
       <div ref={verdictRef}>
         <Verdict tone={verdict.tone} title={verdict.title}>
@@ -284,7 +284,7 @@ export default function LimiterTimeline() {
               Start over
             </QuietAction>
           </Actions>
-          {full && <p className="fact">That is {MAX_REQUESTS} requests. Start over to send more.</p>}
+          {full && <p className="text-[0.95rem] leading-snug text-fg/75">That is {MAX_REQUESTS} requests. Start over to send more.</p>}
         </form>
       </Fold>
 
@@ -292,7 +292,7 @@ export default function LimiterTimeline() {
         <Fold summary="What the phone remembers after each request">
           <ol aria-label="State after each request" className="divide-y divide-border">
             {rows.map((r) => (
-              <li key={r.n} className="py-1.5 fact">
+              <li key={r.n} className="py-1.5 text-[0.95rem] leading-snug text-fg/75">
                 <span className="tabular-nums">{r.n}.</span> {stateText(r, keying)}.
               </li>
             ))}

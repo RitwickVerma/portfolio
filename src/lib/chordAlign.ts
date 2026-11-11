@@ -11,7 +11,9 @@
 //   - `alignDetail` also returns the matrices and the traceback path the original computes and
 //     throws away, so a figure can draw them; `align` is `alignDetail(...).match`;
 //   - `tokens` strips combining marks with \p{M} where Python uses unicodedata.combining, and
-//     splits words on letters and digits. Identical on Latin text; not checked on Devanagari.
+//     splits words on letters and digits. It folds case with toLowerCase plus the one Latin
+//     letter Python's casefold treats differently (ß becomes ss). Other scripts are not checked:
+//     Devanagari splits differently from the original.
 
 /** Below this the two lines do not look like the same words at all; a free gap beats pairing them. */
 export const MIN_SIMILARITY = 0.5;
@@ -21,7 +23,7 @@ const COMBINING = new RegExp("\\p{M}", "gu");
 
 /** titles.tokens: casefold, drop diacritics, split into words. */
 export function tokens(text: string): string[] {
-  return (text || "").normalize("NFKD").replace(COMBINING, "").toLowerCase().match(WORD) ?? [];
+  return (text || "").toLowerCase().replace(/ß/g, "ss").normalize("NFKD").replace(COMBINING, "").match(WORD) ?? [];
 }
 
 /** Levenshtein distance, capped: only 0, 1 and "more than 1" are ever needed. */

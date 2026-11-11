@@ -343,7 +343,9 @@ export class HingeDetector {
     private readonly closedDegrees = 20,
   ) {}
 
-  onAngle(degrees: number): void {
+  onAngle(angle: number): void {
+    // The Kotlin takes a Float: 89.99999999 arrives as 90f and arms.
+    const degrees = Math.fround(angle);
     if (degrees >= this.openDegrees) this.armed = true;
     else if (degrees <= this.closedDegrees && this.armed) {
       this.armed = false;

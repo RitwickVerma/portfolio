@@ -162,10 +162,20 @@ export default function Ambilight({ note = false }: { note?: boolean }) {
         last = 0;
         return;
       }
-      if (now - last < 1000 / FPS) return;
-      // Advance by the time actually played, so the film resumes where it stopped.
-      if (last > 0) filmTime.current += (now - last) / 1000;
-      last = now;
+      if (last === 0) {
+        last = now;
+        paint(filmTime.current);
+        return;
+      }
+      const frame = 1000 / FPS;
+      if (now - last < frame) return;
+      // Advance by whole frames and keep the remainder. Setting `last = now` instead would wait
+      // for the first display refresh after each frame was due: three refreshes on a 60 Hz
+      // screen, which is 20 frames a second and not the 24 the caption says.
+      const frames = Math.floor((now - last) / frame);
+      last += frames * frame;
+      // The film moves by the time actually played, so it resumes where it stopped.
+      filmTime.current += (frames * frame) / 1000;
       paint(filmTime.current);
     };
     raf = requestAnimationFrame(tick);
@@ -223,7 +233,7 @@ export default function Ambilight({ note = false }: { note?: boolean }) {
         )}
       </div>
       {note && (
-        <p className="mt-5 text-center text-[0.8125rem] leading-snug text-white/70">
+        <p className="mt-5 text-center text-[0.8125rem] leading-snug text-white/80">
           {TOP + BOTTOM + SIDE * 2} LEDs: {TOP} along the top, {SIDE} down each side, {BOTTOM} along the bottom
         </p>
       )}
@@ -271,7 +281,7 @@ export default function Ambilight({ note = false }: { note?: boolean }) {
     <figure>
       {stage}
       <figcaption className="mt-3 flex flex-wrap items-baseline gap-x-5 gap-y-2">
-        <span className="fact flex-1 min-w-[16rem]">
+        <span className="text-[0.95rem] leading-snug text-fg/75 flex-1 min-w-[16rem]">
           A simulation of the idea: {TOP + BOTTOM + SIDE * 2} LEDs, each the mean colour of one zone of the frame, at {FPS} frames a second. The real one reads the
           TV&apos;s decoded video plane and holds 20 to 25.
         </span>

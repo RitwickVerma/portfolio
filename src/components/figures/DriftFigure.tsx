@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Actions, FigureFrame, Fold, Presets, QuietAction, Segmented, Verdict } from "./kit";
+import { Actions, FigureFrame, Fold, Presets, QuietAction, Segmented, Toggle, Verdict } from "./kit";
 import { CALM, DRIFT_GUESTS, SCENARIOS, guestState, headline, jobFor, plan, sameLive, setGuest, type GuestState, type Live, type ScenarioId } from "@/lib/drift";
 
 // The nightly job of the note, as a model. A scenario changes the lab by hand
@@ -13,10 +13,6 @@ const GUEST_OPTIONS: { id: GuestState; label: string }[] = [
   { id: "edited", label: "Settings edited" },
   { id: "gone", label: "Gone" },
 ];
-const YES_NO = (yes: string) => [
-  { id: "no", label: "No" },
-  { id: "yes", label: yes },
-] as const;
 
 const HOST_WORD: Record<GuestState, string> = { "as it was": "unchanged", edited: "settings edited", gone: "gone" };
 
@@ -27,7 +23,7 @@ function Row({ title, sub, job, differs }: { title: string; sub: string; job: st
         <span className="font-semibold">{title}</span>
         <span className={`block text-[0.95rem] leading-snug ${differs ? "text-fg" : "text-fg/75"}`}>{sub}</span>
       </span>
-      <span className={`wd-narrow text-[0.95rem] text-right ${job === "nothing to report" ? "text-muted" : "font-bold"}`}>{job}</span>
+      <span className={`text-[0.95rem] text-right ${job === "nothing to report" ? "text-fg/75" : "font-bold"}`}>{job}</span>
     </li>
   );
 }
@@ -51,7 +47,7 @@ export default function DriftFigure() {
     setLive(next);
     setActive(null);
   };
-  const flag = (key: "added" | "compose" | "secret" | "inside", v: string) => edit({ ...live, [key]: v === "yes" });
+  const flag = (key: "added" | "compose" | "secret" | "inside", on: boolean) => edit({ ...live, [key]: on });
 
   const job = (subject: string, seen: string) => {
     if (stale) return "run the job";
@@ -112,10 +108,10 @@ export default function DriftFigure() {
           {DRIFT_GUESTS.map((g) => (
             <Segmented key={g.id} label={g.name} options={GUEST_OPTIONS} value={guestState(live, g.id)} onChange={(v) => edit(setGuest(live, g.id, v))} />
           ))}
-          <Segmented label="A new guest appears" options={YES_NO("Appears")} value={live.added ? "yes" : "no"} onChange={(v) => flag("added", v)} />
-          <Segmented label="A config file is edited" options={YES_NO("Edited")} value={live.compose ? "yes" : "no"} onChange={(v) => flag("compose", v)} />
-          <Segmented label="A password is left in a config" options={YES_NO("Left")} value={live.secret ? "yes" : "no"} onChange={(v) => flag("secret", v)} />
-          <Segmented label="A file inside a container is edited" options={YES_NO("Edited")} value={live.inside ? "yes" : "no"} onChange={(v) => flag("inside", v)} />
+          <Toggle label="A new guest appears" checked={live.added} onChange={(on) => flag("added", on)} />
+          <Toggle label="A config file is edited" checked={live.compose} onChange={(on) => flag("compose", on)} />
+          <Toggle label="A password is left in a config" checked={live.secret} onChange={(on) => flag("secret", on)} />
+          <Toggle label="A file inside a container is edited" checked={live.inside} onChange={(on) => flag("inside", on)} />
           <Actions>
             <button type="button" className="btn min-h-11 sm:min-h-9" onClick={() => setRan({ ...live, edited: [...live.edited], gone: [...live.gone] })}>
               Run tonight&apos;s job

@@ -51,7 +51,7 @@ export default function PagingFigure() {
           <div key={row.id} className="mb-3 last:mb-0">
             <p className="flex flex-wrap items-baseline justify-between gap-x-3">
               <span className="font-semibold">{row.label}</span>
-              <span className="fact">
+              <span className="text-[0.95rem] leading-snug text-fg/75">
                 {failed(runs[row.id])} failed, {plural(flags[row.id].filter(Boolean).length, "page", "pages")}
               </span>
             </p>
@@ -69,7 +69,7 @@ export default function PagingFigure() {
             </ol>
           </div>
         ))}
-        <p className="fact mt-2">One square is one check, five minutes apart; an empty one passed. × failed, ? could not be checked, ▲ a page was sent.</p>
+        <p className="text-[0.95rem] leading-snug text-fg/75 mt-2">One square is one check, five minutes apart; an empty one passed. × failed, ? could not be checked, ▲ a page was sent.</p>
       </div>
 
       <Verdict tone={said.tone} title={said.title}>
@@ -77,12 +77,12 @@ export default function PagingFigure() {
       </Verdict>
 
       <Fold summary="More controls">
-        <p className="fact mb-2">Press a square to flip it. The watchdog checks can also be &ldquo;could not be checked&rdquo;.</p>
+        <p className="text-[0.95rem] leading-snug text-fg/75 mb-2">Press a square to flip it. The watchdog checks can also be &ldquo;could not be checked&rdquo;.</p>
         <div role="region" aria-label="Flip individual checks. Scrolls sideways on a narrow screen." tabIndex={0} className="overflow-x-auto pb-2">
           <div className="min-w-max">
             {ROWS.map((row) => (
               <div key={row.id} className="mb-2">
-                <p className="fact">{row.label}</p>
+                <p className="text-[0.95rem] leading-snug text-fg/75">{row.label}</p>
                 <ul className="flex gap-1">
                   {runs[row.id].map((v, i) => (
                     <li key={i}>

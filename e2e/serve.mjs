@@ -2,7 +2,7 @@
 // answers with its index.html, a missing path with 404.html. No dependencies.
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, join, normalize, resolve, sep } from "node:path";
 
 const ROOT = resolve(process.argv[2] ?? "out");
 const PORT = Number(process.env.PORT ?? 4173);
@@ -25,8 +25,14 @@ const TYPES = {
 };
 
 async function resolveFile(pathname) {
-  const path = join(ROOT, normalize(decodeURIComponent(pathname)));
-  if (!path.startsWith(ROOT)) return null;
+  let decoded;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return null; // A malformed % escape is a 404, not a crash.
+  }
+  const path = join(ROOT, normalize(decoded));
+  if (path !== ROOT && !path.startsWith(ROOT + sep)) return null;
   for (const candidate of [path, join(path, "index.html"), `${path}.html`]) {
     try {
       if ((await stat(candidate)).isFile()) return candidate;

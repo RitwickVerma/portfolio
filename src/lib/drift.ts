@@ -160,7 +160,7 @@ export function headline(report: Report): Headline {
   const committed = count("committed");
   const unseen = count("not seen");
   if (report.findings.length === 0) {
-    return { tone: "ok", title: "Nothing changed, so the job has nothing to report and saves nothing.", details: [] };
+    return { tone: "ok", title: "Nothing changed by hand tonight, so the job has nothing new to report and saves nothing.", details: [] };
   }
   const parts: string[] = [];
   if (reported) parts.push(`reports ${reported} ${reported === 1 ? "difference" : "differences"}`);

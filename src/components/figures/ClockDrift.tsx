@@ -53,7 +53,7 @@ export default function ClockDrift() {
         <p className="wd-semi text-lg sm:text-xl font-bold leading-snug" data-testid="division">
           {t
             ? `${grouped(CLOCK_HZ)} ÷ ${grouped(t.ticksPerSecond)} = ${trim(t.exactCycles)} cycles per tick${t.exactCycles === t.cycles ? "" : `, rounded down to ${t.cycles}`}`
-            : `${grouped(CLOCK_HZ)} ÷ ${Number.isFinite(rate) ? grouped(rate) : "?"} is not a whole number of cycles`}
+            : `Enter a rate from 1 to ${grouped(CLOCK_HZ)} ticks a second.`}
         </p>
         {marks && t ? (
           <div
@@ -85,7 +85,7 @@ export default function ClockDrift() {
                 </span>
               ))}
             </div>
-            <p className="fact mt-0 text-[0.8125rem]" aria-hidden="true">Tick number</p>
+            <p className="text-[0.95rem] leading-snug text-fg/75 mt-0 text-[0.8125rem]" aria-hidden="true">Tick number</p>
             <p className="text-[0.8125rem] leading-snug">
               {gap > 0
                 ? `Shaded: by the tenth tick the hardware is ${trim(gap)} of ${trim(span)} cycles early, and the gap grows with every tick.`
@@ -97,7 +97,7 @@ export default function ClockDrift() {
 
       <Verdict tone={v.tone} title={v.title}>
         {v.body}
-        <span className="block fact mt-1">
+        <span className="block text-[0.95rem] leading-snug text-fg/75 mt-1">
           Measured on the keyboard over 60 s: the clock read {MEASURED.before.ratio} times real time at {grouped(MEASURED.before.ticksPerSecond)} ticks a second, and {MEASURED.after.ratio} at {grouped(MEASURED.after.ticksPerSecond)}.
         </span>
       </Verdict>
@@ -105,7 +105,7 @@ export default function ClockDrift() {
       <div className="space-y-1">
         <Fold summary="More controls">
           <label className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <span className="fact">Ticks a second, any whole number up to {grouped(CLOCK_HZ)}</span>
+            <span className="text-[0.95rem] leading-snug text-fg/75">Ticks a second, any whole number up to {grouped(CLOCK_HZ)}</span>
             <input
               type="text"
               inputMode="numeric"
@@ -119,15 +119,15 @@ export default function ClockDrift() {
         {t && (
           <Fold summary="The arithmetic">
             <dl className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-1 text-[0.95rem]">
-              <dt className="text-muted">Cycles per tick, exact</dt>
+              <dt className="text-fg/75">Cycles per tick, exact</dt>
               <dd>{trim(t.exactCycles, 4)}</dd>
-              <dt className="text-muted">Cycles per tick, used</dt>
+              <dt className="text-fg/75">Cycles per tick, used</dt>
               <dd>{t.cycles}</dd>
-              <dt className="text-muted">A tick really lasts</dt>
+              <dt className="text-fg/75">A tick really lasts</dt>
               <dd>{trim((t.cycles / CLOCK_HZ) * 1e6, 2)} µs</dd>
-              <dt className="text-muted">The kernel counts it as</dt>
+              <dt className="text-fg/75">The kernel counts it as</dt>
               <dd>{trim(1e6 / t.ticksPerSecond, 2)} µs</dd>
-              <dt className="text-muted">Clock time per real second</dt>
+              <dt className="text-fg/75">Clock time per real second</dt>
               <dd>{trim(t.ratio, 4)}</dd>
             </dl>
           </Fold>

@@ -349,3 +349,9 @@ describe("the note", () => {
     expect(source).toContain("all twelve single-row repeats");
   });
 });
+
+describe("review: tokens folds case as the original does", () => {
+  it("the sharp s becomes ss, as Python's casefold makes it", () => {
+    expect(tokens("Straße über")).toEqual(["strasse", "uber"]);
+  });
+});

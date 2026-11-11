@@ -5,7 +5,7 @@ import { KEYS, BOARD_W, BOARD_H, keyForCode } from "@/lib/crush80";
 import { KEYMAP_TODAY, KEYMAP_BEFORE_FIX } from "@/lib/crush80Keymaps";
 import { bindingAt, type KeymapData, type LayerEvent } from "@/lib/layers";
 import { HOLDS, RIGHT_WIN_KEY, boardState, capName, cells, holdForKey, keyTitle, neighbour, toggleMac, verdict, type Cell, type Dir, type Hold } from "@/lib/layerBoard";
-import { FigureFrame, Fold, Presets, Segmented, Verdict } from "./kit";
+import { FigureFrame, Fold, Presets, Segmented, Toggle, Verdict } from "./kit";
 
 // The real keymap, resolved by the real rule. Hold a layer key and every cap
 // shows what it now does; a yellow cap changed, and its small number is the
@@ -28,10 +28,6 @@ type Scenario = keyof typeof SCENARIOS;
 const PRESETS = (Object.keys(SCENARIOS) as Scenario[]).map((id) => ({ id, label: SCENARIOS[id].label }));
 
 const HOLD_OPTIONS = HOLDS.map((h) => ({ id: h.id, label: h.hint ? `${h.label} (${h.hint})` : h.label }));
-const MAC_OPTIONS = [
-  { id: "off" as const, label: "Off" },
-  { id: "on" as const, label: "On" },
-];
 const WHICH_OPTIONS = [
   { id: "today" as const, label: `Today, ${KEYMAP_TODAY.commit}` },
   { id: "before" as const, label: `Before the fix, ${KEYMAP_BEFORE_FIX.commit}` },
@@ -95,12 +91,34 @@ export default function KeymapLayers() {
   const [stop, setStop] = useState(SCENARIOS.fn.look);
   const caps = useRef<(HTMLButtonElement | null)[]>([]);
   const scroller = useRef<HTMLDivElement>(null);
+  // Whether the board overflows its frame and how much of it is out of sight on each side; null until measured.
+  const [edges, setEdges] = useState<{ over: boolean; left: boolean; right: boolean } | null>(null);
 
   // Phones show part of the board: start on the key the first scenario is about.
   useEffect(() => {
     const box = scroller.current;
     const cap = caps.current[SCENARIOS.fn.look];
     if (box && cap) box.scrollLeft = cap.offsetLeft + cap.offsetWidth / 2 - box.clientWidth / 2;
+  }, []);
+
+  // The cue follows the scroll: a fade on each side that has more board behind it, and the hint only while the board overflows.
+  useEffect(() => {
+    const box = scroller.current;
+    if (!box) return;
+    const read = () =>
+      setEdges({
+        over: box.scrollWidth > box.clientWidth + 1,
+        left: box.scrollLeft > 1,
+        right: box.scrollLeft + box.clientWidth < box.scrollWidth - 1,
+      });
+    read();
+    box.addEventListener("scroll", read, { passive: true });
+    const ro = new ResizeObserver(read);
+    ro.observe(box);
+    return () => {
+      box.removeEventListener("scroll", read);
+      ro.disconnect();
+    };
   }, []);
 
   const map = MAPS[which];
@@ -147,7 +165,9 @@ export default function KeymapLayers() {
     if (h) setDown(h);
   };
   const onKeyUp = (e: KeyboardEvent) => {
-    if (holdForKey(e.key) !== null) setDown(null);
+    // Only the key that is holding releases the hold: F down, N down, F up leaves N held.
+    const released = holdForKey(e.key);
+    if (released !== null) setDown((d) => (d === released ? null : d));
   };
 
   const trace: { layer: number; binding: string | null; wins: boolean }[] = [];
@@ -172,7 +192,7 @@ export default function KeymapLayers() {
             The rule is ZMK&rsquo;s: the board keeps a set of layers that are on, and a key is read from the highest one that has something on that key. A transparent key (<code className="font-mono text-[0.85em] [overflow-wrap:anywhere]">&amp;trans</code>) falls through to the layer below. Holding Fn turns layer 2 on, and Space on that layer turns on layer 4, so Fn then Space reads the number pad.
           </p>
           <p>
-            &ldquo;Old file&rdquo; isldquo;Before the fix&ldquo;Old file&rdquo; isrdquo; is <code className="font-mono text-[0.85em] [overflow-wrap:anywhere]">config/crush80.keymap</code> at {KEYMAP_BEFORE_FIX.commit}, the commit before b18bf3c. It had a conditional layer, a rule ZMK re-checks after every layer change, which kept layer 3 off unless Mac mode and Fn were both on. Holding right Win turned layer 3 on and the rule turned it off at once.
+            &ldquo;Before the fix&rdquo; is <code className="font-mono text-[0.85em] [overflow-wrap:anywhere]">config/crush80.keymap</code> at {KEYMAP_BEFORE_FIX.commit}, the commit before b18bf3c. It had a conditional layer, a rule ZMK re-checks after every layer change, which kept layer 3 off unless Mac mode and Fn were both on. Holding right Win turned layer 3 on and the rule turned it off at once.
           </p>
           <p>
             Both files are copied unedited into the site&rsquo;s tests, and a test parses them with a second reader and compares the result with the data this figure uses. Mac mode here is the resolver tapping M with Fn down, which is what the real key does. You can also hold F, N, W or P on your own keyboard (Fn, Fn+Space, right Win, right Win+Space) while the figure has focus, and tap M for Mac mode.
@@ -182,6 +202,7 @@ export default function KeymapLayers() {
     >
       <Presets items={PRESETS} active={active} onPick={scenario} />
 
+      <div>
       <div className="relative" onKeyDown={onKeyDown} onKeyUp={onKeyUp} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDown(null); }}>
         <div ref={scroller} role="region" aria-label="Crush 80 keys. Scrolls sideways on a narrow screen." tabIndex={0} className="relative overflow-x-auto rounded-md glass outline-none focus-visible:ring-2 focus-visible:ring-accent">
           <div className="relative m-1 min-w-[640px] max-md:min-w-[720px]" style={{ aspectRatio: `${BOARD_W} / ${BOARD_H}` }}>
@@ -201,8 +222,11 @@ export default function KeymapLayers() {
             ))}
           </div>
         </div>
-        {/* Below a tablet the board scrolls sideways; the fade says so. */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-8 rounded-r-md bg-gradient-to-l from-background to-transparent md:hidden" />
+        {/* The board scrolls sideways when it does not fit; a fade on the side with more of it says so. Until measured, the right one shows below a tablet. */}
+        <div aria-hidden="true" className={`pointer-events-none absolute inset-y-0 right-0 w-8 rounded-r-md bg-gradient-to-l from-background to-transparent transition-opacity duration-[var(--dur-tap)] ${edges ? (edges.right ? "opacity-100" : "opacity-0") : "md:hidden"}`} />
+        <div aria-hidden="true" className={`pointer-events-none absolute inset-y-0 left-0 w-8 rounded-l-md bg-gradient-to-r from-background to-transparent transition-opacity duration-[var(--dur-tap)] ${edges?.left ? "opacity-100" : "opacity-0"}`} />
+      </div>
+      {(edges ? edges.over : true) && <p className={`mt-1.5 text-[0.8125rem] leading-snug text-fg/75 ${edges ? "" : "md:hidden"}`}>Swipe the board sideways</p>}
       </div>
 
       <Verdict tone={v.tone} title={v.title}>
@@ -213,7 +237,7 @@ export default function KeymapLayers() {
         <Fold summary="More controls">
           <div className="space-y-3">
             <Segmented label="Hold" options={HOLD_OPTIONS} value={latched} onChange={setLatched} />
-            <Segmented label="Mac mode" options={MAC_OPTIONS} value={mac ? "on" : "off"} onChange={(m) => (m === "on") !== mac && setToggled((t) => toggleMac(map, t))} />
+            <Toggle label="Mac mode" checked={mac} onChange={(on) => on !== mac && setToggled((t) => toggleMac(map, t))} />
             <Segmented label="Keymap" options={WHICH_OPTIONS} value={which} onChange={setWhich} />
           </div>
         </Fold>
@@ -241,7 +265,7 @@ export default function KeymapLayers() {
               </p>
               <ol className="mt-1 font-mono text-[0.8rem] leading-relaxed">
                 {trace.map((t) => (
-                  <li key={t.layer} className={t.wins ? "text-fg" : "text-muted"}>
+                  <li key={t.layer} className={t.wins ? "text-fg" : "text-fg/75"}>
                     {t.layer} {map.layers[t.layer].name} {t.binding === null ? "&trans, falls through" : `&${t.binding}`}
                     {t.wins && " ← used"}
                   </li>

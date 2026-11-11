@@ -80,7 +80,7 @@ export default function UniverseSwitch() {
       <Fold summary="The numbers">
         <table className="w-full text-[0.95rem] border-collapse">
           <caption className="sr-only">Same strategy, {WINDOW}, stocks only: yearly return, Sharpe ratio and deepest fall by the list it picked from</caption>
-          <thead className="fact text-left">
+          <thead className="text-[0.95rem] leading-snug text-fg/75 text-left">
             <tr>
               <th scope="col" className="border-b border-fg py-1.5 pr-3 font-normal">List</th>
               <th scope="col" className="border-b border-fg py-1.5 pr-3 font-normal">Yearly return</th>
@@ -105,7 +105,7 @@ export default function UniverseSwitch() {
             </tr>
           </tbody>
         </table>
-        <p className="fact mt-2">Sharpe is return per unit of ups and downs; higher is better.</p>
+        <p className="text-[0.95rem] leading-snug text-fg/75 mt-2">Sharpe is return per unit of ups and downs; higher is better.</p>
       </Fold>
     </FigureFrame>
   );

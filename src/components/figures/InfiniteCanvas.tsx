@@ -104,6 +104,8 @@ export default function InfiniteCanvas() {
     if (m) {
       e.preventDefault();
       setCam((c) => clamp({ ...c, x: c.x + m[0], y: c.y + m[1] }, size));
+    } else if (e.ctrlKey || e.metaKey) {
+      // Ctrl or Cmd with + and - is the browser's own zoom; leave it alone.
     } else if (e.key === "+" || e.key === "=") zoomBy(1.2);
     else if (e.key === "-") zoomBy(1 / 1.2);
   };
@@ -120,7 +122,8 @@ export default function InfiniteCanvas() {
         aria-label="An infinite canvas of windows. Drag or use the arrow keys to move the camera; plus and minus zoom."
         onKeyDown={onKeyDown}
         onPointerDown={(e) => {
-          if (e.button !== 0) return;
+          // The first pointer down owns the drag; a second finger does not take it over.
+          if (e.button !== 0 || drag.current) return;
           e.currentTarget.setPointerCapture(e.pointerId);
           drag.current = { id: e.pointerId, px: e.clientX, py: e.clientY, cx: cam.x, cy: cam.y };
         }}
@@ -129,8 +132,17 @@ export default function InfiniteCanvas() {
           if (!d || d.id !== e.pointerId) return;
           setCam((c) => clamp({ ...c, x: d.cx - (e.clientX - d.px) / c.zoom, y: d.cy - (e.clientY - d.py) / c.zoom }, size));
         }}
-        onPointerUp={() => (drag.current = null)}
-        onPointerCancel={() => (drag.current = null)}
+        onPointerUp={(e) => {
+          if (drag.current && drag.current.id === e.pointerId) drag.current = null;
+        }}
+        onPointerCancel={(e) => {
+          if (drag.current && drag.current.id === e.pointerId) drag.current = null;
+        }}
+        // If the browser drops the up event (capture lost, window blurred mid-drag), the drag still ends here;
+        // without this the canvas would refuse every later press.
+        onLostPointerCapture={(e) => {
+          if (drag.current && drag.current.id === e.pointerId) drag.current = null;
+        }}
         className="relative h-[19rem] sm:h-[22rem] overflow-hidden border-2 border-fg rounded-[var(--r-box)] bg-surface cursor-grab active:cursor-grabbing touch-pan-y select-none outline-none focus-visible:border-accent"
         style={{
           backgroundImage: "radial-gradient(rgb(var(--fg-rgb) / 0.22) 1px, transparent 1px)",
@@ -143,7 +155,7 @@ export default function InfiniteCanvas() {
             <div key={w.title} className="absolute bg-background border-2 border-fg rounded-[5px] overflow-hidden" style={{ left: w.x, top: w.y, width: w.w, height: w.h }}>
               <div className="flex items-center justify-between px-3 h-8 border-b-2 border-fg">
                 <span className="wd-semi font-bold text-sm">{w.title}</span>
-                <span className="font-mono text-[10px] text-muted">
+                <span className="font-mono text-xs text-fg/75">
                   {w.x}, {w.y}
                 </span>
               </div>
@@ -168,12 +180,12 @@ export default function InfiniteCanvas() {
         </div>
       </div>
       <figcaption className="mt-3 flex flex-wrap items-baseline gap-x-5 gap-y-2">
-        <span className="fact flex-1 min-w-[16rem]">
+        <span className="text-[0.95rem] leading-snug text-fg/75 flex-1 min-w-[16rem]">
           Drag it. Each title bar shows its window&apos;s position, and those numbers never change: only the camera moves. Camera at{" "}
-          <span className="font-mono text-[0.7rem]">
+          <span className="font-mono text-xs">
             {Math.round(cam.x)}, {Math.round(cam.y)}
           </span>
-          , zoom <span className="font-mono text-[0.7rem]">{cam.zoom.toFixed(2)}</span>.
+          , zoom <span className="font-mono text-xs">{cam.zoom.toFixed(2)}</span>.
         </span>
         <button type="button" className="fact underline decoration-fg/30 underline-offset-4 hover:text-fg max-sm:min-h-11 max-sm:min-w-11 max-sm:px-1" onClick={() => zoomBy(1.25)}>
           Zoom in

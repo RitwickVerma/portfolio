@@ -3,7 +3,8 @@
 // asks the TV's own colour-measure block for one small block of the screen at a
 // time. The TV reports 2 measure slots and a 20 ms settle time: arm both slots,
 // wait, read both. That is the whole model; there is no overhead in it, so it is a
-// ceiling and the measured rates sit at or just under it.
+// ceiling. The repo reports its measurements as rounded ranges ("12 to 15 Hz"); the model
+// is at the top of each range to that rounding (14.7 Hz for 8 spots), or above it.
 
 /** Measure slots the TV reported (`BlockCount`). */
 export const SLOTS = 2;

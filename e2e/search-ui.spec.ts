@@ -102,6 +102,31 @@ test.describe("the Why? control", () => {
       await expect(why).toHaveAttribute("aria-expanded", "false");
     });
 
+    test(`the arithmetic fits its panel at ${width}px, nothing scrolls sideways`, async ({ page }) => {
+      await open(page, QUERY, width);
+      await page.locator("#hit-0 button[aria-expanded]").click();
+      const panel = page.locator("#hit-0 [data-explain]");
+      await expect(panel).toBeVisible();
+      const fit = await panel.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
+      expect(fit.scroll, "the panel scrolls sideways").toBe(fit.client);
+      if (width < 640) {
+        // Phone: each term is a stacked item whose line multiplies back: weight x idf x saturation = score.
+        const items = panel.getByRole("list", { name: "Score by term" }).getByRole("listitem");
+        expect(await items.count()).toBeGreaterThan(0);
+        for (let i = 0; i < (await items.count()); i++) {
+          const item = items.nth(i);
+          const [w, idf, sat, score] = ((await item.innerText()).match(/(-?\d+\.\d+)\s*weight\s*×\s*(-?\d+\.\d+)\s*idf\s*×\s*(-?\d+\.\d+)\s*saturation\s*=\s*(-?\d+\.\d+)/)?.slice(1) ?? []).map(Number);
+          expect(score, `term ${i} shows its four numbers`).toBeDefined();
+          // The row prints as many decimals of the last factor as it takes: the product is the printed score to under half a cent.
+          expect(Math.abs(w * idf * sat - score), `term ${i} multiplies back`).toBeLessThan(0.005);
+          const box = (await item.boundingBox())!;
+          expect(box.x + box.width).toBeLessThanOrEqual(width);
+        }
+      } else {
+        await expect(panel.locator("table")).toBeVisible();
+      }
+    });
+
     test(`the help text names what is on screen at ${width}px`, async ({ page }) => {
       await open(page, QUERY, width);
       await page.getByRole("button", { name: "Query syntax" }).click();
@@ -144,6 +169,7 @@ test.describe("an unbroken 120-character word", () => {
       expect(widest, "an element pokes out of the viewport").toBe("");
       const plan = page.locator('ul[aria-label^="Query plan"]');
       const list = (await plan.boundingBox())!;
+      expect(await plan.locator("li").count(), "plan chips to measure").toBeGreaterThan(0);
       for (const chip of await plan.locator("li").all()) {
         const b = (await chip.boundingBox())!;
         expect(b.x + b.width, "a plan chip is wider than its list").toBeLessThanOrEqual(list.x + list.width + 0.5);
@@ -193,5 +219,40 @@ test.describe("aria-controls", () => {
     await page.locator("#q").fill(QUERY);
     await expect(page.locator("#hits > li").first()).toBeVisible();
     await expect(page.locator("#hits")).toHaveCount(1);
+  });
+});
+
+test.describe("facet chips, the cases a review broke", () => {
+  test("a chip closes an open quote, so the filter is a filter and not part of the phrase", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const box = page.locator("#q");
+    await expect(async () => {
+      await box.fill('"reverse engineering');
+      await expect(page.getByRole("group", { name: "Narrow by kind" })).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 20_000 });
+    // The first chip after "All": whatever kind leads for this phrase.
+    const chip = page.getByRole("group", { name: "Narrow by kind" }).getByRole("button").nth(1);
+    const kind = ((await chip.innerText()).match(/^(.*?)\s+\d+$/) ?? [])[1];
+    expect(kind, "a kind chip to click").toBeTruthy();
+    await chip.click();
+    await expect(box).toHaveValue(/^"reverse engineering" kind:[a-z]+ $/);
+    const rows = page.locator("#hits > li");
+    await expect(rows.first()).toBeVisible();
+    const labels = await rows.evaluateAll((els) => els.map((el) => (el.textContent ?? "").trim()));
+    expect(labels.length).toBeGreaterThan(0);
+    for (const text of labels) expect(text.startsWith(kind!), `${text.slice(0, 30)} is a ${kind}`).toBe(true);
+  });
+
+  test("a chip replaces a negated kind filter instead of leaving it behind", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const box = page.locator("#q");
+    await expect(async () => {
+      await box.fill("testing -kind:note ");
+      await expect(page.getByRole("group", { name: "Narrow by kind" })).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 20_000 });
+    await page.getByRole("group", { name: "Narrow by kind" }).getByRole("button", { name: /^Project \d+$/ }).click();
+    await expect(box).toHaveValue("testing kind:project ");
   });
 });

@@ -50,7 +50,6 @@ export type Step = { kind: "near" | "far"; ms: number } | { kind: "jolt" };
 
 /** The longest stretch a visitor can build, and the width of the axis (room for the last window to run out). */
 export const MAX_BUILD_MS = 7_500;
-export const AXIS_MS = 9_000;
 
 export const REST = { x: 0, y: 0, z: 9.81 } as const;
 /** A grab: the same reading the app's own tests use for "the phone is grabbed". */

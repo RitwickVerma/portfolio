@@ -39,7 +39,10 @@ export function pathStats(returns: ArrayLike<number>, years: number): PathStats 
   for (let i = 0; i < n; i++) ss += (returns[i] - mean) * (returns[i] - mean);
   const sd = Math.sqrt(ss / (n - 1));
   let eq = 1;
-  let peak = 1;
+  // The running peak starts at the first period's value, not at the 1 before it, as the repo's
+  // metrics.py does (np.maximum.accumulate over the equity series): a loss in the first period is
+  // not a fall from a peak the series never recorded.
+  let peak = 0;
   let mdd = 0;
   for (let i = 0; i < n; i++) {
     eq *= 1 + returns[i];

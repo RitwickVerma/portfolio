@@ -32,6 +32,11 @@ type Lit = Map<string, number>; // keyId → time lit
 
 export default function Crush80() {
   const [lit, setLit] = useState<Lit>(new Map());
+  /** The lit keys as of the last render, for the frame loop to read without reaching into an updater. */
+  const litRef = useRef<Lit>(lit);
+  useEffect(() => {
+    litRef.current = lit;
+  }, [lit]);
   // Render-time clock advanced by the frame loop; render never reads the real clock.
   const [now, setNow] = useState(0);
   const [last, setLast] = useState<Key | null>(null);
@@ -99,15 +104,14 @@ export default function Crush80() {
     let lastDemo = 0;
     const tick = () => {
       const t = performance.now();
-      let anyLit = false;
+      // Both updaters are pure: React may run them later, or twice, so nothing is read back out of them.
       setLit((m) => {
         let changed = false;
         const next = new Map(m);
         for (const [id, at] of next) if (t - at > DECAY_MS) { next.delete(id); changed = true; }
-        anyLit = next.size > 0;
         return changed ? next : m;
       });
-      if (anyLit) setNow(t);
+      if (litRef.current.size > 0) setNow(t);
       if (!reduce.current && !focused && t - idleSince.current > DEMO_IDLE_MS) {
         const i = demoIndex.current;
         const atEnd = i >= DEMO_TEXT.length;

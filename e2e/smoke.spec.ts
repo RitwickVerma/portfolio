@@ -70,6 +70,18 @@ for (const { name, path } of PAGES) {
         const { scroll, client, widest } = await sidewaysOverflow(page);
         expect(scroll, `page scrolls sideways; widest element: ${widest}`).toBeLessThanOrEqual(client);
         expect(widest, "an element pokes out of the viewport").toBe("");
+        // Again with every fold open: what is folded away has no width until it is opened, so the
+        // first pass cannot see a table or a row of controls that is too wide.
+        const folds = await page.evaluate(() => {
+          const all = [...document.querySelectorAll("details")];
+          all.forEach((d) => (d.open = true));
+          return all.length;
+        });
+        if (folds > 0) {
+          const open = await sidewaysOverflow(page);
+          expect(open.scroll, `with folds open the page scrolls sideways; widest element: ${open.widest}`).toBeLessThanOrEqual(open.client);
+          expect(open.widest, "with folds open an element pokes out of the viewport").toBe("");
+        }
       });
     }
 
@@ -102,13 +114,65 @@ for (const { name, path } of PAGES) {
   });
 }
 
+test.describe("note figures: type", () => {
+  const NOTES = [
+    "/notes/chordist-chart-alignment/",
+    "/notes/crush80-open-firmware/",
+    "/notes/homelab-git-is-the-truth/",
+    "/notes/kwin-canvas-frame-classifier/",
+    "/notes/plutus-what-the-backtest-cannot-tell-you/",
+    "/notes/shutup-wave-or-reach/",
+    "/notes/sudostamp-refuse-before-asking/",
+    "/notes/tizen-video-plane-ambilight/",
+  ];
+  for (const path of NOTES) {
+    test(`${path}: all drawn text is 12 px or more and sentences are not set condensed`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(path);
+      await page.waitForLoadState("networkidle");
+      // A note whose figure failed to load has no text to measure and would pass empty.
+      await expect(page.locator("main figure").first()).toBeVisible();
+      const { bad, measured } = await page.evaluate(() => {
+        const out: string[] = [];
+        let measured = 0;
+        // The folds hold tables and controls too.
+        document.querySelectorAll("figure details").forEach((d) => ((d as HTMLDetailsElement).open = true));
+        for (const fig of document.querySelectorAll("figure")) {
+          const walker = document.createTreeWalker(fig, NodeFilter.SHOW_TEXT);
+          for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+            const text = (n.textContent ?? "").trim();
+            const el = n.parentElement;
+            if (!text || !el || el.closest(".sr-only")) continue;
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0 || getComputedStyle(el).visibility === "hidden") continue;
+            measured += 1;
+            let px = parseFloat(getComputedStyle(el).fontSize);
+            const svg = el.closest("svg");
+            if (svg && el instanceof SVGGraphicsElement) {
+              const m = el.getScreenCTM();
+              px *= m ? Math.hypot(m.a, m.b) : 1;
+            }
+            if (px < 11.95) out.push(`${px.toFixed(1)}px: ${text.slice(0, 40)}`);
+            // The condensed .fact is for dates, units and numbers, not a sentence a reader needs.
+            if (el.closest(".fact") && !el.closest("button") && text.split(/\s+/).length > 6) out.push(`condensed sentence: ${text.slice(0, 50)}`);
+          }
+        }
+        return { bad: out, measured };
+      });
+      expect(measured, "pieces of figure text measured").toBeGreaterThan(10);
+      expect(bad).toEqual([]);
+    });
+  }
+});
+
 test.describe("the frame-authority figure", () => {
   test("a pull is put back and a move on the screen is kept, placed by keyboard and by pointer", async ({ page }) => {
     const problems = watch(page);
     await page.goto(FIGURE_NOTE);
     await page.waitForLoadState("networkidle");
     const figure = page.locator("figure").first();
-    const verdict = figure.locator("[aria-live]");
+    // The verdict by its own mark, not by aria-live: while the window is being placed it is a quiet readout.
+    const verdict = figure.locator("[data-tone]");
     const move = figure.getByRole("button", { name: "Let KWin move it" });
     const win = figure.getByRole("group", { name: /^Window at/ });
     const x = figure.getByLabel("x", { exact: true });
@@ -184,6 +248,54 @@ test.describe("the frame-authority figure", () => {
     await expect(figure.getByText(/a rescue from a monitor that went away is not/)).toBeVisible();
     expect(problems).toEqual([]);
   });
+
+  for (const width of [390, 1440]) {
+    test(`every label sits beside its shape, clear of every line, at ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(FIGURE_NOTE);
+      await page.waitForLoadState("networkidle");
+      const figure = page.locator("figure").first();
+      await page.evaluate(() => document.querySelectorAll("figure details").forEach((d) => ((d as HTMLDetailsElement).open = true)));
+      // The corner dot is a ring with a dark centre, and the window carries a drag cue.
+      const dot = await figure.locator("svg circle").evaluateAll((cs) => cs.map((c) => c.getBoundingClientRect().width));
+      expect(Math.max(...dot)).toBeGreaterThanOrEqual(20);
+      await expect(figure.getByText("Drag the window", { exact: true })).toBeVisible();
+      for (const name of ["Pulled in from far away", "80 px over to 100", "A top above the screen", "A move on the screen", "A resize", "A sub-pixel snap", "A monitor went away", "A window that insists"]) {
+        await figure.getByRole("button", { name, exact: true }).first().click();
+        const found = await figure.evaluate((fig) => {
+          const svg = fig.querySelector("svg")!;
+          const sb = svg.getBoundingClientRect();
+          const labels = [...fig.querySelectorAll("span[aria-hidden='true'].absolute")].map((e) => ({ t: e.textContent ?? "", r: e.getBoundingClientRect(), fs: parseFloat(getComputedStyle(e).fontSize) }));
+          const edges: { x0: number; y0: number; x1: number; y1: number }[] = [];
+          for (const e of svg.querySelectorAll("rect,line")) {
+            if (e.tagName === "rect" && (!e.getAttribute("stroke") || e.getAttribute("fill") === "transparent" || e.getAttribute("stroke") === "var(--accent)")) continue;
+            const b = e.getBoundingClientRect();
+            if (e.tagName === "line") edges.push({ x0: b.left, y0: b.top, x1: b.right, y1: b.bottom });
+            else edges.push({ x0: b.left, y0: b.top, x1: b.right, y1: b.top }, { x0: b.left, y0: b.bottom, x1: b.right, y1: b.bottom }, { x0: b.left, y0: b.top, x1: b.left, y1: b.bottom }, { x0: b.right, y0: b.top, x1: b.right, y1: b.bottom });
+          }
+          const bad: string[] = [];
+          labels.forEach((l, i) => {
+            if (l.fs < 12) bad.push(`${l.t}: ${l.fs}px`);
+            if (l.r.left < sb.left - 1 || l.r.right > sb.right + 1) bad.push(`${l.t}: outside the drawing`);
+            for (const e of edges) {
+              const flat = e.y0 === e.y1;
+              const upright = e.x0 === e.x1;
+              const hit = flat ? e.y0 > l.r.top && e.y0 < l.r.bottom && e.x1 > l.r.left && e.x0 < l.r.right : upright ? e.x0 > l.r.left && e.x0 < l.r.right && e.y1 > l.r.top && e.y0 < l.r.bottom : false;
+              if (hit) bad.push(`${l.t}: crosses a line`);
+            }
+            labels.slice(i + 1).forEach((o) => {
+              if (l.r.left < o.r.right && o.r.left < l.r.right && l.r.top < o.r.bottom && o.r.top < l.r.bottom) bad.push(`${l.t} overlaps ${o.t}`);
+            });
+          });
+          return { bad, labels: labels.length, edges: edges.length };
+        });
+        // The check must have had something to check: a renamed class would otherwise pass it empty.
+        expect(found.labels, `${name}: labels found`).toBeGreaterThan(1);
+        expect(found.edges, `${name}: lines found`).toBeGreaterThan(3);
+        expect(found.bad, name).toEqual([]);
+      }
+    });
+  }
 
   test("a window that insists is kept on the third move, and a pause starts the chain again", async ({ page }) => {
     await page.goto(FIGURE_NOTE);
@@ -287,6 +399,9 @@ test.describe("search", () => {
     await page.waitForTimeout(4000);
     await expect(page.locator("#q")).toHaveValue("");
     await expect(page).not.toHaveURL(/\?q=/);
+    // And the page did hydrate: an empty box on a page whose script never ran would prove nothing.
+    await page.locator("#q").pressSequentially("fitment");
+    await expect(page.getByText(/ranked in your browser/)).toBeVisible();
     await context.close();
   });
 });
@@ -304,11 +419,8 @@ test.describe("the SudoStamp note's figures", () => {
     await page.waitForLoadState("networkidle");
     const fig = limiter(page);
     const status = fig.getByRole("status");
-    // Opens on the one denial; "Rotate the address" retries from three new addresses, all refused without asking.
-    await expect(requests(page)).toHaveCount(1);
-    await expect(requests(page).nth(0)).toContainText("Asked, you denied");
-    await expect(fig.getByRole("button", { name: "Rotate the address" })).toHaveAttribute("aria-pressed", "false");
-    await fig.getByRole("button", { name: "Rotate the address" }).click();
+    // Opens on "Rotate the address" already played: one denial, then three new addresses, all refused without asking.
+    await expect(fig.getByRole("button", { name: "Rotate the address" })).toHaveAttribute("aria-pressed", "true");
     await expect(requests(page)).toHaveCount(4);
     await expect(requests(page).nth(0)).toContainText("Asked, you denied");
     for (const n of [1, 2, 3]) {
@@ -317,7 +429,14 @@ test.describe("the SudoStamp note's figures", () => {
     }
     await expect(requests(page).nth(3)).toContainText("Old way: you would be asked here.");
     await expect(status).toContainText("Counting by computer, the phone asks you 1 time. Counting by address, it would have asked 4.");
-    await expect(fig.getByRole("button", { name: "Rotate the address" })).toHaveAttribute("aria-pressed", "true");
+    // One request alone is a different story: nothing is at stake until a second one arrives.
+    await fig.getByText("Send your own request").click();
+    await fig.getByRole("button", { name: "Start over" }).click();
+    await fig.getByRole("button", { name: "Send request" }).click();
+    await expect(requests(page)).toHaveCount(1);
+    await expect(fig.getByRole("button", { name: "Rotate the address" })).toHaveAttribute("aria-pressed", "false");
+    await fig.getByRole("button", { name: "Rotate the address" }).click();
+    await expect(requests(page)).toHaveCount(4);
     // Counted by address, the same requests all reach the user, and the rows say so.
     await fig.getByRole("radio", { name: "by address (before)" }).click();
     await expect(fig.getByRole("list", { name: "Requests, oldest first" })).not.toContainText("Refused");
@@ -431,9 +550,10 @@ test.describe("the SudoStamp note's figures", () => {
     const page = await context.newPage();
     await page.goto(SUDO_NOTE);
     await expect(limiter(page)).toBeVisible();
-    await expect(requests(page)).toHaveCount(1);
+    await expect(requests(page)).toHaveCount(4);
     await expect(requests(page).nth(0)).toContainText("Asked, you denied");
-    await expect(limiter(page).getByRole("status")).toContainText("the phone asks you 1 time");
+    await expect(requests(page).nth(3)).toContainText("Refused, phone stayed silent");
+    await expect(limiter(page).getByRole("status")).toContainText("Counting by computer, the phone asks you 1 time. Counting by address, it would have asked 4.");
     await expect(page.getByText("Test vector from the app's unit test")).toBeVisible();
     await expect(sshView(page)).toBeVisible();
     await expect(sigFigure(page)).toContainText("One missing zero byte and the signature fails");
@@ -563,7 +683,7 @@ test.describe("the ShutUp figure", () => {
     await expect(fig.getByText(/The switches have changed since this run/)).toBeVisible();
     await fig.getByRole("button", { name: "Run 400 streams" }).click();
     await expect(fig.getByText(/the motion guard off/)).toBeVisible();
-    await expect(fig.getByText(/1 of 4 rules broken by random streams: \d+ of 400 streams/)).toBeVisible();
+    await expect(fig.getByText(/1 of 4 checks failed on random streams: \d+ of 400 streams/)).toBeVisible();
     await expect(fig.getByText(/First failure: stream 0, seed \d+/)).toBeVisible();
   });
 
@@ -903,6 +1023,24 @@ test.describe("crush80 note figures", () => {
     await expect(fig.getByRole("button", { name: /^Home on the Home key: Sends Home, from the base layer/ })).toHaveCount(1);
   });
 
+  test("the keyboard says it scrolls sideways only where it does", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(CRUSH_NOTE);
+    await page.waitForLoadState("networkidle");
+    const fig = page.getByRole("figure", { name: /Hold Fn and the same keys/ });
+    const board = fig.getByRole("region", { name: /Crush 80 keys/ });
+    expect(await board.evaluate((b) => b.scrollWidth > b.clientWidth)).toBe(true);
+    await expect(fig.getByText("Swipe the board sideways")).toBeVisible();
+    // The board opens on the middle of the keys, so there is more of it on both sides.
+    const fades = await board.evaluate((b) => [...b.parentElement!.querySelectorAll(":scope > div[aria-hidden]")].map((f) => getComputedStyle(f).opacity));
+    expect(fades).toEqual(["1", "1"]);
+    await board.evaluate((b) => (b.scrollLeft = b.scrollWidth));
+    await expect.poll(() => board.evaluate((b) => [...b.parentElement!.querySelectorAll(":scope > div[aria-hidden]")].map((f) => getComputedStyle(f).opacity))).toEqual(["0", "1"]);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    expect(await board.evaluate((b) => b.scrollWidth > b.clientWidth)).toBe(false);
+    await expect(fig.getByText("Swipe the board sideways")).toHaveCount(0);
+  });
+
   test("the layer figure answers to the visitor's own keys and walks with arrows", async ({ page }) => {
     await page.goto(CRUSH_NOTE);
     await page.waitForLoadState("networkidle");
@@ -920,7 +1058,10 @@ test.describe("crush80 note figures", () => {
     // M is Fn+M: Mac mode swaps Alt and Win.
     await page.keyboard.press("m");
     await fig.getByText("More controls").click();
-    await expect(fig.getByRole("radio", { name: "On" })).toHaveAttribute("aria-checked", "true");
+    const mac = fig.getByRole("switch", { name: "Mac mode" });
+    await expect(mac).toHaveAttribute("aria-checked", "true");
+    await mac.click();
+    await expect(mac).toHaveAttribute("aria-checked", "false");
   });
 
   test("the clock figure shows the rounding and its drift", async ({ page }) => {

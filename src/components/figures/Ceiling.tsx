@@ -86,14 +86,14 @@ export default function Ceiling() {
       <Fold summary="More controls">
         <div className="space-y-4">
           <div>
-            <label htmlFor="ceil-spots" className="fact flex items-baseline justify-between gap-3">
+            <label htmlFor="ceil-spots" className="text-[0.95rem] leading-snug text-fg/75 flex items-baseline justify-between gap-3">
               <span>Spots round the screen edge</span>
               <span className="text-fg tabular-nums">{spots}</span>
             </label>
             <input id="ceil-spots" type="range" min={8} max={73} step={1} value={spots} onChange={(e) => { setSpots(Number(e.target.value)); setStep(0); }} className="block w-full h-11 sm:h-9 accent-fg" />
           </div>
           <div>
-            <label htmlFor="ceil-settle" className="fact flex items-baseline justify-between gap-3">
+            <label htmlFor="ceil-settle" className="text-[0.95rem] leading-snug text-fg/75 flex items-baseline justify-between gap-3">
               <span>Wait before each reading (settle time)</span>
               <span className="text-fg tabular-nums">{settle} ms</span>
             </label>
@@ -104,7 +104,7 @@ export default function Ceiling() {
             <QuietAction onClick={() => setSettle(DEFAULT_SETTLE_MS)}>Wait {DEFAULT_SETTLE_MS} ms, the TV&apos;s own</QuietAction>
             <QuietAction onClick={() => setStep((n) => n + 1)}>Step the sampler</QuietAction>
           </Actions>
-          <p className="fact">
+          <p className="text-[0.95rem] leading-snug text-fg/75">
             Step {armed + 1} of {steps}: spots {a + 1}{a + 2 <= spots ? ` and ${a + 2}` : ""} are armed (the large dots), the sampler waits {settle} ms, then reads both.
           </p>
         </div>
@@ -121,13 +121,13 @@ export default function Ceiling() {
                   <span className="absolute left-0 top-0 h-1.5 bg-fg" style={{ width: pct(model) }} />
                   <span className="absolute bottom-0 h-1.5 bg-muted" style={{ left: pct(m.lo), width: `max(3px, ${pct(m.hi - m.lo)})` }} />
                 </span>
-                <span className="col-span-2 fact tabular-nums">
+                <span className="col-span-2 text-[0.95rem] leading-snug text-fg/75 tabular-nums">
                   model at {settle} ms: <span className="text-fg">{hz(model)} Hz</span>; measured at {MEASURED_SETTLE_MS} ms: {m.text}
                 </span>
               </div>
             );
           })}
-          <p className="fact mt-2">Upper bar: model. Lower bar: measured range. Scale 0 to {AXIS_HZ} Hz.</p>
+          <p className="text-[0.95rem] leading-snug text-fg/75 mt-2">Upper bar: model. Lower bar: measured range. Scale 0 to {AXIS_HZ} Hz.</p>
         </div>
       </Fold>
     </FigureFrame>

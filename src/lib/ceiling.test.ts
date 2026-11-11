@@ -9,16 +9,18 @@ describe("the ceiling, against the repo's own numbers", () => {
     expect(DEFAULT_SETTLE_MS).toBe(20);
     expect(readingsPerSecond(20)).toBe(100);
   });
-  it("at 17 ms it is the 'about 116 per second'", () => {
+  it("at 17 ms the ceiling is 118 readings a second, above the 100 to 116 the repo measured", () => {
     expect(Math.round(readingsPerSecond(17))).toBe(118);
     expect(readingsPerSecond(17)).toBeGreaterThan(116);
   });
-  it("the model never sits below the measured table at the measured settle time", () => {
+  it("the model is a ceiling over the measured table, to the rounding the repo reports", () => {
     for (const m of MEASURED) {
       const model = spotHz(m.spots, MEASURED_SETTLE_MS);
-      // A ceiling: within a hair of the top of what was measured, or above it.
-      expect(model).toBeGreaterThanOrEqual(m.lo);
-      // And not wildly above it: the repo's own table is within 20% of the model.
+      // The repo's ranges are whole numbers of Hz (one decimal for the 73-spot row). Rounded the
+      // same way, the model is not under the top of any measured range.
+      const digits = Number.isInteger(m.hi) ? 0 : 1;
+      expect(Number(model.toFixed(digits)), `${m.spots} spots: model ${model.toFixed(2)} Hz`).toBeGreaterThanOrEqual(m.hi);
+      // And not wildly above it: the top of each range is within 20% of the model.
       expect(model).toBeLessThan(m.hi * 1.2);
     }
   });

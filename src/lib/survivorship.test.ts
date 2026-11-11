@@ -148,10 +148,30 @@ describe("the toy market", () => {
     expect(runToy(w, "then").eligibleShare).toBe(1);
     expect(runToy(w, "survivors").eligibleShare).toBeLessThan(1);
   });
-  it("the bias: survivors beat who-existed-then, and the honest picks are within noise of the market", () => {
-    const a = averageOver({ ...TOY, delistRate: 0.05 }, 20);
-    expect(a.survivors - a.then).toBeGreaterThan(0.03);
-    expect(Math.abs(a.then - a.market)).toBeLessThan(0.02);
+  it("the bias: survivors beat who-existed-then, by about the delisting loss they never take", () => {
+    const a = averageOver({ ...TOY, seed: 1000, delistRate: 0.05 }, 200);
+    // 5% a year delisted at -40% is about two points a year the survivors-only list never pays.
+    expect(a.survivors - a.then).toBeGreaterThan(0.015);
+    expect(a.survivors - a.then).toBeLessThan(0.03);
+  }, 60_000);
+  it("the rule has nothing to find: on the honest universe it never beats the market by more than chance", () => {
+    // Three seed bases of 100 worlds each, so one lucky base cannot carry the claim. With delisting
+    // tied to past returns (an earlier version) the rule was +1.4 points at 5% and +2.6 at 12%.
+    // Twenty stocks are bumpier than three hundred, so the rule sits a little UNDER the market
+    // (between about -0.7 and +0.1 points by base); the bound is one-sided on purpose.
+    for (const rate of [0.05, 0.12]) {
+      let edge = 0;
+      for (const seed of [1, 1000, 3000]) {
+        const a = averageOver({ ...TOY, seed, delistRate: rate }, 100);
+        edge += (a.then - a.market) / 3;
+      }
+      expect(edge, `rate ${rate}: mean edge ${(edge * 100).toFixed(2)} points`).toBeLessThan(0.004);
+      expect(edge, `rate ${rate}: mean edge ${(edge * 100).toFixed(2)} points`).toBeGreaterThan(-0.012);
+    }
+  }, 120_000);
+  it("with nobody delisted the two lists are the same list", () => {
+    const a = averageOver({ ...TOY, delistRate: 0 }, 10);
+    expect(a.survivors).toBe(a.then);
   });
   it("the bias grows with the delisting rate", () => {
     const lo = averageOver({ ...TOY, delistRate: 0.02 }, 12);
@@ -174,5 +194,15 @@ describe("the real rows", () => {
     expect(SPY.cagr).toBe(15.2);
     const cagr = UNIVERSES.map((u) => u.cagr);
     expect([...cagr].sort((a, b) => a - b)).toEqual(cagr);
+  });
+});
+
+describe("review: the bootstrap's drawdown is the source's", () => {
+  it("a loss in the first period is not a drawdown, as in the repo's metrics.py", async () => {
+    const { pathStats } = await import("./bootstrap");
+    // equity 0.8, 0.88, 0.924: it only rises from its first recorded value.
+    expect(pathStats([-0.2, 0.1, 0.05], 1).maxDrawdown).toBe(0);
+    // equity 1.1, 0.88, 0.968: down 20% from the peak of 1.1.
+    expect(pathStats([0.1, -0.2, 0.1], 1).maxDrawdown).toBeCloseTo(-0.2, 12);
   });
 });

@@ -91,7 +91,7 @@ export default function PqToLed() {
       <Presets items={SCENES} active={scene} onPick={pick} />
 
       <div>
-        <p className="fact mb-2">
+        <p className="text-[0.95rem] leading-snug text-fg/75 mb-2">
           The picture says {name} at {fmtNits(nits)} nits. The TV stores that as PQ code {code} of 255.
         </p>
         <div className="grid grid-cols-2 gap-3">
@@ -127,7 +127,7 @@ export default function PqToLed() {
             }}
           />
           <div>
-            <label htmlFor="pq-nits" className="fact flex items-baseline justify-between gap-3">
+            <label htmlFor="pq-nits" className="text-[0.95rem] leading-snug text-fg/75 flex items-baseline justify-between gap-3">
               <span>Brightness of the brightest channel</span>
               <span className="text-fg tabular-nums">{fmtNits(nits)} nits</span>
             </label>
@@ -162,7 +162,7 @@ export default function PqToLed() {
             ] as [string, string][]
           ).map(([k, v]) => (
             <div key={k} className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-x-3 py-1.5 border-b border-border last:border-0">
-              <dt className="fact">{k}</dt>
+              <dt className="text-[0.95rem] leading-snug text-fg/75">{k}</dt>
               <dd className="tabular-nums text-fg/90">{v}</dd>
             </div>
           ))}
@@ -178,7 +178,7 @@ export default function PqToLed() {
           <text x={REF_CODE - 4} y="14" textAnchor="end" className="fill-muted" fontSize="13">{REF_WHITE} nits</text>
           <path d={IGNORED_PATH} fill="none" className="stroke-muted" strokeWidth="1.5" strokeDasharray="4 3" />
           <path d={TONE_PATH} fill="none" className="stroke-fg" strokeWidth="2" />
-          <circle cx={lumaCode} cy={W - SDR_TABLE[lumaCode]} r="6" className="fill-bg stroke-fg" strokeWidth="2.5" />
+          <circle cx={lumaCode} cy={W - SDR_TABLE[lumaCode]} r="6" className="fill-background stroke-fg" strokeWidth="2.5" />
           <text x="0" y="278" className="fill-muted" fontSize="13">Plane luma code, 0 to 255</text>
           <text x="-8" y="127" textAnchor="middle" transform="rotate(-90 -8 127)" className="fill-muted" fontSize="13">LED value</text>
           <text x="250" y="244" textAnchor="end" className="fill-fg" fontSize="13">solid: the app</text>

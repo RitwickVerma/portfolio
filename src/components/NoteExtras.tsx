@@ -75,7 +75,8 @@ export function NoteHighlights() {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get("q");
+    // The same cap the search box applies to ?q=.
+    const q = new URLSearchParams(window.location.search).get("q")?.slice(0, 120);
     const root = document.querySelector(".note");
     if (!q || !root || typeof Highlight === "undefined" || !CSS.highlights) return;
     const parsed = parseQuery(`${q} `);

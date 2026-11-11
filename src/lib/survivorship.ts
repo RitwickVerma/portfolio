@@ -1,10 +1,14 @@
 // A toy market for the survivorship figure. Everything here is made up.
 //
-// Every stock has the same expected return, so a rule that ranks stocks by past
-// return has nothing to find. The one thing that is not symmetric is delisting:
-// a stock that has halved from its high is four times as likely to be delisted
-// as a healthy one, and a delisting month is a flat -40%. Pick your stocks from
-// the ones still listed at the end and you have used the future to choose the past.
+// Every stock has the same expected return and the same chance of being delisted
+// each month, whatever it did before, so a rule that ranks stocks by past return
+// has nothing to find. A delisting month is a flat -40%. Pick your stocks from the
+// ones still listed at the end and you have used the future to choose the past:
+// you never hold a stock in the month it is delisted.
+//
+// (An earlier version made a fallen stock four times as likely to be delisted.
+// That gave past returns real information: the rule beat the market by about
+// 1.4 points a year on the honest universe, which the figure's text denied.)
 //
 // The rule is the repo's idea in spirit, not its code: each month rank by the
 // return from 12 months ago to one month ago (the repo skips the most recent
@@ -23,12 +27,10 @@ export interface ToyParams {
   picks: number;
 }
 
-export const TOY: ToyParams = { seed: 7, stocks: 300, months: 132, delistRate: 0.05, picks: 20 };
+export const TOY: ToyParams = { seed: 7, stocks: 300, months: 132, delistRate: 0.1, picks: 20 };
 
 export const DRIFT = 0.006;
 export const VOL = 0.11;
-export const DISTRESS_BELOW = 0.5;
-export const DISTRESS_MULT = 4;
 export const DELIST_RETURN = -0.4;
 export const WARMUP = 12;
 
@@ -51,20 +53,18 @@ export function makeWorld(p: ToyParams): World {
     const ru = mulberry32(mix(p.seed ^ 0x5bd1e995, i));
     const path = new Float64Array(p.months + 1);
     path[0] = 1;
-    let peak = 1;
     let gone = p.months + 1;
     for (let t = 1; t <= p.months; t++) {
       const r = Math.max(-0.9, DRIFT + VOL * normal(rz));
       const u = ru();
       const prev = path[t - 1];
-      const hazard = (p.delistRate / 12) * (prev < DISTRESS_BELOW * peak ? DISTRESS_MULT : 1);
+      const hazard = p.delistRate / 12;
       if (u < hazard) {
         path[t] = prev * (1 + DELIST_RETURN);
         gone = t;
         break;
       }
       path[t] = prev * (1 + r);
-      if (path[t] > peak) peak = path[t];
     }
     prices.push(gone <= p.months ? path.subarray(0, gone + 1) : path);
     last[i] = gone;
