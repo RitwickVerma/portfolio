@@ -462,10 +462,14 @@ test.describe("search", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     await page.waitForLoadState("networkidle");
+    // The server HTML already shows the demo's hits, so "a hit is visible" did not prove the box was live: under
+    // load WebKit took the fill before hydration, then hydration reset the controlled input to "". The in-tab
+    // index line exists only after hydration, so wait for it first.
+    await expect(page.getByText(/indexed in this tab in/)).toBeVisible({ timeout: 30_000 });
     const box = page.locator("#q");
     await expect(async () => {
       await box.fill("c++");
-      await expect(page.locator("#hits > li").first()).toBeVisible({ timeout: 500 });
+      await expect(page.locator("#hits > li").first()).toContainText(/c\+\+/i, { timeout: 1_000 });
     }).toPass();
     await expect(page.getByRole("group", { name: "Complete the word" })).toHaveCount(0);
     await box.press("Tab");
