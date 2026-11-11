@@ -95,7 +95,7 @@ export const OG_CARDS = {
     eyebrow: "ritwickverma.dev/engine",
     name: "The engine room",
     line: "How the search on ritwickverma.dev works",
-    lineTwo: "A query taken apart stage by stage, a control-against-treatment replay of judged queries, and a latency benchmark.",
+    lineTwo: "A query taken apart stage by stage and a control-against-treatment replay of judged queries.",
   },
   design: {
     path: "/design/",
@@ -103,7 +103,7 @@ export const OG_CARDS = {
     eyebrow: "ritwickverma.dev/design",
     name: "Index",
     line: "The design language of ritwickverma.dev",
-    lineTwo: "Five rules, the colour and type tokens, the components, and what is allowed to move.",
+    lineTwo: "Five rules, seven colours and their contrast, one typeface at three widths, and a table of tokens and parts.",
   },
 } as const satisfies Record<string, OgCard>;
 

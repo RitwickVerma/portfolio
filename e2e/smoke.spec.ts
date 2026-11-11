@@ -1116,9 +1116,13 @@ test.describe("crush80 note figures", () => {
     await page.waitForLoadState("networkidle");
     const fig = page.getByRole("figure", { name: /Hold Fn and the same keys/ });
     const h = fig.getByRole("button", { name: /on the H key/ });
-    await h.focus();
-    await page.keyboard.press("ArrowRight");
-    await expect(fig.getByRole("button", { name: /on the J key/ })).toBeFocused();
+    // networkidle is not hydration: on the shared CI runner the first ArrowRight landed before the key
+    // handler existed and focus stayed on H. Walk again until it moves; the assertion is the same.
+    await expect(async () => {
+      await h.focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(fig.getByRole("button", { name: /on the J key/ })).toBeFocused({ timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
     await fig.getByRole("button", { name: "Hold Fn" }).click();
     await fig.getByRole("button", { name: /on the J key/ }).focus();
     await page.keyboard.down("n");

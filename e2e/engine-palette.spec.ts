@@ -75,7 +75,7 @@ test.describe("engine room", () => {
     await context.close();
   });
 
-  test("two phrases show the 2.25 they multiply by, so stage 4 multiplies back", async ({ page }) => {
+  test("two phrases show the 2.25 they multiply by, so stage 3 multiplies back", async ({ page }) => {
     await page.goto("/engine/");
     await page.waitForLoadState("networkidle"); // the key handlers exist only after hydration
     // Filled again until it takes: a fill that lands before hydration is overwritten by the first render.
@@ -94,11 +94,58 @@ test.describe("engine room", () => {
     expect(widths.doc).toBeLessThanOrEqual(widths.view);
   });
 
-  test("the benchmark's throughput comes from search time, not wall time", async ({ page }) => {
+  test("the replay says its three metrics in a sentence, and they are the ones in the big numbers", async ({ browser }) => {
+    // Static HTML: the sentence must be there without JavaScript.
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
     await page.goto("/engine/");
-    await page.waitForLoadState("networkidle"); // the key handlers exist only after hydration
-    await page.getByRole("button", { name: /Run 6,000 queries/ }).click();
-    await expect(page.locator("#latency")).toContainText("ms of search time");
+    const sentence = (await page.locator("[data-replay-summary]").innerText()).replace(/\s+/g, " ");
+    const big = await page.locator("#replay dl dd").allInnerTexts();
+    expect(big).toHaveLength(3);
+    for (const dd of big) {
+      const m = /^(\S+) from (\S+) in the control$/.exec(dd.replace(/\s+/g, " ").trim());
+      expect(m, dd).not.toBeNull();
+      const [, treatment, control] = m!.map((x) => x.replace(/[.%]/g, "\\$&"));
+      expect(sentence, dd).toMatch(new RegExp(`${treatment}( of the time)? against ${control}`));
+    }
+    // The lede names the size of the index it ran over, and the page makes no latency claim.
+    await expect(page.locator("#replay")).toContainText(/over the same index the browser builds: \d+ documents and [\d,]+ distinct terms/);
+    await expect(page.locator("#latency")).toHaveCount(0);
+    await context.close();
+  });
+});
+
+test.describe("headings are claims", () => {
+  for (const path of ["/engine/", "/design/"]) {
+    test(`every section and stage heading on ${path} is a sentence`, async ({ page }) => {
+      await page.goto(path);
+      const headings = await page.locator("main h2, main h3").allInnerTexts();
+      expect(headings.length).toBeGreaterThan(4);
+      for (const h of headings) expect(h.trim(), "a claim is a sentence, not a label").toMatch(/[a-z0-9)][.]$/);
+    });
+  }
+});
+
+test.describe("design page", () => {
+  test("the parts and the tokens are one table of at most twelve rows", async ({ page }) => {
+    await page.goto("/design/");
+    const table = page.locator("#tokens table");
+    await expect(table).toHaveCount(1);
+    await expect(table.locator("thead th").first()).toHaveText("Name");
+    const rows = await table.locator("tbody tr").count();
+    expect(rows).toBeGreaterThanOrEqual(8);
+    expect(rows).toBeLessThanOrEqual(12);
+    // Every row names a token and says one thing; the old demo blocks are gone.
+    await expect(page.locator("#parts")).toHaveCount(0);
+    await expect(page.locator("main mark")).toHaveCount(0);
+    await expect(page.locator("#tokens .btn")).toHaveCount(0);
+  });
+
+  test("the five rules, the colour contrasts and the width slider are still there", async ({ page }) => {
+    await page.goto("/design/");
+    await expect(page.locator("#rules h3")).toHaveCount(5);
+    await expect(page.locator("#colour li", { hasText: "Highlighter" }).first()).toContainText(": 1");
+    await expect(page.locator("#type input[type=range]").first()).toBeVisible();
   });
 });
 

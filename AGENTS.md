@@ -60,7 +60,7 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 | `src/components/` | `Search` (the hero), `Palette` (Ctrl K, every page), the home sections (`Work`, `Projects`, `Keyboard`, `Notes`, `Homelab`, `Contact`) on the shared `Section` frame, `Timeline`, `Crush80`, `NoteExtras` (contents rail, match highlighting), `Nav`, `Footer`. |
 | `src/components/search/parts.tsx` | Shared by every search surface: result row, plan chips, score breakdown (`Explain`), `CorpusMap`. |
 | `src/components/figures/` | Home page: `Ambilight` (canvas simulation; LEDs computed from the pixels), `InfiniteCanvas` (pan and zoom), `LabTopology` (SVG from `lib/data`). Notes: `LimiterTimeline` and `SignatureBytes` (SudoStamp: the ported limiter; a WebCrypto signature as DER and as an SSH blob), `FrameAuthority` (kwin-canvas: the ported frame classifier against a stand-in for KWin's rule), `WaveOrReach` (ShutUp: the ported gesture detectors and a seeded property check), `ChordAlignment` (Chordist: the ported alignment beside the original greedy scan). Each note figure has its pure logic and tests in `src/lib/` and one e2e test that operates it. |
-| `src/components/engine/`, `design/` | `XRay` and `Benchmark` for `/engine`; `WidthSpecimen` for `/design`. |
+| `src/components/engine/`, `design/` | `XRay` for `/engine`; `WidthSpecimen` for `/design`. |
 | `src/content/notes/*.mdx` | The engineering notes; each needs an entry in `src/lib/notes.ts` (newest first). |
 | `src/lib/data.ts` | Single source for home, `/resume` and the search index: projects, experience, education, services, skills, links. |
 | `src/lib/sudostamp.ts`, `sudostampSim.ts` | TypeScript port of SudoStamp's `Limiter`, the 1.3.0 per-address cooldown, the 32-byte signing refusal and the DER-to-SSH signature conversion (clock injected, no BigInt); the figure's replay model on top. Pure. |
@@ -100,7 +100,7 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 1. Pushing to `master` deploys to production; CI `check` must pass first (`needs: check`).
 2. Never leak private addresses or unverifiable facts in the client bundle or copy (`6bbbe8b`); the private Plutus link was dropped (`ce863eb`).
 3. Same-page result links must be plain `<a href="#id">`, not `next/link`: a client-side hash navigation does not update `:target`, so the landing highlight never fires.
-4. `performance.now()` is too coarse to time one query; `timed()` in `useSearchIndex.ts` and `Benchmark.tsx` time a batch and divide. Do not read the clock during render.
+4. `performance.now()` is too coarse to time one query; `timed()` in `useSearchIndex.ts` times a batch and divide. Do not read the clock during render.
 5. Tailwind utilities `text-fg/NN` generated nothing until `--color-fg` was defined in the theme (`37ae49e`).
 6. `lib/resume.ts` is generated and still says "Present" after the role ends; `lib/corpus.ts` takes the current role's period from `lib/data` instead. Keep it that way.
 7. Next.js 16.3.0 had RCE advisories (incl. `next/og`); stay on >= 16.4.0 (`bb477f4`).
