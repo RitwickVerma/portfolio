@@ -131,7 +131,7 @@ export default function ChordAlignment() {
       <Presets<Kind> label="Try" items={PRESETS} active={active} onPick={preset} />
 
       <div>
-        <p className="fact mb-2 max-w-[62ch]">
+        <p className="text-[0.95rem] leading-snug text-fg/75 mb-2 max-w-[62ch]">
           Times are minutes:seconds into the song. Alignment: the best fit for the whole song. Greedy scan: the first good match, never going back.
         </p>
         <table className="w-full max-w-2xl table-fixed border-collapse text-left">
@@ -145,16 +145,16 @@ export default function ChordAlignment() {
             <tr className="align-bottom text-[0.8rem] leading-tight sm:text-sm">
               <th scope="col" className="pb-1.5 pr-1 text-center font-semibold text-fg">
                 Alignment
-                <span className="fact block font-normal tabular-nums">
+                <span className="text-[0.95rem] leading-snug text-fg/75 block font-normal tabular-nums">
                   {a.placed} of {n}
                 </span>
               </th>
-              <th scope="col" className="px-2 pb-1.5 font-normal text-muted">
+              <th scope="col" className="px-2 pb-1.5 font-normal text-fg/75">
                 Chart row
               </th>
               <th scope="col" className="pb-1.5 pl-1 text-center font-semibold text-fg">
                 Greedy scan
-                <span className="fact block font-normal tabular-nums">
+                <span className="text-[0.95rem] leading-snug text-fg/75 block font-normal tabular-nums">
                   {g.placed} of {n}
                 </span>
               </th>
@@ -163,7 +163,7 @@ export default function ChordAlignment() {
           <tbody>
             {n === 0 && (
               <tr>
-                <td colSpan={3} className="border-t-2 border-fg py-3 fact">
+                <td colSpan={3} className="border-t-2 border-fg py-3 text-[0.95rem] leading-snug text-fg/75">
                   No chart rows, so there is nothing to align.
                 </td>
               </tr>
@@ -180,18 +180,18 @@ export default function ChordAlignment() {
                     {ja !== null ? (
                       <span className="text-base font-semibold">{clock(LINES[ja].t)}</span>
                     ) : jg !== null ? (
-                      <span className="text-sm text-muted">
+                      <span className="text-sm text-fg/75">
                         none<span className="sr-only">: the alignment gives this row no line</span>
                       </span>
                     ) : (
-                      <span className="text-sm text-muted">
+                      <span className="text-sm text-fg/75">
                         none<span className="sr-only">: neither method finds a line</span>
                       </span>
                     )}
                   </td>
                   <th scope="row" className={`${first} px-2 py-1.5 text-left text-base font-normal leading-snug`}>
                     <span className="fact mr-1.5 tabular-nums">{index + 1}</span>
-                    {row.text.trim() === "" ? <span className="text-muted">(empty row)</span> : row.text}
+                    {row.text.trim() === "" ? <span className="text-fg/75">(empty row)</span> : row.text}
                   </th>
                   <td className={`${first} px-1 py-1.5 text-center tabular-nums`}>
                     {jg !== null ? (
@@ -205,7 +205,7 @@ export default function ChordAlignment() {
                         lost<span className="sr-only">: the greedy scan finds no line for this row</span>
                       </span>
                     ) : (
-                      <span className="text-sm text-muted">none</span>
+                      <span className="text-sm text-fg/75">none</span>
                     )}
                   </td>
                 </tr>
@@ -236,7 +236,7 @@ export default function ChordAlignment() {
 
       <div className="space-y-1">
         <Fold summary="Edit the chart">
-          <p className="fact mb-2 max-w-[62ch]">Change a row&rsquo;s words, copy it or delete it, and both columns above update.</p>
+          <p className="text-[0.95rem] leading-snug text-fg/75 mb-2 max-w-[62ch]">Change a row&rsquo;s words, copy it or delete it, and both columns above update.</p>
           <ol className="max-w-xl">
             {rows.map((row, index) => (
               <li key={row.id} className="flex items-center gap-1.5 border-b border-border py-1">
@@ -284,7 +284,7 @@ export default function ChordAlignment() {
         <Fold summary="The twelve timed lines">
           <ol className="grid gap-x-8 sm:grid-cols-2">
             {LINES.map((l, j) => (
-              <li key={j} className="fact flex gap-3 border-b border-border py-1">
+              <li key={j} className="text-[0.95rem] leading-snug text-fg/75 flex gap-3 border-b border-border py-1">
                 <span className="w-16 shrink-0 font-mono text-xs">
                   L{j + 1} {clock(l.t)}
                 </span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { bestReach, reachBox, reachReport, type MonitorReach, type Rect } from "@/lib/frameAuthority";
 import {
   ACTORS,
@@ -37,8 +37,12 @@ const BREAK = 2300;
 const SQUEEZE = 0.2;
 const mx = (x: number) => (x <= BREAK ? x : BREAK + (x - BREAK) * SQUEEZE);
 const unmx = (x: number) => (x <= BREAK ? x : BREAK + (x - BREAK) / SQUEEZE);
-const VB = { x: -600, y: -650, w: 3800, h: 2400 };
+const VB = { x: -600, y: -800, w: 4100, h: 2750 };
 const LIMIT = { x0: -500, x1: 4300, y0: -300, y1: 1100 };
+// The squeeze line is drawn only above the screen's own height; below it a tint says the same, so a label can sit beside a window over there.
+const BREAK_TOP = -450;
+const BREAK_BOTTOM = 1930;
+const BREAK_STUBS: [number, number][] = [[BREAK_TOP, -80]];
 const STEP = 20;
 const BIG_STEP = 200;
 
@@ -93,25 +97,178 @@ function arrowHead(from: Rect, to: Rect): string {
   return `${cx},${cy} ${cx - ux * L - uy * W},${cy - uy * L + ux * W} ${cx - ux * L + uy * W},${cy - uy * L - ux * W}`;
 }
 
-/** A label laid over the drawing at a world position (already squeezed); flips its anchor near an edge so it never leaves the box. */
-function Label({ x, y, below, children, strong, wrap, side: forced }: { x: number; y: number; below?: boolean; children: ReactNode; strong?: boolean; wrap?: boolean; side?: "left" | "right" }) {
-  const px = ((x - VB.x) / VB.w) * 100;
-  const py = ((y - VB.y) / VB.h) * 100;
-  const side = forced ?? (px < 20 ? "left" : px > 62 ? "right" : "mid");
+/** The box around a polygon given as "x,y x,y ...". */
+function pointsBox(points: string): Box {
+  const xy = points.split(" ").map((p) => p.split(",").map(Number));
+  return { x0: Math.min(...xy.map((p) => p[0])), y0: Math.min(...xy.map((p) => p[1])), x1: Math.max(...xy.map((p) => p[0])), y1: Math.max(...xy.map((p) => p[1])) };
+}
+
+// ---- Labels -------------------------------------------------------------
+// A label is HTML laid over the SVG, so it is real CSS pixels at any width. Each
+// one is put beside the shape it names: the first of its candidate places (right,
+// left, below, above, then further out) that crosses no line of the drawing, no
+// other shape and no other label. Sizes are estimated for a phone-width drawing,
+// so on a wide screen the labels only get more room than the check assumed.
+
+type Box = { x0: number; y0: number; x1: number; y1: number };
+type Seg = [number, number, number, number];
+interface Spec {
+  /** The lines of the label; the first is the strong one. */
+  lines: string[];
+}
+interface Placed {
+  box: Box;
+  /** The width in px the text wraps to. */
+  maxPx: number;
+  /** Anchor point and which corner of the label sits on it, 0 to 1 on each axis. */
+  x: number;
+  y: number;
+  ax: number;
+  ay: number;
+}
+
+/** The drawing's width in px before it is measured: a phone. */
+const DRAWN_DEFAULT = 320;
+const CHAR_PX = 6.6;
+const LABEL_MAX_PX = 112;
+const LINE_PX = 16;
+
+/** Widths a label may wrap to, widest first: a narrower one is taller but fits a tighter gap. */
+const LABEL_WIDTHS = [LABEL_MAX_PX, 88, 68, 56];
+
+function sizeOf(spec: Spec, maxPx: number, ppu: number): { w: number; h: number } {
+  const text = maxPx - 8;
+  const longest = Math.max(...spec.lines.map((l) => l.length * CHAR_PX));
+  const rows = spec.lines.reduce((n, l) => n + Math.max(1, Math.ceil((l.length * CHAR_PX) / text)), 0);
+  return { w: Math.min(maxPx, longest + 8) / ppu, h: (rows * LINE_PX + 2) / ppu };
+}
+
+function rectEdges(r: Rect): Seg[] {
+  return [
+    [r.x, r.y, r.x + r.width, r.y],
+    [r.x, r.y + r.height, r.x + r.width, r.y + r.height],
+    [r.x, r.y, r.x, r.y + r.height],
+    [r.x + r.width, r.y, r.x + r.width, r.y + r.height],
+  ];
+}
+const boxOf = (r: Rect): Box => ({ x0: r.x, y0: r.y, x1: r.x + r.width, y1: r.y + r.height });
+const overlap = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+const inside = (b: Box) => b.x0 >= VB.x + 20 && b.y0 >= VB.y + 20 && b.x1 <= VB.x + VB.w - 20 && b.y1 <= VB.y + VB.h - 20;
+/** Whether a segment passes through a box (Liang-Barsky). */
+function hits(sg: Seg, b: Box): boolean {
+  const [x0, y0, x1, y1] = sg;
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  let t0 = 0;
+  let t1 = 1;
+  for (const [p, q] of [
+    [-dx, x0 - b.x0],
+    [dx, b.x1 - x0],
+    [-dy, y0 - b.y0],
+    [dy, b.y1 - y0],
+  ]) {
+    if (p === 0) {
+      if (q < 0) return false;
+    } else {
+      const r = q / p;
+      if (p < 0) t0 = Math.max(t0, r);
+      else t1 = Math.min(t1, r);
+      if (t0 > t1) return false;
+    }
+  }
+  return true;
+}
+
+/** Candidate places for a label of size w by h beside a shape, nearest and most natural first. */
+function candidates(r: Box, spec: Spec, ppu: number): Placed[] {
+  const out: Placed[] = [];
+  const gap = 5 / ppu;
+  const midY = (r.y0 + r.y1) / 2;
+  const midX = (r.x0 + r.x1) / 2;
+  for (const ring of [1, 3, 6]) {
+   for (const maxPx of LABEL_WIDTHS) {
+    const { w, h } = sizeOf(spec, maxPx, ppu);
+    const g = gap * ring;
+    for (const dy of [0, -h / 2, h / 2, -h, h]) {
+      out.push({ maxPx, x: r.x1 + g, y: midY + dy, ax: 0, ay: 0.5, box: { x0: r.x1 + g, x1: r.x1 + g + w, y0: midY + dy - h / 2, y1: midY + dy + h / 2 } });
+      out.push({ maxPx, x: r.x0 - g, y: midY + dy, ax: 1, ay: 0.5, box: { x0: r.x0 - g - w, x1: r.x0 - g, y0: midY + dy - h / 2, y1: midY + dy + h / 2 } });
+    }
+    // Below and above: slide along the shape until the label is clear of every line.
+    const xs: number[] = [];
+    for (let x0 = r.x0 - w + 150; x0 <= r.x1 - 150; x0 += 50) xs.push(x0);
+    // Flush with either end of the drawing, for a shape squeezed against it.
+    for (const x0 of [VB.x + VB.w - 20 - w, VB.x + 20]) if (x0 < r.x1 - 150 && x0 + w > r.x0 + 150) xs.push(x0);
+    xs.sort((a, b) => Math.abs(a + w / 2 - midX) - Math.abs(b + w / 2 - midX));
+    for (const x0 of xs) {
+      out.push({ maxPx, x: x0, y: r.y1 + g, ax: 0, ay: 0, box: { x0, x1: x0 + w, y0: r.y1 + g, y1: r.y1 + g + h } });
+      out.push({ maxPx, x: x0, y: r.y0 - g, ax: 0, ay: 1, box: { x0, x1: x0 + w, y0: r.y0 - g - h, y1: r.y0 - g } });
+    }
+   }
+  }
+  return out;
+}
+
+/** The first candidate that is clear, or the first one when none is. */
+function settle(owner: Box, spec: Spec, ppu: number, lines: Seg[], solids: Box[], taken: Box[]): Placed {
+  const all = candidates(owner, spec, ppu);
+  return pick(all, lines, solids, taken);
+}
+
+/** A row of places along a band above or below the drawing, starting at one end and stepping away from it. */
+function along(spec: Spec, ppu: number, from: number, dir: 1 | -1, y: number, ay: 0 | 1): Placed[] {
+  return Array.from({ length: 30 }, (_, i) => LABEL_WIDTHS.map((maxPx) => fixed(from + dir * i * 150, y, dir === 1 ? 0 : 1, ay, spec, ppu, maxPx))).flat();
+}
+
+/** How badly a place breaks the rules: 0 is clear. */
+function faults(c: Placed, lines: Seg[], solids: Box[], taken: Box[]): number {
+  const b = { x0: c.box.x0 - 15, x1: c.box.x1 + 15, y0: c.box.y0 - 15, y1: c.box.y1 + 15 };
+  return (inside(c.box) ? 0 : 8) + 4 * lines.filter((l) => hits(l, b)).length + 3 * solids.filter((o) => overlap(o, b)).length + 3 * taken.filter((o) => overlap(o, b)).length;
+}
+
+/** The first of some places that is clear; when none is, the least bad. */
+function pick(all: Placed[], lines: Seg[], solids: Box[], taken: Box[]): Placed {
+  let best = all[0];
+  let worst = Infinity;
+  for (const c of all) {
+    const f = faults(c, lines, solids, taken);
+    if (f === 0) return c;
+    if (f < worst) {
+      worst = f;
+      best = c;
+    }
+  }
+  return best;
+}
+
+/** A label laid over the drawing at a placed anchor. */
+function PlacedLabel({ at: p, spec, strong }: { at: Placed; spec: Spec; strong?: boolean }) {
   const style: CSSProperties = {
-    left: `${px}%`,
-    top: `${py}%`,
-    transform: `translate(${side === "left" ? "0" : side === "right" ? "-100%" : "-50%"}, ${below ? "3px" : "calc(-100% - 3px)"})`,
+    left: `${((p.x - VB.x) / VB.w) * 100}%`,
+    top: `${((p.y - VB.y) / VB.h) * 100}%`,
+    transform: `translate(${-p.ax * 100}%, ${-p.ay * 100}%)`,
+    maxWidth: p.maxPx,
   };
   return (
     <span
       aria-hidden="true"
       style={style}
-      className={`pointer-events-none absolute rounded-[2px] bg-background/85 px-1 text-xs sm:text-[0.8125rem] leading-tight text-fg ${wrap ? "w-max max-w-[94%] whitespace-normal" : "whitespace-nowrap"} ${strong ? "font-semibold" : ""} ${side === "right" ? "text-right" : side === "left" ? "text-left" : "text-center"}`}
+      className={`pointer-events-none absolute w-max rounded-[2px] bg-background/90 px-1 text-xs sm:text-[0.8125rem] leading-tight text-fg ${p.ax === 1 ? "text-right" : p.ax === 0.5 ? "text-center" : "text-left"}`}
     >
-      {children}
+      {spec.lines.map((l, i) => (
+        <span key={i} className={`block ${i === 0 && strong ? "font-semibold" : i > 0 ? "text-fg/75" : ""}`}>
+          {l}
+        </span>
+      ))}
     </span>
   );
+}
+
+/** A label at a fixed anchor beside what it names (the screen, the dotted box, the squeeze line). */
+function fixed(x: number, y: number, ax: 0 | 1, ay: 0 | 1, spec: Spec, ppu: number, maxPx = LABEL_MAX_PX): Placed {
+  const { w, h } = sizeOf(spec, maxPx, ppu);
+  const x0 = ax === 0 ? x : x - w;
+  const y0 = ay === 0 ? y : y - h;
+  return { maxPx, x, y, ax, ay, box: { x0, x1: x0 + w, y0, y1: y0 + h } };
 }
 
 /** What one monitor's check compared, in the figure's words. */
@@ -186,9 +343,22 @@ export default function FrameAuthority() {
     return { scene: f.scene, played: f.played, preset: f.preset };
   });
   const [focused, setFocused] = useState(false);
+  const [drawn, setDrawn] = useState(DRAWN_DEFAULT);
   const svgRef = useRef<SVGSVGElement>(null);
   const drag = useRef<{ id: number; dx: number; dy: number } | null>(null);
   const hintId = useId();
+
+  // Labels are placed for the width the drawing really has; until it is measured, a phone's.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const read = () => setDrawn(Math.max(200, Math.floor(svg.getBoundingClientRect().width / 8) * 8));
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(svg);
+    return () => ro.disconnect();
+  }, []);
+  const ppu = drawn / VB.w;
 
   const { scene, played, preset } = state;
   const { frame } = scene;
@@ -236,9 +406,41 @@ export default function FrameAuthority() {
   const here = bestReach(reachReport(frame, monitors));
   // The solid block is where the canvas leaves the window; the other place is drawn as a dashed ghost.
   const ghost = played ? (verdict === "revert" ? played.now : played.was) : null;
-  // The lower of the two windows gets its label underneath and the higher one above, so a label never lands on the other window.
   const farSide = frame.x > BREAK || (!!ghost && ghost.x > BREAK);
-  const solidBelow = !!ghost && frame.y > ghost.y;
+
+  // Where each label goes: beside its shape, clear of every line and of the other labels.
+  const winRect: Rect = { x: fx, y: frame.y, width: frame.width, height: frame.height };
+  const ghostRect: Rect | null = ghost ? { x: mx(ghost.x), y: ghost.y, width: ghost.width, height: ghost.height } : null;
+  const goneRect: Rect = { x: GONE_MONITOR.x, y: GONE_MONITOR.y, width: mx(GONE_MONITOR.x + GONE_MONITOR.width) - GONE_MONITOR.x, height: GONE_MONITOR.height };
+  const arrow = played && ghost ? arrowHead({ ...played.was, x: mx(played.was.x) }, { ...played.now, x: mx(played.now.x) }) : null;
+  const lines: Seg[] = [...rectEdges(MONITOR), ...rectEdges(zone), ...(scene.gone ? rectEdges(goneRect) : []), ...(farSide ? BREAK_STUBS.map(([y0, y1]): Seg => [BREAK, y0, BREAK, y1]) : [])];
+  if (played && ghost) lines.push([mx(played.was.x) + played.was.width / 2, played.was.y + played.was.height / 2, mx(played.now.x) + played.now.width / 2, played.now.y + played.now.height / 2]);
+  const solids: Box[] = [boxOf(winRect), { x0: fx - 160, y0: frame.y - 160, x1: fx + 160, y1: frame.y + 160 }];
+  if (ghostRect) solids.push(boxOf(ghostRect));
+  if (arrow) solids.push(pointsBox(arrow));
+
+  const SPEC = {
+    screen: { lines: ["Screen"] },
+    zone: { lines: ["Dotted box: safe for the dot"] },
+    squeeze: { lines: ["Squeezed beyond this line"] },
+    gone: { lines: ["Unplugged"] },
+  } satisfies Record<string, Spec>;
+  const squeezeAt = farSide ? fixed(BREAK - 40, VB.y + 20, 1, 0, SPEC.squeeze, ppu) : null;
+  const taken: Box[] = squeezeAt ? [squeezeAt.box] : [];
+  const winSpec: Spec = { lines: [played && ghost ? `Window ${verdict === "revert" ? "put back at" : "kept at"} ${at(frame)}` : `Window at ${at(frame)}`] };
+  const winAt = settle(boxOf(winRect), winSpec, ppu, lines, solids, taken);
+  taken.push(winAt.box);
+  const ghostSpec: Spec | null = played && ghost ? { lines: [verdict === "revert" ? `${GHOST[played.actor]} ${at(ghost)}` : `Was at ${at(ghost)}`] } : null;
+  const ghostAt = ghostSpec && ghostRect ? settle(boxOf(ghostRect), ghostSpec, ppu, lines, solids, taken) : null;
+  if (ghostAt) taken.push(ghostAt.box);
+  // The fixed furniture of the drawing takes what is left: its usual corner first, then the others.
+  const above = MONITOR.y - 60;
+  const below = MONITOR.y + MONITOR.height + 60;
+  const screenAt = pick([...along(SPEC.screen, ppu, MONITOR.x + MONITOR.width, -1, above, 1), ...along(SPEC.screen, ppu, MONITOR.x + MONITOR.width, -1, below, 0), fixed(MONITOR.x + MONITOR.width - 60, 60, 1, 0, SPEC.screen, ppu), fixed(MONITOR.x + 60, 60, 0, 0, SPEC.screen, ppu)], lines, solids, taken);
+  taken.push(screenAt.box);
+  const goneAt = scene.gone ? settle(boxOf(goneRect), SPEC.gone, ppu, lines, solids, taken) : null;
+  if (goneAt) taken.push(goneAt.box);
+  const zoneAt = pick([...along(SPEC.zone, ppu, zone.x, 1, above, 1), ...along(SPEC.zone, ppu, zone.x, 1, below, 0), ...LABEL_WIDTHS.flatMap((w) => [fixed(60, zone.y + zone.height - 60, 0, 1, SPEC.zone, ppu, w), fixed(zone.x + zone.width - 60, zone.y + zone.height - 60, 1, 1, SPEC.zone, ppu, w)])], lines, solids, taken);
 
   return (
     <FigureFrame
@@ -276,8 +478,15 @@ export default function FrameAuthority() {
           )}
           <rect x={zone.x} y={zone.y} width={zone.width} height={zone.height} fill="var(--fg)" fillOpacity={0.08} stroke="var(--fg)" strokeOpacity={0.7} strokeWidth={2} strokeDasharray="2 4" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
 
-          {/* Where the drawing turns from to scale to squeezed. */}
-          {farSide && <line aria-hidden="true" x1={BREAK} y1={-450} x2={BREAK} y2={1120} stroke="var(--fg)" strokeOpacity={0.5} strokeWidth={1.5} strokeDasharray="3 5" vectorEffect="non-scaling-stroke" />}
+          {/* Where the drawing turns from to scale to squeezed: a tint beyond the line, and the line as a stub above the screen. */}
+          {farSide && (
+            <g aria-hidden="true">
+              <rect x={BREAK} y={BREAK_TOP} width={VB.x + VB.w - BREAK} height={BREAK_BOTTOM - BREAK_TOP} fill="var(--fg)" fillOpacity={0.05} />
+              {BREAK_STUBS.map(([y0, y1]) => (
+                <line key={y0} x1={BREAK} y1={y0} x2={BREAK} y2={y1} stroke="var(--fg)" strokeOpacity={0.6} strokeWidth={2} strokeDasharray="3 5" vectorEffect="non-scaling-stroke" />
+              ))}
+            </g>
+          )}
 
           {/* The other place the window was, and the line between the two. */}
           {played && ghost && (
@@ -317,47 +526,35 @@ export default function FrameAuthority() {
             <rect x={fx + frame.width / 2 - hit.w / 2} y={frame.y + frame.height / 2 - hit.h / 2} width={hit.w} height={hit.h} fill="transparent" />
             <rect x={fx} y={frame.y} width={frame.width} height={frame.height} fill="var(--fg)" stroke="var(--fg)" strokeWidth={2.5} vectorEffect="non-scaling-stroke" />
             <rect x={fx} y={frame.y} width={frame.width} height={90} fill="var(--bg)" fillOpacity={0.35} />
-            <g aria-hidden="true" stroke="var(--bg)" strokeOpacity={0.55} strokeWidth={2.5} strokeLinecap="round" vectorEffect="non-scaling-stroke">
-              <line x1={fx + frame.width * 0.3} y1={frame.y + frame.height * 0.55} x2={fx + frame.width * 0.7} y2={frame.y + frame.height * 0.55} vectorEffect="non-scaling-stroke" />
-              <line x1={fx + frame.width * 0.3} y1={frame.y + frame.height * 0.72} x2={fx + frame.width * 0.7} y2={frame.y + frame.height * 0.72} vectorEffect="non-scaling-stroke" />
-            </g>
-            <circle cx={fx} cy={frame.y} r={90} fill="var(--bg)" stroke="var(--fg)" strokeWidth={2.5} vectorEffect="non-scaling-stroke" />
+            {/* A four-way arrow: this is the part you drag. */}
+            <path
+              aria-hidden="true"
+              d={`M${fx + frame.width / 2 - 110},${frame.y + frame.height * 0.62} h220 M${fx + frame.width / 2},${frame.y + frame.height * 0.62 - 110} v220 M${fx + frame.width / 2 + 70},${frame.y + frame.height * 0.62 - 40} l40,40 l-40,40 M${fx + frame.width / 2 - 70},${frame.y + frame.height * 0.62 - 40} l-40,40 l40,40 M${fx + frame.width / 2 - 40},${frame.y + frame.height * 0.62 - 70} l40,-40 l40,40 M${fx + frame.width / 2 - 40},${frame.y + frame.height * 0.62 + 70} l40,40 l40,-40`}
+              fill="none"
+              stroke="var(--bg)"
+              strokeOpacity={0.85}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+            {/* The corner dot: a dark point inside a light ring, so it shows on the window and off it. */}
+            <circle cx={fx} cy={frame.y} r={150} fill="var(--bg)" stroke="var(--fg)" strokeWidth={2.5} vectorEffect="non-scaling-stroke" />
+            <circle cx={fx} cy={frame.y} r={62} fill="var(--fg)" />
             {focused && <rect x={fx - 60} y={frame.y - 60} width={frame.width + 120} height={frame.height + 120} fill="none" stroke="var(--accent)" strokeWidth={3} vectorEffect="non-scaling-stroke" />}
           </g>
         </svg>
 
-        <Label x={MONITOR.x + MONITOR.width} y={MONITOR.y} strong side="right">
-          Screen
-        </Label>
-        {scene.gone && (
-          <Label x={GONE_MONITOR.x + 60} y={GONE_MONITOR.y} side="left">
-            Unplugged
-          </Label>
-        )}
-        <Label x={zone.x} y={MONITOR.y + MONITOR.height + 30} below side="left">
-          Dotted box: safe for the dot
-        </Label>
-        {farSide && (
-          <Label x={BREAK - 40} y={VB.y + 20} below side="right">
-            Squeezed beyond this line
-          </Label>
-        )}
-        {played && ghost ? (
-          <>
-            <Label x={fx + frame.width / 2} y={solidBelow ? frame.y + frame.height : frame.y} below={solidBelow} strong>
-              Window {verdict === "revert" ? "put back at" : "kept at"} {at(frame)}
-            </Label>
-            <Label x={mx(ghost.x) + ghost.width / 2} y={solidBelow ? ghost.y : ghost.y + ghost.height} below={!solidBelow}>
-              {verdict === "revert" ? `${GHOST[played.actor]} ${at(ghost)}` : `Was at ${at(ghost)}`}
-            </Label>
-          </>
-        ) : (
-          <Label x={fx + frame.width / 2} y={frame.y} strong>
-            Window at {at(frame)} · drag me
-          </Label>
-        )}
+        <PlacedLabel at={screenAt} spec={SPEC.screen} strong />
+        {goneAt && <PlacedLabel at={goneAt} spec={SPEC.gone} />}
+        <PlacedLabel at={zoneAt} spec={SPEC.zone} />
+        {squeezeAt && <PlacedLabel at={squeezeAt} spec={SPEC.squeeze} />}
+        <PlacedLabel at={winAt} spec={winSpec} strong />
+        {ghostAt && ghostSpec && <PlacedLabel at={ghostAt} spec={ghostSpec} />}
         </div>
-        <p className="fact mt-1.5 max-w-[60ch]">The screen is 1920 × 1080. The window stays put while its top-left corner (the dot) is inside the dotted box.</p>
+        <p className="mt-1.5 max-w-[62ch] text-[0.8125rem] leading-snug text-fg/75">
+          <span className="font-semibold text-fg">Drag the window</span> (the block with the four arrows) to move it. The screen is 1920 × 1080. The window stays put while its top-left corner (the dot) is inside the dotted box.
+        </p>
       </div>
 
       {played && verdict ? (
@@ -370,7 +567,7 @@ export default function FrameAuthority() {
           </p>
           <p className="mt-1 text-[0.95rem] text-fg/80">In reach means at least 100 px of the window is over a screen and its top edge is on that screen.</p>
           {preset === "insists" && played.result.rule !== "insists" ? (
-            <p className="fact mt-1">Press “{BUTTON.kwin}” twice more, quickly: the third pull in a row is the window insisting.</p>
+            <p className="text-[0.95rem] leading-snug text-fg/75 mt-1">Press “{BUTTON.kwin}” twice more, quickly: the third pull in a row is the window insisting.</p>
           ) : null}
         </Verdict>
       ) : (
@@ -395,42 +592,42 @@ export default function FrameAuthority() {
         <Fold summary="Why: the six checks">
           {played && detail ? (
             <>
-              <p className="fact">{verdict === "revert" ? "Every check says pull." : "The classifier stopped at the highlighted check."}</p>
+              <p className="text-[0.95rem] leading-snug text-fg/75">{verdict === "revert" ? "Every check says pull." : "The classifier stopped at the highlighted check."}</p>
               <ol className="mt-1 border-t border-fg">
                 {detail.rows.map((row, i) => {
                   const decisive = verdict === "adopt" && i === detail.decided;
                   return (
                     <li key={row.q} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-0.5 py-2 border-b border-border">
-                      <span className="wd-narrow text-[0.95rem] leading-snug">{decisive ? <mark>{row.q}</mark> : row.q}</span>
-                      <span className="wd-narrow text-[0.95rem] font-semibold text-right">
-                        {row.answer === null ? <span className="font-normal text-muted">not asked</span> : decisive ? <mark>{row.answer}</mark> : row.answer}
+                      <span className="text-[0.95rem] leading-snug">{decisive ? <mark>{row.q}</mark> : row.q}</span>
+                      <span className="text-[0.95rem] font-semibold text-right">
+                        {row.answer === null ? <span className="font-normal text-fg/75">not asked</span> : decisive ? <mark>{row.answer}</mark> : row.answer}
                       </span>
-                      <span className="col-span-2 font-mono text-xs leading-snug text-muted [overflow-wrap:anywhere]">{row.numbers}</span>
+                      <span className="col-span-2 font-mono text-xs leading-snug text-fg/75 [overflow-wrap:anywhere]">{row.numbers}</span>
                     </li>
                   );
                 })}
               </ol>
             </>
           ) : (
-            <p className="fact">The checks and the numbers they compare appear here once the move is played.</p>
+            <p className="text-[0.95rem] leading-snug text-fg/75">The checks and the numbers they compare appear here once the move is played.</p>
           )}
         </Fold>
         <Fold summary="More controls">
           <div className="space-y-4">
-            <p id={hintId} className="fact max-w-[60ch]">
+            <p id={hintId} className="text-[0.95rem] leading-snug text-fg/75 max-w-[60ch]">
               Place the window by dragging it, or tab to it and use the arrow keys (Shift: 200 px), or type its place. On a phone a vertical swipe scrolls the page, so use the numbers for the height.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 wd-narrow text-[0.95rem]">
+              <label className="flex items-center gap-2 text-[0.95rem]">
                 x
                 <input type="number" step={STEP} value={frame.x} onChange={(e) => Number.isFinite(e.target.valueAsNumber) && place(e.target.valueAsNumber, frame.y)} className="w-24 min-h-11 sm:min-h-9 border border-fg bg-background px-2 font-mono text-sm" />
               </label>
-              <label className="flex items-center gap-2 wd-narrow text-[0.95rem]">
+              <label className="flex items-center gap-2 text-[0.95rem]">
                 y
                 <input type="number" step={STEP} value={frame.y} onChange={(e) => Number.isFinite(e.target.valueAsNumber) && place(frame.x, e.target.valueAsNumber)} className="w-24 min-h-11 sm:min-h-9 border border-fg bg-background px-2 font-mono text-sm" />
               </label>
             </div>
-            <label className="flex items-center gap-2 min-h-11 sm:min-h-9 wd-narrow text-[0.95rem]">
+            <label className="flex items-center gap-2 min-h-11 sm:min-h-9 text-[0.95rem]">
               <input type="checkbox" className="size-5 accent-[var(--accent)]" checked={scene.gone} onChange={(e) => change({ gone: e.target.checked })} />
               A second screen was just unplugged
             </label>
@@ -447,7 +644,7 @@ export default function FrameAuthority() {
           <div className="space-y-2">
             <Presets label="Test case" items={PRESETS} active={preset} onPick={choose} />
             {chosen && (
-              <p className="fact max-w-[62ch]">
+              <p className="text-[0.95rem] leading-snug text-fg/75 max-w-[62ch]">
                 From <span className="font-mono text-xs">logic.test.js</span>: &ldquo;{chosen.test}&rdquo;.
               </p>
             )}

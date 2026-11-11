@@ -123,7 +123,7 @@ export default function BootstrapPath() {
             </span>
           ))}
         </div>
-        <p className="fact mt-1">
+        <p className="text-[0.95rem] leading-snug text-fg/75 mt-1">
           Bars: how many of the {SAMPLES.toLocaleString("en-US")} reshuffles ended near each {what}. Thick line under them: the middle 95%, {pctText(s.lo * 100, 0)} to {pctText(s.hi * 100, 0)}.
         </p>
       </div>
@@ -150,7 +150,7 @@ export default function BootstrapPath() {
             className="h-11 w-52 max-w-full accent-fg"
           />
         </div>
-        <p className="fact mt-3 mb-1">The real path (thick) and 12 of the reshuffles, growth of 1 on a log scale over {YEARS.toFixed(1)} years</p>
+        <p className="text-[0.95rem] leading-snug text-fg/75 mt-3 mb-1">The real path (thick) and 12 of the reshuffles, growth of 1 on a log scale over {YEARS.toFixed(1)} years</p>
         <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2">
           <div className="relative" aria-hidden="true">
             {pathTicks.map((t) => (
@@ -180,7 +180,7 @@ export default function BootstrapPath() {
           <caption className="sr-only">
             Reshuffles of the weekly backtest path, {SAMPLES} of them, mean piece {block} weeks, seed {seed}
           </caption>
-          <thead className="fact text-left">
+          <thead className="text-[0.95rem] leading-snug text-fg/75 text-left">
             <tr>
               <th scope="col" className="border-b border-fg py-1.5 pr-2 font-normal"><span className="sr-only">Number</span></th>
               <th scope="col" className="border-b border-fg py-1.5 pr-2 font-normal">Real</th>

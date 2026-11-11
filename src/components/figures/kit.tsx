@@ -13,6 +13,9 @@ import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 //   children the stage: Presets, the drawing, the Verdict, then More
 //   caption  one sentence on where the figure stops being the real thing
 //   about    the long provenance, folded
+//
+// Controls: Presets (one-tap scenarios), Segmented (one of a few, as radios),
+// Toggle (one thing on or off, as a switch), QuietAction, Actions.
 
 export function FigureFrame({
   claim,
@@ -124,7 +127,7 @@ export function Segmented<T extends string>({
   };
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-      <span className="fact">{label}</span>
+      <span className="text-[0.95rem] leading-snug text-fg/75">{label}</span>
       <div ref={ref} role="radiogroup" aria-label={label} onKeyDown={onKeyDown} className="flex flex-wrap gap-1.5">
         {options.map((o) => (
           <button
@@ -142,6 +145,44 @@ export function Segmented<T extends string>({
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * One thing that is on or off: a real switch, not a two-option Segmented. The
+ * whole row is the 44 px target, the label sits beside the track and names the
+ * switch, and the track is ink when on (a choice, so never blue or yellow).
+ */
+export function Toggle({
+  label,
+  checked,
+  onChange,
+  hint,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  hint?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="group flex w-full sm:w-auto items-center gap-3 min-h-11 text-left text-[0.95rem] leading-tight outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-[var(--r-chip)]"
+    >
+      <span
+        aria-hidden="true"
+        className="relative inline-block h-6 w-11 shrink-0 rounded-full border-2 border-fg/50 bg-transparent transition-colors duration-[var(--dur-tap)] group-hover:border-fg group-aria-checked:border-fg group-aria-checked:bg-fg"
+      >
+        <span className="absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-fg/60 transition-transform duration-[var(--dur-tap)] group-aria-checked:translate-x-5 group-aria-checked:bg-background" />
+      </span>
+      <span className="text-fg/85 group-aria-checked:text-fg">
+        {label}
+        {hint ? <span className="block text-xs text-fg/75">{hint}</span> : null}
+      </span>
+    </button>
   );
 }
 

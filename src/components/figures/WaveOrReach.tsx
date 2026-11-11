@@ -284,7 +284,7 @@ export default function WaveOrReach() {
         </Lane>
         <Lane label="Phone jolted">
           <Baseline />
-          {shape.jolts.length === 0 && <span className="absolute inset-0 flex items-center text-xs text-muted">no jolt in this timeline</span>}
+          {shape.jolts.length === 0 && <span className="absolute inset-0 flex items-center text-xs text-fg/75">no jolt in this timeline</span>}
           {shape.jolts.map((t, i) => (
             <span key={i} className="absolute inset-y-0 w-0" style={{ left: pct(t) }}>
               <span className={`absolute inset-y-0 -translate-x-1/2 w-2 ${sw.motionGuard ? "bg-fg" : "border-2 border-fg bg-background"}`} />
@@ -305,7 +305,7 @@ export default function WaveOrReach() {
               {b.rule === "arming" ? "first second" : "moved"}
             </span>
           ))}
-          {out.bands.length === 0 && <span className="absolute inset-0 flex items-center text-xs text-muted">nothing is being ignored</span>}
+          {out.bands.length === 0 && <span className="absolute inset-0 flex items-center text-xs text-fg/75">nothing is being ignored</span>}
         </Lane>
         <Lane label="What happened to each wave" height={`${28 + markRows * 18}px`}>
           <Baseline />
@@ -330,7 +330,7 @@ export default function WaveOrReach() {
           ))}
         </Lane>
         <div className={`mt-1 ${LANE}`}>
-          <p className="wd-narrow text-[0.8rem] leading-tight text-muted">Seconds since the ringing began</p>
+          <p className="text-[0.8125rem] leading-tight text-fg/75">Seconds since the ringing began</p>
           <div className="px-3">
             <div className="relative h-5 border-t border-fg">
               {ticks.map((s) => (
@@ -351,7 +351,7 @@ export default function WaveOrReach() {
       {/* Three switches, in plain words. Without JavaScript they have nothing to do, so they are not drawn. */}
       {ready && (
         <div role="group" aria-label="Rules that stop a reach" className="flex flex-wrap items-center gap-x-5 gap-y-0">
-          <span className="fact w-full sm:w-auto">Switch a rule off</span>
+          <span className="text-[0.95rem] leading-snug text-fg/75 w-full sm:w-auto">Switch a rule off</span>
           {RULES.map((r) => (
             <label key={r.key} className="inline-flex items-center gap-2 cursor-pointer min-h-11 sm:min-h-9">
               <input
@@ -361,7 +361,7 @@ export default function WaveOrReach() {
                 onChange={(e) => setSw((s) => ({ ...s, [r.key]: e.target.checked }))}
                 className="appearance-none shrink-0 relative w-10 h-6 rounded-full border-2 border-fg bg-transparent before:absolute before:top-[2px] before:left-[2px] before:size-4 before:rounded-full before:bg-fg before:content-[''] checked:bg-fg checked:before:translate-x-4 checked:before:bg-background"
               />
-              <span className={`fact w-7 ${sw[r.key] ? "" : "!text-fg font-semibold"}`} aria-hidden="true">
+              <span className={`w-7 text-[0.95rem] ${sw[r.key] ? "text-fg/75" : "text-fg font-semibold"}`} aria-hidden="true">
                 {sw[r.key] ? "on" : "off"}
               </span>
               <span className="text-[0.95rem] leading-tight">{r.label}</span>
@@ -393,7 +393,7 @@ export default function WaveOrReach() {
             <Actions>
               <QuietAction onClick={() => edit((s) => s.slice(0, -1))}>Undo</QuietAction>
               <QuietAction onClick={() => edit(() => [])}>Clear</QuietAction>
-              <span className="fact">
+              <span className="text-[0.95rem] leading-snug text-fg/75">
                 {sec(shape.endMs)} of {sec(MAX_BUILD_MS)} built{full ? ", full: undo or clear" : ""}
               </span>
             </Actions>
@@ -410,11 +410,11 @@ export default function WaveOrReach() {
             return (
               <li key={s.rule} className="py-3 border-b border-border">
                 <p className="wd-semi font-bold text-[1.05rem] leading-snug max-w-[44ch]">{s.title}</p>
-                {!on && s.off ? <p className="fact mt-1.5">{s.off(shape.jolts)}</p> : null}
+                {!on && s.off ? <p className="text-[0.95rem] leading-snug text-fg/75 mt-1.5">{s.off(shape.jolts)}</p> : null}
                 {entries.length > 0 && (
                   <ul className="mt-1.5 space-y-1 list-none p-0">
                     {entries.map((e, i) => (
-                      <li key={i} className="fact flex gap-x-2">
+                      <li key={i} className="text-[0.95rem] leading-snug text-fg/75 flex gap-x-2">
                         <span className="font-mono text-xs leading-[1.7] text-fg tabular-nums shrink-0 w-16">{sec(e.atMs)}</span>
                         <span>
                           <strong className="font-semibold text-fg">{logVerb(e)}</strong> {e.text}
@@ -423,7 +423,7 @@ export default function WaveOrReach() {
                     ))}
                   </ul>
                 )}
-                {on && entries.length === 0 && <p className="fact mt-1.5">Nothing to report.</p>}
+                {on && entries.length === 0 && <p className="text-[0.95rem] leading-snug text-fg/75 mt-1.5">Nothing to report.</p>}
               </li>
             );
           })}
@@ -433,21 +433,21 @@ export default function WaveOrReach() {
       {/* The app's property test, in this tab. Open without JavaScript so the build-time result is on the page. */}
       <Fold summary="Check it on random streams" open={!ready}>
         <div className="space-y-3">
-          <p className="fact max-w-[62ch]">
+          <p className="text-[0.95rem] leading-snug text-fg/75 max-w-[62ch]">
             The app tests these rules on random sensor streams rather than ones I would write by hand. This runs a ported copy of that test, with whichever rules are switched on above.
           </p>
           <Verdict tone={stale ? "plain" : broken === 0 ? "ok" : "warn"} title={checkTitle} />
           <dl>
             {PROPERTIES.map((p) => (
               <div key={p.key} className="flex justify-between gap-4 border-b border-border py-1.5">
-                <dt className="fact">{p.label}</dt>
-                <dd className="fact text-fg tabular-nums shrink-0">
+                <dt className="text-[0.95rem] leading-snug text-fg/75">{p.label}</dt>
+                <dd className="text-[0.95rem] leading-snug text-fg/75 text-fg tabular-nums shrink-0">
                   {n(report.failing[p.key])} of {n(report.streams)}
                 </dd>
               </div>
             ))}
           </dl>
-          <p className="fact">
+          <p className="text-[0.95rem] leading-snug text-fg/75">
             Seed {report.seed}, {n(report.streams)} streams of {report.readings} readings, each run with double wave on and off, with the arming delay {report.switches.arming ? "on" : "off"}, the
             motion guard {report.switches.motionGuard ? "on" : "off"} and the single-wave rule {report.switches.singleWaveRule ? "on" : "off"}.
             {report.first ? ` First failure: stream ${report.first.index}, seed ${report.first.seed}.` : ""}
@@ -455,7 +455,7 @@ export default function WaveOrReach() {
           </p>
           {ready && (
             <div className="space-y-2">
-              <label className="fact inline-flex items-center gap-2 min-h-11 sm:min-h-9">
+              <label className="text-[0.95rem] leading-snug text-fg/75 inline-flex items-center gap-2 min-h-11 sm:min-h-9">
                 Seed
                 <input
                   type="number"
@@ -497,7 +497,7 @@ function Baseline() {
 function Lane({ label, height = "20px", children }: { label: string; height?: string; children: ReactNode }) {
   return (
     <div className={`mb-2 sm:mb-1.5 ${LANE}`}>
-      <p className="wd-narrow text-[0.8rem] leading-tight mb-0.5 sm:mb-0 text-fg">{label}</p>
+      <p className="text-[0.8125rem] leading-tight mb-0.5 sm:mb-0 text-fg">{label}</p>
       <div className="px-3">
         <div className="relative" style={{ height }}>
           {children}

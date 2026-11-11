@@ -118,7 +118,7 @@ function Strip({
 }) {
   return (
     <div>
-      <p className="fact pb-1">{title}</p>
+      <p className="text-[0.95rem] leading-snug text-fg/75 pb-1">{title}</p>
       <div role="group" aria-label={`${title}, hex`} className="flex flex-wrap">
         {fields.map((f) => {
           const on = active === f.key;
@@ -127,7 +127,7 @@ function Strip({
             <span key={`${f.key}-${f.start}`} className="contents">
               {f.key.startsWith("val-") && missing.includes(f.key.slice(4) as "r" | "s") && (
                 <span data-missing="true" className="flex flex-col border-l border-dashed border-warn px-1.5 pt-0.5 pb-1 mb-1">
-                  <span className="fact text-[0.75rem] leading-4 whitespace-nowrap text-warn">00 missing</span>
+                  <span className="text-[0.75rem] leading-4 whitespace-nowrap text-warn">00 missing</span>
                   <span className="font-mono text-[0.75rem] leading-5 text-warn">··</span>
                 </span>
               )}
@@ -138,7 +138,7 @@ function Strip({
                 onClick={() => onPin(f.key)}
                 className={`flex max-w-full flex-col border-l border-fg/40 px-1.5 pt-0.5 pb-1 mb-1 cursor-pointer ${on || pad ? "bg-hit text-ink" : ""} ${pad ? "font-semibold" : ""}`}
               >
-                <span aria-hidden="true" className={`fact text-[0.75rem] leading-4 whitespace-nowrap ${on || pad ? "!text-ink" : ""}`}>
+                <span aria-hidden="true" className={`text-[0.75rem] leading-4 whitespace-nowrap ${on || pad ? "text-ink" : "text-fg/75"}`}>
                   {labelOf(f)}
                 </span>
                 <Hex bytes={bytes.subarray(f.start, f.end)} />
@@ -320,10 +320,10 @@ export default function SignatureBytes() {
           setSkipPad(v === "without");
         }}
       />
-      {problem && <p className="fact text-warn">{problem}</p>}
+      {problem && <p className="text-[0.95rem] leading-snug text-fg/75 text-warn">{problem}</p>}
 
       <div>
-        <p className="fact pb-2">
+        <p className="text-[0.95rem] leading-snug text-fg/75 pb-2">
           {signed.source === "browser" ? "Signed just now in this tab by a P-256 key that was made here." : "Test vector from the app's unit test (SshSigTest.kt), shown until this tab signs something."}
         </p>
         <div className="grid gap-x-8 gap-y-4 md:grid-cols-2">
@@ -348,7 +348,7 @@ export default function SignatureBytes() {
         <div className="space-y-4">
           {signed.message && (
             <div>
-              <p className="fact">Signed value, 32 random bytes like a pam_rssh challenge</p>
+              <p className="text-[0.95rem] leading-snug text-fg/75">Signed value, 32 random bytes like a pam_rssh challenge</p>
               <p className="font-mono text-[0.75rem] leading-5 break-all">{toHex(signed.message)}</p>
             </div>
           )}
@@ -372,11 +372,11 @@ export default function SignatureBytes() {
                     >
                       {name}
                     </button>
-                    <span className={`fact ${on ? "!text-ink" : ""}`}>
+                    <span className={`text-[0.95rem] leading-snug text-fg/75 ${on ? "!text-ink" : ""}`}>
                       DER bytes {range(d)}, SSH bytes {range(s)}
                     </span>
                   </p>
-                  <p className={`fact mt-0.5 ${on ? "!text-ink" : ""}`}>
+                  <p className={`text-[0.95rem] leading-snug text-fg/75 mt-0.5 ${on ? "!text-ink" : ""}`}>
                     {NOTE[kind]}
                     {kind === "pad" && w ? padNote(w) : ""}
                   </p>
