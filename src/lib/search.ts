@@ -39,19 +39,20 @@ const STOPWORDS = new Set(
 );
 
 /** Terms whose punctuation is the whole point. Rewritten before splitting. */
+// The C must start a word: "abc++" and "pc#" are not languages. (A captured lead, not a lookbehind.)
 const LITERALS: [RegExp, string][] = [
-  [/c\+\+/g, " cpp "],
-  [/c#/g, " csharp "],
+  [/(^|[^a-z0-9])c\+\+/g, "$1 cpp "],
+  [/(^|[^a-z0-9])c#/g, "$1 csharp "],
   [/\.net\b/g, " dotnet "],
 ];
 
-/** A deliberately small suffix stripper: plurals, -ing, -ed, a trailing e. */
+/**
+ * A deliberately small suffix stripper: -ing and -ed, then plurals, then a trailing e. The order
+ * matters: with plurals first, "bias" lost its s and "biased" did not, so the two never met.
+ */
 export function stem(word: string): string {
   let w = word;
   if (/^\d/.test(w)) return w;
-  if (w.length > 4 && w.endsWith("ies")) w = `${w.slice(0, -3)}y`;
-  else if (w.length > 4 && /(ss|x|z|ch|sh)es$/.test(w)) w = w.slice(0, -2);
-  else if (w.length > 3 && w.endsWith("s") && !/(ss|us|is)$/.test(w)) w = w.slice(0, -1);
 
   const before = w;
   if (w.length > 5 && w.endsWith("ing")) w = w.slice(0, -3);
@@ -59,6 +60,12 @@ export function stem(word: string): string {
   // "running" -> "runn" -> "run"; keep ll/ss/zz ("install", "pass").
   if (w !== before && /([^aeiouylsz])\1$/.test(w)) w = w.slice(0, -1);
 
+  if (w.length > 4 && w.endsWith("ies")) w = `${w.slice(0, -3)}y`;
+  else if (w.length > 4 && /(ss|x|z|ch|sh)es$/.test(w)) w = w.slice(0, -2);
+  else if (w.length > 3 && w.endsWith("s") && !/(ss|us|is)$/.test(w)) w = w.slice(0, -1);
+
+  // Five letters and up. At four, "note" met "not", "time" met "tim" and "page" met "paging":
+  // the judged queries lost relevance, so "tune" and "tuning" stay apart, a known limit.
   if (w.length > 4 && w.endsWith("e")) w = w.slice(0, -1);
   return w;
 }
@@ -72,9 +79,13 @@ export function fold(text: string): string {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-/** Lowercase, fold accents, keep C++/C#/.NET whole, drop thousands separators, split, drop stopwords, stem. */
+/**
+ * Lowercase, fold accents, keep C++/C#/.NET whole, drop thousands separators, split, drop stopwords, stem.
+ * A comma is a thousands separator only before exactly three digits: "50,000" is one number,
+ * "2020,2021" is two.
+ */
 export function tokenize(text: string): string[] {
-  let s = fold(text).toLowerCase().replace(/(\d),(?=\d{3})/g, "$1");
+  let s = fold(text).toLowerCase().replace(/(\d),(?=\d{3}(?:\D|$))/g, "$1");
   for (const [re, to] of LITERALS) s = s.replace(re, to);
   const out: string[] = [];
   for (const raw of s.split(/[^a-z0-9]+/)) {
@@ -89,6 +100,7 @@ export function tokenize(text: string): string[] {
 /** What a visitor may type after kind: and the kinds it selects. */
 export const KIND_ALIASES: Record<string, DocKind[]> = {
   work: ["eBay", "Earlier work"],
+  earlier: ["Earlier work"],
   ebay: ["eBay"],
   project: ["Project"],
   projects: ["Project"],
@@ -108,6 +120,8 @@ export interface ParsedQuery {
   phrases: string[][];
   /** Stems a document must not contain. */
   excluded: string[];
+  /** Quoted phrases after a minus: a document must not contain them adjacent and in order. */
+  excludedPhrases: string[][];
   /** kind: filters, resolved to kinds. Empty means no filter. */
   kinds: DocKind[];
   /** tech: filters, stemmed. A document's keywords must contain each. */
@@ -119,8 +133,17 @@ export interface ParsedQuery {
 }
 
 export function parseQuery(query: string): ParsedQuery {
-  const parsed: ParsedQuery = { terms: [], phrases: [], excluded: [], kinds: [], tech: [], unknownKinds: [], stillTyping: false };
+  const parsed: ParsedQuery = { terms: [], phrases: [], excluded: [], excludedPhrases: [], kinds: [], tech: [], unknownKinds: [], stillTyping: false };
   let rest = query;
+
+  // -"a phrase" excludes the phrase. It is read before the plain quotes, or the minus would be left behind
+  // and the phrase would be required instead of removed.
+  rest = rest.replace(/(^|\s)-"([^"]*)"?/g, (_, lead: string, phrase: string) => {
+    const stems = tokenize(phrase);
+    if (stems.length === 1) parsed.excluded.push(stems[0]);
+    else if (stems.length > 1) parsed.excludedPhrases.push(stems);
+    return `${lead} `;
+  });
 
   rest = rest.replace(/"([^"]*)"?/g, (_, phrase: string) => {
     const stems = tokenize(phrase);
@@ -511,6 +534,7 @@ export function search(index: SearchIndex, query: string, config: RankerConfig =
   for (const [i, terms] of candidates) {
     const doc = index.docs[i];
     if (parsed.excluded.some((t) => index.postings.get(t)?.has(i))) continue;
+    if (parsed.excludedPhrases.some((p) => containsPhrase(index.sequences[i], p))) continue;
     if (!parsed.tech.every((t) => index.keywordStems[i].has(t))) continue;
     const phrases = parsed.phrases.filter((p) => containsPhrase(index.sequences[i], p)).length;
     if (phrases < parsed.phrases.length) continue;
@@ -588,8 +612,32 @@ export function snippet(text: string, stems: Iterable<string>, max = 230): strin
     out += s;
   }
   out = out.trim();
-  if (out.length > max) out = `${out.slice(0, out.lastIndexOf(" ", max)).replace(/[,;:]$/, "")}…`;
-  return first > 0 ? `… ${out}` : out;
+  let lead = first > 0;
+  if (out.length > max) {
+    // One sentence longer than the window: start a little before its first matched word, so the
+    // match is in what is shown. Without this a match 300 characters in was cut off and the row
+    // showed no reason for being there.
+    let from = 0;
+    for (const m of out.matchAll(WORD)) {
+      if (tokenize(m[0]).some((t) => set.has(t))) {
+        const at = m.index ?? 0;
+        if (at + m[0].length > max) {
+          const back = out.lastIndexOf(" ", Math.max(0, at - Math.floor(max / 3)));
+          from = back > 0 ? back + 1 : 0;
+        }
+        break;
+      }
+    }
+    if (from > 0) {
+      out = out.slice(from);
+      lead = true;
+    }
+    if (out.length > max) {
+      const cut = out.lastIndexOf(" ", max);
+      out = `${out.slice(0, cut > 0 ? cut : max).replace(/[,;:]$/, "")}…`;
+    }
+  }
+  return lead ? `… ${out}` : out;
 }
 
 // ─── The score, as shown ────────────────────────────────────────────────────
@@ -597,8 +645,32 @@ export function snippet(text: string, stems: Iterable<string>, max = 230): strin
 /** A multiplier as a reader would write it: 1.625, not 1.63, so the line multiplies back. */
 export const factor = (n: number) => String(+n.toFixed(3));
 
+/**
+ * `n` printed with the fewest decimals, from `min` up, at which `holds` is true of the printed
+ * number. This is how a displayed line is made to multiply back by hand. A base of 2.971 times a
+ * static rank of 0.85 is 2.52535, which a reader rounds to 2.53 while the score shown is 2.52; the
+ * loop prints one more decimal of the base until the reader's product rounds to the score.
+ */
+/**
+ * True when `product`, rounded by hand to two decimals, is `total`. A product that ends exactly on a
+ * five (0.425) does not count: a reader rounds it up, the machine's binary 0.425 rounds down.
+ */
+function roundsTo(product: number, total: string): boolean {
+  const cents = product * 100;
+  if (Math.abs(cents - Math.floor(cents) - 0.5) < 1e-6) return false;
+  return product.toFixed(2) === total;
+}
+
+function fewestDecimals(n: number, min: number, holds: (printed: number) => boolean): string {
+  for (let d = min; d <= 10; d++) {
+    const printed = n.toFixed(d);
+    if (holds(Number(printed))) return printed;
+  }
+  return n.toFixed(10);
+}
+
 export interface ScoreLine {
-  /** The sum over terms, to three decimals; "1" for a hit listed by a filter alone. */
+  /** The sum over terms, to three decimals or as many more as the line needs; "1" for a hit listed by a filter alone. */
   base: string;
   /** True when no term scored and the filters alone listed the document: its base is 1. */
   listedByFilter: boolean;
@@ -606,11 +678,14 @@ export interface ScoreLine {
   factors: { label: string; value: string }[];
   /** The score, to two decimals. */
   total: string;
+  /** False only for a filter-only hit whose exact multipliers cannot land on the rounded score (0.425 is 0.42 or 0.43). */
+  exact: boolean;
 }
 
 /**
  * The line under a result: base x factors = score, every number as it is printed, so the line can be
- * multiplied by hand. (A filter-only hit has no terms; its base is 1, as `search` computes it.)
+ * multiplied by hand and rounds to the score shown. (A filter-only hit has no terms; its base is 1,
+ * as `search` computes it.)
  */
 export function scoreLine(hit: SearchHit): ScoreLine {
   const { terms, prior, phrases } = hit.explain;
@@ -619,5 +694,27 @@ export function scoreLine(hit: SearchHit): ScoreLine {
   const factors: ScoreLine["factors"] = [];
   if (prior !== 1) factors.push({ label: "static rank", value: factor(prior) });
   if (phrases > 0) factors.push({ label: "phrase", value: factor(PHRASE_BONUS ** phrases) });
-  return { base: listedByFilter ? "1" : sum.toFixed(3), listedByFilter, factors, total: hit.score.toFixed(2) };
+  const total = hit.score.toFixed(2);
+  const rest = factors.reduce((p, f) => p * Number(f.value), 1);
+  const lands = (base: number) => roundsTo(base * rest, total);
+  const base = listedByFilter ? "1" : fewestDecimals(sum, 3, lands);
+  return { base, listedByFilter, factors, total, exact: lands(Number(base)) };
+}
+
+export interface TermLine {
+  weight: string;
+  idf: string;
+  /** How much the term's count adds once damped: score / (weight x idf), from the numbers as printed. */
+  saturation: string;
+  score: string;
+}
+
+/** One term's row as printed: weight x idf x saturation = score, and the three printed factors round to the printed score. */
+export function termLine(t: TermScore): TermLine {
+  const weight = factor(t.weight);
+  const idf = t.idf.toFixed(2);
+  const score = t.score.toFixed(2);
+  const shown = Number(weight) * Number(idf);
+  const saturation = fewestDecimals(t.score / shown, 2, (sat) => roundsTo(shown * sat, score));
+  return { weight, idf, saturation, score };
 }

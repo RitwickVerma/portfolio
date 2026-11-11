@@ -104,6 +104,8 @@ export default function InfiniteCanvas() {
     if (m) {
       e.preventDefault();
       setCam((c) => clamp({ ...c, x: c.x + m[0], y: c.y + m[1] }, size));
+    } else if (e.ctrlKey || e.metaKey) {
+      // Ctrl or Cmd with + and - is the browser's own zoom; leave it alone.
     } else if (e.key === "+" || e.key === "=") zoomBy(1.2);
     else if (e.key === "-") zoomBy(1 / 1.2);
   };
@@ -120,7 +122,8 @@ export default function InfiniteCanvas() {
         aria-label="An infinite canvas of windows. Drag or use the arrow keys to move the camera; plus and minus zoom."
         onKeyDown={onKeyDown}
         onPointerDown={(e) => {
-          if (e.button !== 0) return;
+          // The first pointer down owns the drag; a second finger does not take it over.
+          if (e.button !== 0 || drag.current) return;
           e.currentTarget.setPointerCapture(e.pointerId);
           drag.current = { id: e.pointerId, px: e.clientX, py: e.clientY, cx: cam.x, cy: cam.y };
         }}
@@ -129,8 +132,12 @@ export default function InfiniteCanvas() {
           if (!d || d.id !== e.pointerId) return;
           setCam((c) => clamp({ ...c, x: d.cx - (e.clientX - d.px) / c.zoom, y: d.cy - (e.clientY - d.py) / c.zoom }, size));
         }}
-        onPointerUp={() => (drag.current = null)}
-        onPointerCancel={() => (drag.current = null)}
+        onPointerUp={(e) => {
+          if (drag.current && drag.current.id === e.pointerId) drag.current = null;
+        }}
+        onPointerCancel={(e) => {
+          if (drag.current && drag.current.id === e.pointerId) drag.current = null;
+        }}
         className="relative h-[19rem] sm:h-[22rem] overflow-hidden border-2 border-fg rounded-[var(--r-box)] bg-surface cursor-grab active:cursor-grabbing touch-pan-y select-none outline-none focus-visible:border-accent"
         style={{
           backgroundImage: "radial-gradient(rgb(var(--fg-rgb) / 0.22) 1px, transparent 1px)",

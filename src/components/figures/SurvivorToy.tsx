@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useId, useMemo, useState } from "react";
 import { Actions, FigureFrame, Fold, Presets, QuietAction, Verdict } from "./kit";
-import { pctText } from "@/lib/plutusResults";
+import { UNIVERSES, gap, pctText } from "@/lib/plutusResults";
 import { TOY, makeWorld, runToy, averageOver, type Universe } from "@/lib/survivorship";
 
 // A synthetic market you can run. 300 invented stocks with identical odds, a
@@ -10,6 +10,8 @@ import { TOY, makeWorld, runToy, averageOver, type Universe } from "@/lib/surviv
 // Seeded, so the same inputs draw the same picture.
 
 const WORLDS = 20;
+/** The real gap the toy is compared with: today's members against members as they stood, from the result rows. */
+const REAL_GAP = gap(UNIVERSES.find((u) => u.id === "today")!, UNIVERSES.find((u) => u.id === "then")!);
 const PRESETS: ReadonlyArray<{ id: Universe; label: string }> = [
   { id: "survivors", label: "Only stocks still listed today" },
   { id: "then", label: "Everyone who existed then" },
@@ -65,7 +67,7 @@ export default function SurvivorToy() {
             is four times as likely to be delisted (dropped from the market, usually after failing) as a healthy one, and the delisting month is a flat −40%. The rule is the repo&apos;s idea in spirit, not its code or data: each month buy the{" "}
             {TOY.picks} stocks that rose most from 12 months ago to one month ago, equal amounts, no costs. There is no index membership.
           </p>
-          <p>Seed {seed}. The numbers in the sentence are the mean of {WORLDS} worlds (seeds {seed} to {seed + WORLDS - 1}) so one lucky draw cannot stand for the rule. At the top of the slider the toy reaches a gap smaller than the real 18.2 points.</p>
+          <p>Seed {seed}. The numbers in the sentence are the mean of {WORLDS} worlds (seeds {seed} to {seed + WORLDS - 1}) so one lucky draw cannot stand for the rule. At the top of the slider the toy reaches a gap smaller than the real {REAL_GAP.toFixed(1)} points.</p>
         </>
       }
     >
@@ -106,7 +108,9 @@ export default function SurvivorToy() {
       </div>
       <Verdict tone={universe === "survivors" ? (edge > 1 ? "warn" : "plain") : Math.abs(edge) < 1 ? "ok" : "plain"} title={`${universe === "survivors" ? "Surviving stocks only" : "Everyone who existed"}: ${pctText(pick * 100)} a year, the market ${pctText(mean.market * 100)}.`}>
         {universe === "survivors"
-          ? `No stock here has better odds than another, so the extra ${edge.toFixed(1)} points a year is the list's doing: the rule never held a company that later disappeared.`
+          ? edge > 1
+            ? `No stock here has better odds than another, so the extra ${edge.toFixed(1)} points a year is the list's doing: the rule never held a company that later disappeared.`
+            : `With this few stocks disappearing, the surviving list is nearly the whole market, and the rule is ${Math.abs(edge).toFixed(1)} points from it: there is almost nothing for the list to hide.`
           : Math.abs(edge) < 1
             ? "With the whole market to choose from, the rule earns about what the market does, which is what a rule with nothing to find should do."
             : `With the whole market to choose from, the rule is ${Math.abs(edge).toFixed(1)} points from the market, far less than the survivors-only list gave it.`}{" "}

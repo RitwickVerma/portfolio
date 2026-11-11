@@ -553,7 +553,7 @@ export default function FrameAuthority() {
         {ghostAt && ghostSpec && <PlacedLabel at={ghostAt} spec={ghostSpec} />}
         </div>
         <p className="mt-1.5 max-w-[62ch] text-[0.8125rem] leading-snug text-fg/75">
-          <span className="font-semibold text-fg">Drag the window</span> (the block with the four arrows) to move it. The screen is 1920 × 1080. The window stays put while its top-left corner (the dot) is inside the dotted box.
+          <span className="font-semibold text-fg">Drag the window</span> (the block with the four arrows) to move it. The screen is {MONITOR.width} × {MONITOR.height}. The window stays put while its top-left corner (the dot) is inside the dotted box.
         </p>
       </div>
 

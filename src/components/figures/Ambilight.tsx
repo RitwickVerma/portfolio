@@ -162,10 +162,20 @@ export default function Ambilight({ note = false }: { note?: boolean }) {
         last = 0;
         return;
       }
-      if (now - last < 1000 / FPS) return;
-      // Advance by the time actually played, so the film resumes where it stopped.
-      if (last > 0) filmTime.current += (now - last) / 1000;
-      last = now;
+      if (last === 0) {
+        last = now;
+        paint(filmTime.current);
+        return;
+      }
+      const frame = 1000 / FPS;
+      if (now - last < frame) return;
+      // Advance by whole frames and keep the remainder. Setting `last = now` instead would wait
+      // for the first display refresh after each frame was due: three refreshes on a 60 Hz
+      // screen, which is 20 frames a second and not the 24 the caption says.
+      const frames = Math.floor((now - last) / frame);
+      last += frames * frame;
+      // The film moves by the time actually played, so it resumes where it stopped.
+      filmTime.current += (frames * frame) / 1000;
       paint(filmTime.current);
     };
     raf = requestAnimationFrame(tick);

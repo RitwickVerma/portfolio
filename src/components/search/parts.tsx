@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import {
-  highlight, snippet, tokenize, scoreLine,
+  highlight, snippet, tokenize, scoreLine, termLine,
   type DocKind, type ParsedQuery, type PlanTerm, type SearchDoc, type SearchHit, type SearchIndex,
 } from "@/lib/search";
 
@@ -63,6 +63,12 @@ export function PlanChips({ plan, parsed }: { plan: PlanTerm[]; parsed: ParsedQu
           <span className="sr-only"> document{t.df === 1 ? "" : "s"}</span>
         </li>
       ))}
+      {parsed.excludedPhrases.map((p) => (
+        <li key={`-"${p.join(" ")}"`} className="term" data-source="excluded" title={`Documents containing the phrase ${p.join(" ")} are removed`}>
+          <span className="sr-only">Excluded phrase: </span>
+          <span className="term-t">{p.join(" ")}</span>
+        </li>
+      ))}
       {parsed.excluded.map((t) => (
         <li key={`-${t}`} className="term" data-source="excluded" title={`Documents containing ${t} are removed`}>
           <span className="sr-only">Excluded: </span>
@@ -118,8 +124,8 @@ export function Explain({ hit }: { hit: SearchHit }) {
                   <span className="fact">{found(t)}</span>
                 </p>
                 <p className="mt-1 font-mono text-[0.7rem] leading-relaxed">
-                  {t.weight.toFixed(2)} <span className="text-muted">weight</span> × {t.idf.toFixed(2)} <span className="text-muted">idf</span> ×{" "}
-                  {(t.score / (t.weight * t.idf)).toFixed(2)} <span className="text-muted">saturation</span> = <span className="font-bold">{t.score.toFixed(2)}</span>
+                  {termLine(t).weight} <span className="text-muted">weight</span> × {termLine(t).idf} <span className="text-muted">idf</span> ×{" "}
+                  {termLine(t).saturation} <span className="text-muted">saturation</span> = <span className="font-bold">{termLine(t).score}</span>
                 </p>
                 <div className="mt-1 h-2 bg-fg/10" aria-hidden="true">
                   <div className="h-full bg-fg" style={{ width: `${Math.max(3, (t.score / sum) * 100)}%` }} />
@@ -159,11 +165,11 @@ export function Explain({ hit }: { hit: SearchHit }) {
           </table>
         </div>
       )}
-      {/* Every number is printed as the engine holds it to three decimals, so the line multiplies back by hand. */}
+      {/* The base is printed to three decimals, or to as many more as it takes for the line to round to the score when multiplied by hand. */}
       <p className="mt-2 pt-2 border-t border-fg font-mono text-[0.7rem] leading-relaxed">
         {line.base}
         {line.listedByFilter ? " (listed by the filter)" : ""}
-        {line.factors.map((f) => ` × ${f.value} ${f.label}`).join("")} = <span className="font-bold">{line.total}</span>
+        {line.factors.map((f) => ` × ${f.value} ${f.label}`).join("")} {line.exact ? "=" : "≈"} <span className="font-bold">{line.total}</span>
       </p>
     </div>
   );

@@ -227,7 +227,7 @@ export default function WaveOrReach() {
   const broken = PROPERTIES.reduce((n, p) => n + (report.failing[p.key] > 0 ? 1 : 0), 0);
   const n = (x: number) => x.toLocaleString("en-US");
   const found = PROPERTIES.filter((p) => report.failing[p.key] > 0).map((p) => `${n(report.failing[p.key])} of ${n(report.streams)} streams`);
-  const checkSentence = broken === 0 ? `No stream broke a rule: ${n(report.streams)} random streams, 0 violations` : `${broken} of 4 rules broken by random streams: ${found.join(", ")}`;
+  const checkSentence = broken === 0 ? `No stream broke a rule: ${n(report.streams)} random streams, 0 violations` : `${broken} of ${PROPERTIES.length} checks failed on random streams: ${found.join(", ")}`;
   // A result belongs to the switches it ran with; once they move, say so before the sentence.
   const checkTitle = stale ? `Before the switches changed: ${checkSentence.charAt(0).toLowerCase()}${checkSentence.slice(1)}` : checkSentence;
   const entriesFor = (rule: Rule) => out.entries.filter((e) => e.rule === rule);

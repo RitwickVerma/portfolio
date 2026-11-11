@@ -29,7 +29,7 @@ const DEMO_KEY_MS = 95;
 /** kind: value that selects exactly this facet. */
 const FACET_FILTER: Record<DocKind, string> = {
   eBay: "ebay",
-  "Earlier work": "work",
+  "Earlier work": "earlier",
   Project: "project",
   Note: "note",
   Homelab: "lab",
@@ -357,7 +357,7 @@ export default function Search() {
         )}
         {result && result.parsed.unknownKinds.length > 0 && (
           <p className="pb-3 text-[0.95rem] text-warn">
-            There is no kind called {result.parsed.unknownKinds.join(", ")}. Try work, ebay, project, note, lab or skills.
+            There is no kind called {result.parsed.unknownKinds.join(", ")}. Try work, ebay, earlier, project, note, lab, skills, education or page.
           </p>
         )}
 

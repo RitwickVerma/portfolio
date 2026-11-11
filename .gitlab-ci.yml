@@ -32,6 +32,8 @@ e2e:
   script:
     - npm ci --prefer-offline
     - npm run build
+    # Every page's title, description, canonical, card and structured data, read from the export.
+    - node tools/seo-audit.mjs
     - npm run test:e2e
   artifacts:
     when: on_failure

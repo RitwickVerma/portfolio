@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { search, parseQuery, factor, CONTROL, TREATMENT, FUZZY_WEIGHT, PHRASE_BONUS, PREFIX_WEIGHT, REWRITE_WEIGHT, type SearchHit } from "@/lib/search";
+import { search, parseQuery, scoreLine, factor, CONTROL, TREATMENT, FUZZY_WEIGHT, PHRASE_BONUS, PREFIX_WEIGHT, REWRITE_WEIGHT, type SearchHit } from "@/lib/search";
 import { useSearchIndex } from "@/lib/useSearchIndex";
 import { CorpusMap, PlanChips } from "@/components/search/parts";
 
@@ -99,7 +99,7 @@ export default function XRay() {
 
   const controlRank = new Map(control.hits.map((h, i) => [h.doc.id, i + 1]));
   const best = treatment.hits[0]?.score ?? 1;
-  const filtered = parsed.excluded.length > 0 || parsed.kinds.length > 0 || parsed.tech.length > 0;
+  const filtered = parsed.excluded.length > 0 || parsed.excludedPhrases.length > 0 || parsed.kinds.length > 0 || parsed.tech.length > 0;
 
   return (
     <div>
@@ -153,11 +153,13 @@ export default function XRay() {
               ))}
             </ul>
           )}
-          {(parsed.phrases.length > 0 || parsed.excluded.length > 0 || parsed.kinds.length > 0 || parsed.tech.length > 0) && (
+          {(parsed.phrases.length > 0 || parsed.excluded.length > 0 || parsed.excludedPhrases.length > 0 || parsed.kinds.length > 0 || parsed.tech.length > 0) && (
             <p className="fact mt-3">
               {[
-                parsed.phrases.length > 0 ? `${parsed.phrases.length} phrase${parsed.phrases.length > 1 ? "s" : ""} (${parsed.phrases.map((p) => `“${p.join(" ")}”`).join(", ")}) must appear word for word` : "",
-                parsed.excluded.length > 0 ? `documents with ${parsed.excluded.join(", ")} are removed` : "",
+                parsed.phrases.length > 0 ? `${parsed.phrases.length} phrase${parsed.phrases.length > 1 ? "s" : ""} (${parsed.phrases.map((p) => `“${p.join(" ")}”`).join(", ")}) must appear with its words next to each other and in order (small words such as “of” are ignored)` : "",
+                parsed.excluded.length + parsed.excludedPhrases.length > 0
+                  ? `documents with ${[...parsed.excluded, ...parsed.excludedPhrases.map((p) => `“${p.join(" ")}”`)].join(", ")} are removed`
+                  : "",
                 parsed.kinds.length > 0 ? `only ${parsed.kinds.join(" and ")} documents` : "",
                 parsed.tech.length > 0 ? `only stacks listing ${parsed.tech.join(", ")}` : "",
               ]
@@ -238,7 +240,7 @@ export default function XRay() {
                         {h.explain.terms.length === 0 && <span className="h-full flex-1 bg-fg" title="Listed because it matches the filter" />}
                       </div>
                       <p className="font-mono text-[0.7rem] text-muted mt-1">
-                        {h.explain.terms.length === 0 ? "filter only, base 1" : sum.toFixed(3)}
+                        {h.explain.terms.length === 0 ? "filter only, base 1" : scoreLine(h).base}
                         {h.explain.prior !== 1 ? ` × ${factor(h.explain.prior)} static rank` : ""}
                         {h.explain.phrases > 0 ? ` × ${factor(PHRASE_BONUS ** h.explain.phrases)} phrase` : ""}
                       </p>

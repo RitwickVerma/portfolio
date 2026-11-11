@@ -176,3 +176,13 @@ describe("the real rows", () => {
     expect([...cagr].sort((a, b) => a - b)).toEqual(cagr);
   });
 });
+
+describe("review: the bootstrap's drawdown is the source's", () => {
+  it("a loss in the first period is not a drawdown, as in the repo's metrics.py", async () => {
+    const { pathStats } = await import("./bootstrap");
+    // equity 0.8, 0.88, 0.924: it only rises from its first recorded value.
+    expect(pathStats([-0.2, 0.1, 0.05], 1).maxDrawdown).toBe(0);
+    // equity 1.1, 0.88, 0.968: down 20% from the peak of 1.1.
+    expect(pathStats([0.1, -0.2, 0.1], 1).maxDrawdown).toBeCloseTo(-0.2, 12);
+  });
+});

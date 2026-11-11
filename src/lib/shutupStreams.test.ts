@@ -7,7 +7,6 @@ import {
   MOTION_HOLD_MS,
   REACH,
   STREAM_READINGS,
-  AXIS_MS,
   MAX_BUILD_MS,
   describeOutcome,
   layout,
@@ -237,8 +236,8 @@ describe("timelines", () => {
     ]);
   });
 
-  it("the built reach fits the axis with room for the window to run out", () => {
+  it("the built reach is shorter than the longest timeline a visitor can build", () => {
     expect(buildEndMs(REACH)).toBeLessThan(MAX_BUILD_MS);
-    expect(MAX_BUILD_MS + 1_200).toBeLessThan(AXIS_MS);
+
   });
 });

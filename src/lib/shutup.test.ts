@@ -736,3 +736,13 @@ describe("the single-wave rule", () => {
     expect(ringingConfig({ singleWave: "none", doubleWave: "none", doubleWaveWindowMs: 1200 }).waves).toBe(false);
   });
 });
+
+describe("review: the hinge takes a float, as the Kotlin does", () => {
+  it("89.99999999 degrees is 90f and arms", () => {
+    const events: string[] = [];
+    const hinge = new HingeDetector((e) => events.push(e));
+    hinge.onAngle(89.99999999);
+    hinge.onAngle(10);
+    expect(events).toEqual(["closed"]);
+  });
+});

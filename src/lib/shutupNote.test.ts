@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { getNote } from "./notes";
 import { noteSource, noteWordCount } from "./notes.server";
+import { ALL_ON, REACH, layout, replay, sec } from "./shutupStreams";
 
 // The brief for the ShutUp note, as checks: figure first, short, plain title, no serial comma.
 const SLUG = "shutup-wave-or-reach";
@@ -43,7 +44,14 @@ describe("the ShutUp note", () => {
 
   it("states the numbers the figure computes", () => {
     // Switch the single-wave rule off and the reach answers at 1.20 s, before the grab at 1.35 s.
-    expect(prose).toContain("answers at 1.20 s, before the grab at 1.35 s");
+    // Both numbers are computed here from the port, so a change to the detectors fails this test.
+    const off = replay(REACH, { ...ALL_ON, singleWaveRule: false });
+    expect(off.outcome.kind).toBe("answered");
+    const answeredAt = off.outcome.kind === "answered" ? off.outcome.atMs : -1;
+    const grabAt = layout(REACH).jolts[0];
+    expect(answeredAt).toBeLessThan(grabAt);
+    expect(prose).toContain(`answers at ${sec(answeredAt)}, before the grab at ${sec(grabAt)}`);
+    expect(replay(REACH, ALL_ON).outcome.kind).not.toBe("answered");
     expect(prose).toContain("0.8 s");
     expect(prose).toContain("1.8 m/s²");
     expect(prose).toContain("3 m/s²");

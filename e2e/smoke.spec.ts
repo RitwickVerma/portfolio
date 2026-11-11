@@ -70,6 +70,18 @@ for (const { name, path } of PAGES) {
         const { scroll, client, widest } = await sidewaysOverflow(page);
         expect(scroll, `page scrolls sideways; widest element: ${widest}`).toBeLessThanOrEqual(client);
         expect(widest, "an element pokes out of the viewport").toBe("");
+        // Again with every fold open: what is folded away has no width until it is opened, so the
+        // first pass cannot see a table or a row of controls that is too wide.
+        const folds = await page.evaluate(() => {
+          const all = [...document.querySelectorAll("details")];
+          all.forEach((d) => (d.open = true));
+          return all.length;
+        });
+        if (folds > 0) {
+          const open = await sidewaysOverflow(page);
+          expect(open.scroll, `with folds open the page scrolls sideways; widest element: ${open.widest}`).toBeLessThanOrEqual(open.client);
+          expect(open.widest, "with folds open an element pokes out of the viewport").toBe("");
+        }
       });
     }
 
@@ -118,8 +130,11 @@ test.describe("note figures: type", () => {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(path);
       await page.waitForLoadState("networkidle");
-      const bad = await page.evaluate(() => {
+      // A note whose figure failed to load has no text to measure and would pass empty.
+      await expect(page.locator("main figure").first()).toBeVisible();
+      const { bad, measured } = await page.evaluate(() => {
         const out: string[] = [];
+        let measured = 0;
         // The folds hold tables and controls too.
         document.querySelectorAll("figure details").forEach((d) => ((d as HTMLDetailsElement).open = true));
         for (const fig of document.querySelectorAll("figure")) {
@@ -130,6 +145,7 @@ test.describe("note figures: type", () => {
             if (!text || !el || el.closest(".sr-only")) continue;
             const r = el.getBoundingClientRect();
             if (r.width === 0 || r.height === 0 || getComputedStyle(el).visibility === "hidden") continue;
+            measured += 1;
             let px = parseFloat(getComputedStyle(el).fontSize);
             const svg = el.closest("svg");
             if (svg && el instanceof SVGGraphicsElement) {
@@ -141,8 +157,9 @@ test.describe("note figures: type", () => {
             if (el.closest(".fact") && !el.closest("button") && text.split(/\s+/).length > 6) out.push(`condensed sentence: ${text.slice(0, 50)}`);
           }
         }
-        return out;
+        return { bad: out, measured };
       });
+      expect(measured, "pieces of figure text measured").toBeGreaterThan(10);
       expect(bad).toEqual([]);
     });
   }
@@ -269,9 +286,12 @@ test.describe("the frame-authority figure", () => {
               if (l.r.left < o.r.right && o.r.left < l.r.right && l.r.top < o.r.bottom && o.r.top < l.r.bottom) bad.push(`${l.t} overlaps ${o.t}`);
             });
           });
-          return bad;
+          return { bad, labels: labels.length, edges: edges.length };
         });
-        expect(found, name).toEqual([]);
+        // The check must have had something to check: a renamed class would otherwise pass it empty.
+        expect(found.labels, `${name}: labels found`).toBeGreaterThan(1);
+        expect(found.edges, `${name}: lines found`).toBeGreaterThan(3);
+        expect(found.bad, name).toEqual([]);
       }
     });
   }
