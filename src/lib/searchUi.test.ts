@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SHOWN, SHOWN_PHONE, rowsInView, nextSelection, firstRevealed, reselect } from "./searchUi";
+import { SHOWN, SHOWN_PHONE, rowsInView, nextSelection, firstRevealed, reselect, takesCompletion } from "./searchUi";
 
 describe("rowsInView: the rows a visitor can actually see", () => {
   it("a phone shows three before Show all, a wide screen six, and Show all shows every one", () => {
@@ -53,5 +53,38 @@ describe("reselect: a selection survives a re-rank", () => {
     expect(reselect(["a", "b"], "z", 2)).toBe(-1);
     expect(reselect(["a", "b", "c", "d"], "d", 3)).toBe(-1);
     expect(reselect(["a", "b"], null, 2)).toBe(-1);
+  });
+});
+
+describe("takesCompletion: Tab or ArrowRight at the end of the box", () => {
+  const end = { start: 4, end: 4, length: 4 };
+  it("takes the first completion from the end of the text", () => {
+    expect(takesCompletion("Tab", end, 3)).toBe(true);
+    expect(takesCompletion("ArrowRight", end, 1)).toBe(true);
+  });
+
+  it("leaves every other key, and every other caret, alone", () => {
+    expect(takesCompletion("Enter", end, 3)).toBe(false);
+    expect(takesCompletion("ArrowLeft", end, 3)).toBe(false);
+    expect(takesCompletion("Tab", { start: 2, end: 2, length: 4 }, 3)).toBe(false);
+    expect(takesCompletion("Tab", { start: 0, end: 4, length: 4 }, 3)).toBe(false);
+    expect(takesCompletion("Tab", { start: null, end: null, length: 4 }, 3)).toBe(false);
+  });
+
+  it("does nothing with nothing offered, so Tab still leaves the box", () => {
+    expect(takesCompletion("Tab", end, 0)).toBe(false);
+  });
+
+  it("Shift+Tab and shortcuts keep their meaning, and so does a keystroke inside an IME composition", () => {
+    expect(takesCompletion("Tab", end, 3, { shift: true })).toBe(false);
+    expect(takesCompletion("ArrowRight", end, 3, { ctrl: true })).toBe(false);
+    expect(takesCompletion("ArrowRight", end, 3, { alt: true })).toBe(false);
+    expect(takesCompletion("ArrowRight", end, 3, { meta: true })).toBe(false);
+    expect(takesCompletion("Tab", end, 3, { composing: true })).toBe(false);
+  });
+
+  it("yields to a result row the visitor has arrowed to", () => {
+    expect(takesCompletion("Tab", end, 3, {}, 2)).toBe(false);
+    expect(takesCompletion("Tab", end, 3, {}, -1)).toBe(true);
   });
 });

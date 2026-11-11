@@ -218,12 +218,23 @@ export function fold(text: string): string {
  * "2020,2021" is two.
  */
 export function tokenize(text: string): string[] {
+  return analyze(text).map((t) => t.term);
+}
+
+/** A word as the page spells it (accents folded, lowercased) and the term it indexes as. */
+export interface Analyzed {
+  word: string;
+  term: string;
+}
+
+/** `tokenize`, keeping each term's surface word: what the index needs to offer a completion as a word, not a stem. */
+export function analyze(text: string): Analyzed[] {
   let s = fold(text).toLowerCase().replace(/(\d),(?=\d{3}(?:\D|$))/g, "$1");
   for (const [re, to] of LITERALS) s = s.replace(re, to);
-  const out: string[] = [];
+  const out: Analyzed[] = [];
   for (const raw of s.split(/[^a-z0-9]+/)) {
     if (!raw || STOPWORDS.has(raw)) continue;
-    out.push(stem(raw));
+    out.push({ word: raw, term: stem(raw) });
   }
   return out;
 }
@@ -434,6 +445,8 @@ export interface SearchIndex {
   keywordStems: Set<string>[];
   /** Sorted vocabulary, for prefix and fuzzy expansion. */
   terms: string[];
+  /** term -> the words that were indexed as it, commonest first (ties alphabetically): the surface of a stem. */
+  forms: Map<string, string[]>;
 }
 
 export function buildIndex(docs: SearchDoc[]): SearchIndex {
@@ -441,13 +454,18 @@ export function buildIndex(docs: SearchDoc[]): SearchIndex {
   const lengths: FieldTf[] = [];
   const sequences: (string | null)[][] = [];
   const keywordStems: Set<string>[] = [];
+  const spelt = new Map<string, Map<string, number>>();
 
   docs.forEach((doc, i) => {
     const length: FieldTf = [0, 0, 0];
     const sequence: (string | null)[] = [];
     const add = (text: string, field: 0 | 1 | 2) => {
-      const tokens = tokenize(text);
-      for (const term of tokens) {
+      const analysed = analyze(text);
+      const tokens = analysed.map((t) => t.term);
+      for (const { word, term } of analysed) {
+        let seen = spelt.get(term);
+        if (!seen) spelt.set(term, (seen = new Map()));
+        seen.set(word, (seen.get(word) ?? 0) + 1);
         let p = postings.get(term);
         if (!p) postings.set(term, (p = new Map()));
         let tf = p.get(i);
@@ -470,7 +488,10 @@ export function buildIndex(docs: SearchDoc[]): SearchIndex {
     keywordStems.push(kw);
   });
 
-  return { docs, postings, lengths, sequences, keywordStems, terms: [...postings.keys()].sort() };
+  const forms = new Map<string, string[]>();
+  for (const [term, seen] of spelt) forms.set(term, [...seen].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0])).map(([word]) => word));
+
+  return { docs, postings, lengths, sequences, keywordStems, terms: [...postings.keys()].sort(), forms };
 }
 
 // ─── Spelling ───────────────────────────────────────────────────────────────
