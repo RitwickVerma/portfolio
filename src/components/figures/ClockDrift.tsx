@@ -53,7 +53,7 @@ export default function ClockDrift() {
         <p className="wd-semi text-lg sm:text-xl font-bold leading-snug" data-testid="division">
           {t
             ? `${grouped(CLOCK_HZ)} ÷ ${grouped(t.ticksPerSecond)} = ${trim(t.exactCycles)} cycles per tick${t.exactCycles === t.cycles ? "" : `, rounded down to ${t.cycles}`}`
-            : `${grouped(CLOCK_HZ)} ÷ ${Number.isFinite(rate) ? grouped(rate) : "?"} is not a whole number of cycles`}
+            : `Enter a rate from 1 to ${grouped(CLOCK_HZ)} ticks a second.`}
         </p>
         {marks && t ? (
           <div

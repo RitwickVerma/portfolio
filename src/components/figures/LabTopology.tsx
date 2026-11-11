@@ -10,7 +10,8 @@ import { services } from "@/lib/data";
 // in first and the loop last; from 1024 px up the way in runs left to right
 // and the loop sits in one row under it.
 
-const GATEWAY_PARTS = ["Traefik", "Authelia SSO", "Headscale VPN", "CrowdSec"];
+/** What the gateway runs, read from its entry in the data file ("Traefik, Authelia SSO, Headscale VPN and CrowdSec"). */
+const GATEWAY_PARTS = (services.find((s) => s.name === "Gateway")?.description ?? "").split(/,\s*|\s+and\s+/).filter(Boolean);
 
 /** An arrow between two parts: down while they stack, right when they sit side by side. */
 function Arrow() {
@@ -81,7 +82,7 @@ export default function LabTopology() {
               <span aria-hidden="true" className="mr-1.5 text-fg">
                 →
               </span>
-              declares 14 of 16 guests
+              declares 14 of {services.length} guests
             </p>
             <p>
               <span aria-hidden="true" className="mr-1.5 text-fg">

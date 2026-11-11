@@ -165,7 +165,9 @@ export default function KeymapLayers() {
     if (h) setDown(h);
   };
   const onKeyUp = (e: KeyboardEvent) => {
-    if (holdForKey(e.key) !== null) setDown(null);
+    // Only the key that is holding releases the hold: F down, N down, F up leaves N held.
+    const released = holdForKey(e.key);
+    if (released !== null) setDown((d) => (d === released ? null : d));
   };
 
   const trace: { layer: number; binding: string | null; wins: boolean }[] = [];

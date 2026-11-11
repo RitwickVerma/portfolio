@@ -44,6 +44,8 @@ export default function SurvivorToy() {
   const years = (run.strategy.length - 1) / 12;
   const pick = universe === "survivors" ? mean.survivors : mean.then;
   const edge = (pick - mean.market) * 100;
+  /** What the list alone adds: the same rule on the same worlds, survivors against everyone. Paired, so world-to-world chance cancels. */
+  const listGain = (mean.survivors - mean.then) * 100;
   const end = (a: number[]) => a[a.length - 1];
   const rows: Array<{ id: string; label: string; one: number; avg: number }> = [
     { id: "market", label: "The market: every stock that existed", one: world.then.marketCagr, avg: mean.market },
@@ -56,15 +58,15 @@ export default function SurvivorToy() {
       claim="Give a rule with no skill only the stocks that survived, and it looks skilful."
       how={
         <>
-          A made-up market where every stock has the same odds. Survivors are the stocks still listed at the end. Press <b className="font-semibold text-fg">Everyone who existed then</b> and watch the solid line fall to the dashed one.
+          A made-up market where every stock has the same odds. Survivors are the stocks still listed at the end. Press <b className="font-semibold text-fg">Everyone who existed then</b> and watch the rule lose what the list gave it.
         </>
       }
       caption="Synthetic: 300 invented stocks and a crude delisting rule, nothing from Plutus or any real market; it shows the direction, and the real gap above is larger than this reaches."
       about={
         <>
           <p>
-            {TOY.stocks} invented stocks, {TOY.months / 12} years of monthly returns drawn from one distribution, so no stock has better odds than another and there is nothing for a rule to find. A stock that has halved from its high
-            is four times as likely to be delisted (dropped from the market, usually after failing) as a healthy one, and the delisting month is a flat −40%. The rule is the repo&apos;s idea in spirit, not its code or data: each month buy the{" "}
+            {TOY.stocks} invented stocks, {TOY.months / 12} years of monthly returns drawn from one distribution, so no stock has better odds than another and there is nothing for a rule to find. Every stock has the same chance each month of being delisted (dropped from the market,
+            usually after failing), whatever it did before, and the delisting month is a flat −40%. The rule is the repo&apos;s idea in spirit, not its code or data: each month buy the{" "}
             {TOY.picks} stocks that rose most from 12 months ago to one month ago, equal amounts, no costs. There is no index membership.
           </p>
           <p>Seed {seed}. The numbers in the sentence are the mean of {WORLDS} worlds (seeds {seed} to {seed + WORLDS - 1}) so one lucky draw cannot stand for the rule. At the top of the slider the toy reaches a gap smaller than the real {REAL_GAP.toFixed(1)} points.</p>
@@ -106,15 +108,16 @@ export default function SurvivorToy() {
           </div>
         </div>
       </div>
-      <Verdict tone={universe === "survivors" ? (edge > 1 ? "warn" : "plain") : Math.abs(edge) < 1 ? "ok" : "plain"} title={`${universe === "survivors" ? "Surviving stocks only" : "Everyone who existed"}: ${pctText(pick * 100)} a year, the market ${pctText(mean.market * 100)}.`}>
+      <Verdict
+        tone={universe === "survivors" ? (listGain > 0.5 ? "warn" : "plain") : "plain"}
+        title={`${universe === "survivors" ? "Surviving stocks only" : "Everyone who existed"}: ${pctText(pick * 100)} a year, the market ${pctText(mean.market * 100)}.`}
+      >
         {universe === "survivors"
-          ? edge > 1
-            ? `No stock here has better odds than another, so the extra ${edge.toFixed(1)} points a year is the list's doing: the rule never held a company that later disappeared.`
-            : `With this few stocks disappearing, the surviving list is nearly the whole market, and the rule is ${Math.abs(edge).toFixed(1)} points from it: there is almost nothing for the list to hide.`
-          : Math.abs(edge) < 1
-            ? "With the whole market to choose from, the rule earns about what the market does, which is what a rule with nothing to find should do."
-            : `With the whole market to choose from, the rule is ${Math.abs(edge).toFixed(1)} points from the market, far less than the survivors-only list gave it.`}{" "}
-        Average of {WORLDS} made-up worlds.
+          ? listGain > 0.5
+            ? `The same rule earns ${listGain.toFixed(1)} points a year more from this list than from everyone who existed. No stock has better odds than another, so that is the list's doing: the rule never held a company in the month it disappeared.`
+            : "With almost nobody disappearing, the surviving list is nearly the whole market, so there is nothing for the list to hide."
+          : `With the whole market to choose from, the rule ends ${Math.abs(edge).toFixed(1)} points ${edge < 0 ? "below" : "above"} the market. It has nothing to find: twenty stocks are bumpier than three hundred, which costs a little, and the rest is chance between made-up worlds.`}{" "}
+        Average of {WORLDS} made-up worlds, not the one drawn above.
       </Verdict>
       <Actions>
         <QuietAction onClick={() => setSeed((s) => s + 1)}>Draw another world (seed {seed})</QuietAction>

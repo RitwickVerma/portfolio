@@ -12,7 +12,7 @@ export const projects: Project[] = [
     description:
       "Android app that answers, silences and ends calls with a wave over the proximity sensor.",
     role: "Author (2016), rebuilt in 2026 with AI assistance · GPLv3",
-    metric: { value: "26,000+", label: "lifetime downloads, 4.3★ when the Play listing was last up" },
+    metric: { value: "26,000+", label: "lifetime downloads, 4.3★ on the original Play listing" },
     why: "Turns a binary proximity sensor and the accelerometer into gestures: a double-wave timing window, pick-up from a flat surface, face-down detection mid-call.",
     tech: ["Java", "Kotlin", "Android", "EventBus"],
     links: { gitlab: "https://gitlab.com/ritwick7/shutup", page: "/apps/shutup/", pageLabel: "App page" },

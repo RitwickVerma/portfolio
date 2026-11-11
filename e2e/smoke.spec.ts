@@ -171,7 +171,8 @@ test.describe("the frame-authority figure", () => {
     await page.goto(FIGURE_NOTE);
     await page.waitForLoadState("networkidle");
     const figure = page.locator("figure").first();
-    const verdict = figure.locator("[aria-live]");
+    // The verdict by its own mark, not by aria-live: while the window is being placed it is a quiet readout.
+    const verdict = figure.locator("[data-tone]");
     const move = figure.getByRole("button", { name: "Let KWin move it" });
     const win = figure.getByRole("group", { name: /^Window at/ });
     const x = figure.getByLabel("x", { exact: true });

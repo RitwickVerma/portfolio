@@ -380,7 +380,9 @@ export default function FrameAuthority() {
     });
   const choose = (id: string) => {
     const p = PRESETS.find((q) => q.id === id)!;
-    const r = play(presetScene(p, scene.gap));
+    // A preset is a whole scene, its timing included: "A window that insists" needs the quick gap,
+    // and keeping a slower one chosen earlier made its own hint untrue.
+    const r = play(presetScene(p));
     setState({ scene: r.scene, played: r.played, preset: id });
   };
 
@@ -571,7 +573,7 @@ export default function FrameAuthority() {
           ) : null}
         </Verdict>
       ) : (
-        <Verdict title={`No call yet: the window is at ${at(frame)}, ${here?.ok ? "in" : "out of"} reach`}>
+        <Verdict quiet title={`No call yet: the window is at ${at(frame)}, ${here?.ok ? "in" : "out of"} reach`}>
           <p>
             {here
               ? `${here.across >= 0 ? `${fmt(here.across)} px of it is over the screen` : `It is ${fmt(-here.across)} px clear of the screen`}; 100 px must be over it. Press “${BUTTON[scene.actor]}” to see what the canvas does.`

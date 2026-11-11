@@ -39,8 +39,10 @@ describe("paging rule", () => {
 
   it("a check that could not run is an alert of its own", () => {
     expect(at(pages([0, 2, 2, 2], "gated"))).toEqual([2]);
-    // Failing, then unverifiable: a different condition, confirmed on its own.
-    expect(at(pages([1, 1, 2, 2], "gated"))).toEqual([1, 3]);
+    // Failing, then unverifiable: a new finding on a check that is already two runs bad, so it pages at once.
+    expect(at(pages([1, 1, 2, 2], "gated"))).toEqual([1, 2]);
+    // One failure then one unverifiable run is two bad runs in a row: it pages, and the totals say so.
+    expect(at(pages([0, 1, 2, 0], "gated"))).toEqual([2]);
   });
 
   it("the naive rule pages on every failure", () => {

@@ -148,10 +148,23 @@ describe("the toy market", () => {
     expect(runToy(w, "then").eligibleShare).toBe(1);
     expect(runToy(w, "survivors").eligibleShare).toBeLessThan(1);
   });
-  it("the bias: survivors beat who-existed-then, and the honest picks are within noise of the market", () => {
-    const a = averageOver({ ...TOY, delistRate: 0.05 }, 20);
-    expect(a.survivors - a.then).toBeGreaterThan(0.03);
-    expect(Math.abs(a.then - a.market)).toBeLessThan(0.02);
+  it("the bias: survivors beat who-existed-then, by about the delisting loss they never take", () => {
+    const a = averageOver({ ...TOY, seed: 1000, delistRate: 0.05 }, 200);
+    // 5% a year delisted at -40% is about two points a year the survivors-only list never pays.
+    expect(a.survivors - a.then).toBeGreaterThan(0.015);
+    expect(a.survivors - a.then).toBeLessThan(0.03);
+  }, 60_000);
+  it("the rule has nothing to find: on the honest universe it earns the market, at every delisting rate", () => {
+    // 200 worlds each, so the mean is tight enough to see an edge of half a point. With delisting tied
+    // to past returns (an earlier version) this was +1.4 points at 5% and +2.6 at 12%.
+    for (const rate of [0.05, 0.12]) {
+      const a = averageOver({ ...TOY, seed: 1000, delistRate: rate }, 200);
+      expect(Math.abs(a.then - a.market), `rate ${rate}: then ${a.then.toFixed(4)} market ${a.market.toFixed(4)}`).toBeLessThan(0.005);
+    }
+  }, 60_000);
+  it("with nobody delisted the two lists are the same list", () => {
+    const a = averageOver({ ...TOY, delistRate: 0 }, 10);
+    expect(a.survivors).toBe(a.then);
   });
   it("the bias grows with the delisting rate", () => {
     const lo = averageOver({ ...TOY, delistRate: 0.02 }, 12);

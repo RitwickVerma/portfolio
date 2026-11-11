@@ -82,7 +82,7 @@ export default function BootstrapPath() {
       about={
         <>
           <p>
-            The curve is the 2007 to 2026 backtest, thinned to every fifth trading day (about {EQUITY_WEEKLY.length} points), so the worst fall reads about two points shallower than the daily figure in the table. The resampling is
+            The curve is the 2007 to 2026 backtest, thinned to every fifth trading day (about {EQUITY_WEEKLY.length} points), so the worst fall reads about two points shallower than the daily figure in the table, and the Sharpe ratio and the ranges here differ a little from the daily ones in the text. The resampling is
             the repo&apos;s stationary bootstrap: a piece continues with probability 1 − 1/mean piece length, otherwise it jumps to a random week and starts a new one. The repo uses 21 trading days, about 4 weeks, on daily data;
             this uses weeks. Seed {seed}; {SAMPLES.toLocaleString("en-US")} reshuffles.
           </p>
@@ -119,7 +119,7 @@ export default function BootstrapPath() {
         <div className="relative mt-1 h-6" aria-hidden="true">
           {xTicks.map((t) => (
             <span key={t} className="fact absolute -translate-x-1/2 tabular-nums" style={{ left: `${x(t)}%` }}>
-              {Math.round(t * 100)}%
+              {pctText(t * 100, 0)}
             </span>
           ))}
         </div>

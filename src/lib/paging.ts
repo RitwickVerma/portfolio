@@ -31,19 +31,19 @@ export function pages(runs: readonly Run[], rule: Rule, opts: Options = {}): boo
   const confirm = opts.confirm ?? CONFIRM;
   const cooldown = opts.cooldown ?? COOLDOWN_RUNS.service;
   const out: boolean[] = [];
-  let kind: Run = 0;
   let streak = 0;
   // When each kind of fault last paged. Clearing does not reset it.
   const lastPaged: Record<number, number | undefined> = {};
   runs.forEach((r, i) => {
     if (r === 0) {
-      kind = 0;
       streak = 0;
       out.push(false);
       return;
     }
-    streak = r === kind ? streak + 1 : 1;
-    kind = r;
+    // Any run that is not healthy continues the streak: a check that fails and then cannot be
+    // run at all has still gone two runs without a clean answer. (Restarting the count when the
+    // kind changed let two bad runs in a row page nobody while the verdict said none had happened.)
+    streak += 1;
     const last = lastPaged[r];
     const send = streak >= confirm && (last === undefined || i - last >= cooldown);
     if (send) lastPaged[r] = i;

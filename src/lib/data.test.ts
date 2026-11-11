@@ -73,7 +73,7 @@ describe("data integrity", () => {
     expect(blob).not.toMatch(/jellyfin|debrid|aiostreams|nixos|pi-hole|adguard|this session/i);
   });
 
-  it("never claims ShutUp is on Google Play / the Play Store (listing is gone)", () => {
+  it("the record does not send readers to Google Play; the app page carries that link", () => {
     const blob = JSON.stringify({ projects, experiences, education, services });
     expect(blob).not.toMatch(/google play|play store|play\.google/i);
   });

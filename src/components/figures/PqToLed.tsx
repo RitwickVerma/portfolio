@@ -178,7 +178,7 @@ export default function PqToLed() {
           <text x={REF_CODE - 4} y="14" textAnchor="end" className="fill-muted" fontSize="13">{REF_WHITE} nits</text>
           <path d={IGNORED_PATH} fill="none" className="stroke-muted" strokeWidth="1.5" strokeDasharray="4 3" />
           <path d={TONE_PATH} fill="none" className="stroke-fg" strokeWidth="2" />
-          <circle cx={lumaCode} cy={W - SDR_TABLE[lumaCode]} r="6" className="fill-bg stroke-fg" strokeWidth="2.5" />
+          <circle cx={lumaCode} cy={W - SDR_TABLE[lumaCode]} r="6" className="fill-background stroke-fg" strokeWidth="2.5" />
           <text x="0" y="278" className="fill-muted" fontSize="13">Plane luma code, 0 to 255</text>
           <text x="-8" y="127" textAnchor="middle" transform="rotate(-90 -8 127)" className="fill-muted" fontSize="13">LED value</text>
           <text x="250" y="244" textAnchor="end" className="fill-fg" fontSize="13">solid: the app</text>
