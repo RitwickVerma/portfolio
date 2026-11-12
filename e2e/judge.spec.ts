@@ -221,6 +221,10 @@ test.describe("judge it yourself", () => {
       const page = await context.newPage();
       await openJudge(page);
       await expect(placeholder(page)).toHaveText(PLACEHOLDER);
+      // The state a visitor reads: the index is in and the grade buttons are on.
+      await expect(rows(page).first().locator('button[data-grade="2"]')).toBeEnabled();
+      // openJudge scrolled the section under the sticky nav, which then covers the first row's link and axe reports that (target-size); scan from the top.
+      await page.evaluate(() => window.scrollTo(0, 0));
       const { violations } = await new AxeBuilder({ page })
         .include("#judge")
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"])
