@@ -72,14 +72,14 @@ describe("the line says what the engine did, and only that", () => {
     expect(withRow('"query transform" ')).toEqual(['phrase "query transform"']);
   });
 
-  it("the guard can fail: with no answer row, the same words still get a line", () => {
-    expect(answers("how many", TODAY)).toBeNull();
-    expect(labels("how many")).toEqual(["main, spelled from many"]);
+  it("the guard can fail: with no answer row, a respelling still gets its line", () => {
+    expect(answers("fitmen ", TODAY)).toBeNull();
+    expect(labels("fitmen ")).toEqual(["fitment, spelled from fitmen"]);
   });
 
-  it("a question's own words are not reported as respelled (\"many\" is not in the record)", () => {
-    // Without the answer the engine does respell it; with one, the word was part of the question.
-    expect(labels("how many")).toEqual(["main, spelled from many"]);
+  it("a question's own words are not searched for, so many is never respelled to main", () => {
+    expect(labels("how many")).toEqual([]);
+    expect(search(index, "how many").plan).toEqual([]);
     expect(labels("how many projects")).toEqual([]);
     expect(labels("how many years of c++").some((x) => x.includes("spelled"))).toBe(false);
   });
