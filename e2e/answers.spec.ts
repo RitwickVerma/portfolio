@@ -139,12 +139,13 @@ test.describe("the line under the box", () => {
   });
 
   test("Take it apart opens the engine room on the same query", async ({ page }) => {
-    await open(page, "how many years of c++");
+    // A query the answer row does not cover: the line is blank beside an answer, so it has no link there.
+    await open(page, "ir");
     const link = LINE(page).getByRole("link", { name: "Take it apart" });
-    await expect(link).toHaveAttribute("href", "/engine/?q=how%20many%20years%20of%20c%2B%2B#xray");
+    await expect(link).toHaveAttribute("href", "/engine/?q=ir#xray");
     await link.click();
-    await expect(page).toHaveURL(/\/engine\/\?q=how%20many%20years%20of%20c%2B%2B/);
-    await expect(page.locator("#xray-q")).toHaveValue("how many years of c++");
+    await expect(page).toHaveURL(/\/engine\/\?q=ir/);
+    await expect(page.locator("#xray-q")).toHaveValue("ir");
   });
 
   test("the longest rewrites still fit the room kept for the line on a phone", async ({ page }) => {
