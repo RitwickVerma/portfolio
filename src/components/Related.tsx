@@ -19,7 +19,7 @@ export default function Related({ result }: { result: SimilarResult }) {
         What else here is about the same things, by the engine&apos;s reckoning.
       </h2>
       <p className="fact mt-3 max-w-[60ch]">
-        The engine used this note as the query: <span className="font-mono text-[0.8em] break-words">{words.join(" ")}</span>
+        The engine used this note as the query: <span className="font-mono break-words">{words.join(" ")}</span>
         {more > 0 ? `, and ${more} more terms (Why? carries them all)` : ""}.
       </p>
       <ol className="mt-6 border-b border-border">
