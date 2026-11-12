@@ -102,7 +102,9 @@ export async function fetchEntry(path, get, now = new Date()) {
   const { defaultBranch, stars } = parseProject(await need(base));
   const ref = encodeURIComponent(defaultBranch);
   const lastCommit = parseCommits(await need(`${base}/repository/commits?per_page=1&ref_name=${ref}`));
-  const pipeline = parsePipelines(await optional(`${base}/pipelines?per_page=1&ref=${ref}`));
+  // The pipeline of the last pushed commit: what the code did. Scheduled runs (weekly dependency scans
+  // and the like) can fail on a download timeout with nothing changed, and that is not the code's state.
+  const pipeline = parsePipelines(await optional(`${base}/pipelines?per_page=1&ref=${ref}&source=push`));
   const tag = parseTags(await optional(`${base}/repository/tags?per_page=1&order_by=version&sort=desc`));
   return { lastCommit, pipeline, tag, stars, source: "api", asOf: now.toISOString().slice(0, 10) };
 }
@@ -174,8 +176,12 @@ async function main() {
     console.log(`liveness: ${OUT.replace(ROOT + "/", "")} was fetched ${previous.fetchedAt}, under an hour ago; no requests (LIVENESS_FORCE=1 to refetch)`);
     return;
   }
+  // Authenticated requests get GitLab's higher rate limit; CI sets GITLAB_READ_TOKEN (a read_api token).
+  // Without it the run is anonymous and a 429 keeps the previous data, as documented above.
+  const headers = { accept: "application/json" };
+  if (process.env.GITLAB_READ_TOKEN) headers["PRIVATE-TOKEN"] = process.env.GITLAB_READ_TOKEN;
   const get = async (url) => {
-    const res = await fetch(url, { headers: { accept: "application/json" }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) });
     let json = null;
     try {
       json = await res.json();
