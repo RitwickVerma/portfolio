@@ -10,6 +10,8 @@ const STORAGE_KEY = "engine-judge";
 
 const section = (page: Page) => page.locator("#judge");
 const rows = (page: Page) => section(page).locator("[data-judge-row]");
+const PLACEHOLDER = "Grade one row and P@1, MRR and nDCG@5 recompute here, yours beside mine.";
+const placeholder = (page: Page) => section(page).locator("[data-judge-placeholder]");
 
 /** Press a grade on one row and wait until it shows as pressed. The press toggles, so it is only repeated while the row is not pressed. */
 async function grade(row: Locator, which: "0" | "1" | "2") {
@@ -38,9 +40,13 @@ test.describe("judge it yourself", () => {
   test("grading three rows makes the metrics row appear, every number in [0, 1], beside mine", async ({ page }) => {
     await openJudge(page);
     await expect(section(page).locator("[data-judge-metrics]")).toHaveCount(0);
+    // Until a grade exists, one line stands where the table will be, and says what grading does.
+    await expect(placeholder(page)).toHaveText(PLACEHOLDER);
     await gradeThree(page);
     const table = section(page).locator("[data-judge-metrics]");
     await expect(table).toBeVisible();
+    // The first grade replaced it: the line and the table are never both there.
+    await expect(placeholder(page)).toHaveCount(0);
     await expect(table.locator("tbody tr")).toHaveCount(3);
     const cells = await table.locator("tbody td").allInnerTexts();
     expect(cells).toHaveLength(12);
@@ -80,9 +86,11 @@ test.describe("judge it yourself", () => {
     await openJudge(page);
     await grade(rows(page).first(), "1");
     await expect(section(page).locator("[data-judge-metrics]")).toBeVisible();
+    await expect(placeholder(page)).toHaveCount(0);
     await rows(page).first().locator('button[data-grade="1"]').click();
     await expect(rows(page).first().locator('button[aria-pressed="true"]')).toHaveCount(0);
     await expect(section(page).locator("[data-judge-metrics]")).toHaveCount(0);
+    await expect(placeholder(page)).toHaveText(PLACEHOLDER);
   });
 
   test("a reload keeps the grades and the place; Start over clears them", async ({ page }) => {
@@ -103,6 +111,7 @@ test.describe("judge it yourself", () => {
 
     await section(page).locator("[data-judge-reset]").click();
     await expect(section(page).locator("[data-judge-metrics]")).toHaveCount(0);
+    await expect(placeholder(page)).toHaveText(PLACEHOLDER);
     await expect(section(page).locator("[data-judge-position]")).toHaveText("Query 1 of 35");
     await expect(section(page).locator('[data-judge-row] button[aria-pressed="true"]')).toHaveCount(0);
     expect(await page.evaluate((k) => sessionStorage.getItem(k), STORAGE_KEY)).toBeNull();
@@ -190,6 +199,8 @@ test.describe("judge it yourself", () => {
     await page.goto("/engine/");
     await expect(section(page).locator("h2")).toHaveText("Grade it yourself; the numbers recompute from your grades.");
     await expect(section(page)).toContainText("Grading needs JavaScript");
+    // The server HTML already says where the numbers will appear.
+    await expect(placeholder(page)).toHaveText(PLACEHOLDER);
     await expect(section(page).locator("[data-judge-position]")).toHaveText("Query 1 of 35");
     const n = await rows(page).count();
     expect(n).toBeGreaterThan(0);
@@ -204,6 +215,20 @@ test.describe("judge it yourself", () => {
   });
 
   for (const scheme of ["light", "dark"] as const) {
+    test(`axe finds no violations in the section before any grade, ${scheme}`, async ({ browser, browserName }) => {
+      test.skip(browserName !== "chromium", "axe results do not depend on the engine; run once");
+      const context = await browser.newContext({ colorScheme: scheme, reducedMotion: "reduce" });
+      const page = await context.newPage();
+      await openJudge(page);
+      await expect(placeholder(page)).toHaveText(PLACEHOLDER);
+      const { violations } = await new AxeBuilder({ page })
+        .include("#judge")
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"])
+        .analyze();
+      expect(violations.map((v) => `${v.id} (${v.impact}): ${v.help} -> ${v.nodes.map((n) => n.target.join(" ")).slice(0, 4).join(" | ")}`)).toEqual([]);
+      await context.close();
+    });
+
     test(`axe finds no violations in the section with grades given, ${scheme}`, async ({ browser, browserName }) => {
       test.skip(browserName !== "chromium", "axe results do not depend on the engine; run once");
       const context = await browser.newContext({ colorScheme: scheme, reducedMotion: "reduce" });
