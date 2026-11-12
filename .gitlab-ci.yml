@@ -39,7 +39,10 @@ build:
     - node tools/seo-audit.mjs
   artifacts:
     expire_in: 1 week
-    paths: [out/]
+    # prebuild (tools/liveness.mjs) refetches liveness.generated.json and the export is built from it;
+    # e2e/liveness.spec.ts reads the same file to check the page, so it must get THIS copy, not the
+    # one committed in git (they differed as soon as a project's CI status changed: all engines red).
+    paths: [out/, src/lib/liveness.generated.json]
 
 check:
   stage: build
