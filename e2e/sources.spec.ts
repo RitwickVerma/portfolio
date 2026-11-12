@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { NO_SOURCE, SOURCES } from "../src/lib/sources";
-import { sidewaysOverflow } from "./helpers";
+import { sidewaysOverflow, unfold } from "./helpers";
 
 // Every note figure names where its code comes from: a "Source" fold under the figure with a link to
 // the site's module and one to the upstream file at its pinned commit. The table is src/lib/sources.ts;
@@ -30,7 +30,7 @@ for (const slug of SLUGS) {
         const fold = page.locator(`[data-sources="${e.figure}"]`);
         const details = fold.locator("details");
         await expect(details).not.toHaveAttribute("open", /.*/);
-        await fold.locator("summary").filter({ hasText: "Source" }).click();
+        await unfold(fold.locator("summary").filter({ hasText: "Source" }));
         await expect(details).toHaveAttribute("open", "");
         const links = fold.getByRole("link");
         const site = links.first();
@@ -62,7 +62,7 @@ for (const slug of SLUGS) {
         const hrefs = await fold.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
         expect(hrefs[0]).toMatch(SITE_BLOB);
         if (e.upstream.repo !== null) expect(hrefs[1]).toMatch(BLOB);
-        await fold.locator("summary").filter({ hasText: "Source" }).click();
+        await unfold(fold.locator("summary").filter({ hasText: "Source" }));
         await expect(fold.locator("details")).toHaveAttribute("open", "");
       }
       await context.close();

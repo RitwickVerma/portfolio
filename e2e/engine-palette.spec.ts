@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Locator } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { unfold } from "./helpers";
 
 // Regressions from the /engine, /design and command-palette review. Each one
 // failed on the build before its fix.
@@ -55,7 +56,7 @@ test.describe("engine room", () => {
       const [c, t] = cells[3].split(",").map((x) => Number(x.trim()));
       expect(cells[1] !== cells[2] || Math.abs(c - t) > 0.005, `row ${cells[0]} differs`).toBe(true);
     }
-    await details.locator("summary").click();
+    await unfold(details.locator("summary"));
     await expect(agree.first()).toBeVisible();
     for (let i = 0; i < nAgree; i++) {
       const cells = await agree.nth(i).locator("td").allInnerTexts();

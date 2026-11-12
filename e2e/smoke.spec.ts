@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { sidewaysOverflow } from "./helpers";
+import { sidewaysOverflow, unfold } from "./helpers";
 
 // Smoke tests over the built site. Each one guards a promise the site makes
 // in its own copy (colophon, /design): no errors, no third-party requests,
@@ -648,7 +648,7 @@ test.describe("the SudoStamp note's figures", () => {
 
 test.describe("the ShutUp figure", () => {
   const figure = (page: Page) => page.getByRole("figure", { name: /A hand reaching to decline a call looks like a wave/ });
-  const open = (fig: ReturnType<typeof figure>, summary: string) => fig.locator("summary", { hasText: summary }).click();
+  const open = (fig: ReturnType<typeof figure>, summary: string) => unfold(fig.locator("summary", { hasText: summary }));
 
   test("opens on the claim, a preset and the reach, and the first screen holds the drawing and the verdict", async ({ page }) => {
     const problems = watch(page);
@@ -793,9 +793,7 @@ test.describe("alignment figure", () => {
   const lostCells = (page: Page) => drawing(page).getByRole("cell").filter({ hasText: /^lost/ });
   const preset = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
   const fold = (page: Page, name: string) => page.locator("summary").filter({ hasText: name });
-  const openFold = async (page: Page, name: string) => {
-    await fold(page, name).click();
-  };
+  const openFold = (page: Page, name: string) => unfold(fold(page, name));
 
   test("opens on the failure, and is meaningful before it hydrates: the claim, both methods, the verdict, the rows and the matrix are in the HTML", async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
