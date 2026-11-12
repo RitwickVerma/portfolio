@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildIndex, search, planQuery, parseQuery, tokenize, stem, highlight, snippet, WORD, editDistance, nearestTerms,
-  scoreLine, CONTROL, TREATMENT, PHRASE_BONUS, QUESTION_WORDS, type SearchDoc,
+  scoreLine, CONTROL, TREATMENT, PHRASE_BONUS, QUESTION_WORDS, type SearchDoc, type SearchHit,
 } from "./search";
 import { buildCorpus } from "./corpus";
 import { notes } from "./notes";
@@ -425,5 +425,26 @@ describe("scoreLine: the arithmetic as displayed", () => {
     const line = scoreLine(hit);
     expect(line.listedByFilter).toBe(false);
     expect(line.base).toMatch(/^\d+\.\d{3}$/);
+  });
+
+  it("a base on a rounding tie takes the neighbouring third decimal, not a fourth digit", () => {
+    // What the site's full index gave "fitment": 4.6002 x 1.625. The nearest third decimal, 4.600, makes exactly 7.475, which
+    // prints as neither 7.47 nor 7.48 for sure, so the line used to fall back to four digits (4.6002).
+    const hit = { score: 7.4753227509341285, explain: { terms: [{ score: 4.600198615959464 }], prior: 1.625, phrases: 0 } } as unknown as SearchHit;
+    const line = scoreLine(hit);
+    expect(line.total).toBe("7.48");
+    expect(line.base).toBe("4.601");
+    expect(product(line).toFixed(2)).toBe("7.48");
+    expect(Math.abs(Number(line.base) - 4.600198615959464)).toBeLessThan(0.001);
+    // Where the nearest value lands, it is the one printed.
+    const plain = { score: 4.600198615959464, explain: { terms: [{ score: 4.600198615959464 }], prior: 1, phrases: 0 } } as unknown as SearchHit;
+    expect(scoreLine(plain).base).toBe("4.600");
+  });
+
+  it("on the full index no line needs more than three decimals", () => {
+    const site = buildIndex(buildCorpus(notes.map((n) => noteText(n.slug))));
+    for (const q of ["fitment", "performance testing", "search engine", "c++", "plutus", "keys"]) {
+      for (const hit of search(site, q).hits.slice(0, 30)) expect(scoreLine(hit).base, `${q} / ${hit.doc.id}`).toMatch(/^\d+\.\d{3}$/);
+    }
   });
 });

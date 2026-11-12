@@ -847,16 +847,28 @@ function roundsTo(product: number, total: string): boolean {
   return product.toFixed(2) === total;
 }
 
-function fewestDecimals(n: number, min: number, holds: (printed: number) => boolean): string {
+/**
+ * The shortest print of `n` that `holds`. With `neighbours` the
+ * neighbours of the nearest value at `min` decimals are tried too, nearest first and never further than one
+ * unit away, before a longer print is used: a base that sits where its product with the factors falls exactly
+ * on a rounding tie (4.600 x 1.625 = 7.475) is printed as 4.601, not as the four-digit 4.6002.
+ */
+function fewestDecimals(n: number, min: number, holds: (printed: number) => boolean, neighbours = false): string {
   for (let d = min; d <= 10; d++) {
     const printed = n.toFixed(d);
     if (holds(Number(printed))) return printed;
+    if (d === min && neighbours) {
+      const unit = 10 ** -min;
+      const near = Number(printed);
+      const next = [near + unit, near - unit].sort((a, b) => Math.abs(a - n) - Math.abs(b - n));
+      for (const c of next) if (Math.abs(c - n) < unit && holds(Number(c.toFixed(d)))) return c.toFixed(d);
+    }
   }
   return n.toFixed(10);
 }
 
 export interface ScoreLine {
-  /** The sum over terms, to three decimals or as many more as the line needs; "1" for a hit listed by a filter alone. */
+  /** The sum over terms, to three decimals (the neighbouring value when the nearest sits on a rounding tie) or as many more as the line needs; "1" for a hit listed by a filter alone. */
   base: string;
   /** True when no term scored and the filters alone listed the document: its base is 1. */
   listedByFilter: boolean;
@@ -883,7 +895,7 @@ export function scoreLine(hit: SearchHit): ScoreLine {
   const total = hit.score.toFixed(2);
   const rest = factors.reduce((p, f) => p * Number(f.value), 1);
   const lands = (base: number) => roundsTo(base * rest, total);
-  const base = listedByFilter ? "1" : fewestDecimals(sum, 3, lands);
+  const base = listedByFilter ? "1" : fewestDecimals(sum, 3, lands, true);
   return { base, listedByFilter, factors, total, exact: lands(Number(base)) };
 }
 
