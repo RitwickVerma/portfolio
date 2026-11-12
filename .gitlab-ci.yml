@@ -71,12 +71,18 @@ e2e:
       junit: e2e-results/junit.xml
 
 # Deploys build's out/ to Cloudflare Pages (since 2026-10-16; CT114 nginx no longer serves
-# www.ritwickverma.dev). CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are masked+protected CI/CD variables.
+# www.ritwickverma.dev). CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are masked, protected and scoped to the
+# production environment: only this job receives them (build runs npm ci on master too and must not).
+# resource_group: two master pipelines never upload at once, and an older one cannot overwrite a newer deploy.
 # wrangler is pinned: an unpinned `npx wrangler` fetched whatever npm called latest on each deploy.
 deploy:
   stage: deploy
   image: $NODE_IMAGE
   interruptible: false
+  environment:
+    name: production
+    url: https://www.ritwickverma.dev
+  resource_group: production
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
   needs: [build, check, e2e]
