@@ -18,7 +18,7 @@ npm ci
 npm run dev        # local dev server
 npm run build      # static export -> out/
 ```
-**A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: check`). Work on a branch and open an MR; never push to `master` without intent. The deploy job builds on the runner and runs `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
+**A push to `master` triggers a production deploy** (`deploy` job in `.gitlab-ci.yml`, `rules: $CI_COMMIT_BRANCH == "master"`, `needs: [build, check, e2e]`). Work on a branch and open an MR; never push to `master` without intent. The deploy job uploads the `out/` artifact that `build` made and all three e2e engines tested, with `wrangler pages deploy out` to Cloudflare Pages (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` are CI variables). Do not run it locally.
 
 ## Test
 Vitest 4 + jsdom, pure logic only; browser behaviour is covered by the Playwright suite below. Tests are `src/**/*.test.{ts,tsx}` (`vitest.config.mts`; `@` aliases `./src`). Verified 2026-11-10: 35 files / 666 tests pass.
@@ -81,7 +81,7 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 - In-repo: all site content (`src/lib/data.ts`, `src/content/notes/`). Output is a static export in `out/` (`next.config.ts`: `output: "export"`, `trailingSlash: true`); no server runtime, no API routes, no third-party requests at view time.
 - Runtime, not in repo: an optional status feed at `NEXT_PUBLIC_STATUS_URL` (build-time). Unset on the current Cloudflare Pages deploy, so nothing is fetched and readers show the static inventory. `parseStatus` rejects anything off-schema; stale after 15 min (`STALE_AFTER_MS`). The script reads env `PVE_URL`, `PVE_NODE`, `PVE_TOKEN`, `PVE_CACERT`, `OUT` from a root-only env file on that host (see the script header; do not put values in the repo).
 - CI variables `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are used by the deploy job. Never print them.
-- Deploy: `master` -> CI `deploy` -> `npm run build` on the runner -> `wrangler pages deploy out` (Cloudflare Pages). Headers come from `public/_headers`.
+- Deploy: `master` -> CI `build` (npm ci + `npm run build` + SEO audit, `out/` artifact) -> `e2e: [chromium|firefox|webkit]` over that `out/` -> `deploy` (`wrangler pages deploy out`, Cloudflare Pages). Nothing is rebuilt between test and deploy. Headers come from `public/_headers`.
 - Next.js is v16: read `node_modules/next/dist/docs/` before using Next APIs (block above).
 
 ## Code conventions
@@ -97,7 +97,7 @@ docker run --rm --ipc=host -e CI=1 -v "$PWD":/work -w /work mcr.microsoft.com/pl
 - No formatter config (no Prettier) is present.
 
 ## Pitfalls
-1. Pushing to `master` deploys to production; CI `check` must pass first (`needs: check`).
+1. Pushing to `master` deploys to production; `build`, `check` and all three `e2e` jobs must pass first.
 2. Never leak private addresses or unverifiable facts in the client bundle or copy (`6bbbe8b`); the private Plutus link was dropped (`ce863eb`).
 3. Same-page result links must be plain `<a href="#id">`, not `next/link`: a client-side hash navigation does not update `:target`, so the landing highlight never fires.
 4. `performance.now()` is too coarse to time one query; `timed()` in `useSearchIndex.ts` times a batch and divide. Do not read the clock during render.
