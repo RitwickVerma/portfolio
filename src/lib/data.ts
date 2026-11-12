@@ -243,6 +243,12 @@ export const services: Service[] = [
   { name: "Observability", description: "Status checks, log hub and image-update notices", ct: "CT119", tech: ["Gatus", "Dozzle", "Diun"] },
 ];
 
+/**
+ * The year the owner first wrote C++: 11th class, 2013. The professional count is the eBay tenure,
+ * computed from the dates above; "how long has he written C++" is a different question and gets both.
+ */
+export const CPP_SINCE = 2013;
+
 export const skills = {
   // Languages he writes himself. C# in the side projects is agent-written, so it
   // stays on the project cards only (copy.test.ts pins this list).
