@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 
 // The home page's record sections, operated. Each test reads a number off the page and checks the
 // figure beside it was drawn from it, not just that something is on screen.
@@ -61,6 +61,19 @@ test.describe("work figures", () => {
   });
 });
 
+/**
+ * Click an in-page link and wait for its target row to be on screen. The click is retried: on the
+ * shared runner WebKit once took the hash (the URL changed) but left the page where it was, so the
+ * row never scrolled in (master pipeline 3059062910, phone case). Same assertions as before.
+ */
+async function jumpTo(page: Page, link: Locator, target: string) {
+  await expect(async () => {
+    await link.click();
+    await expect(page.locator(target)).toBeInViewport({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+  await expect(page).toHaveURL(new RegExp(`${target}$`));
+}
+
 test.describe("timeline is navigation", () => {
   test("pressing an eBay bar goes to that role's rows, with plain links", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -69,9 +82,7 @@ test.describe("timeline is navigation", () => {
     await expect(links).toHaveCount(2);
     await expect(links.nth(0)).toHaveAttribute("href", "#work-role-0");
     await expect(links.nth(1)).toHaveAttribute("href", "#work-role-1");
-    await links.nth(1).click();
-    await expect(page).toHaveURL(/#work-role-1$/);
-    await expect(page.locator("#work-role-1")).toBeInViewport();
+    await jumpTo(page, links.nth(1), "#work-role-1");
     await expect(page.locator("#work-role-1")).toContainText("Software Engineer 2");
     // The internships are not links.
     await expect(page.locator("#work figure a:visible")).toHaveCount(2);
@@ -83,9 +94,7 @@ test.describe("timeline is navigation", () => {
     const link = page.locator("#work figure a[href='#work-role-0']:visible");
     await expect(link).toHaveCount(1);
     expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await link.click();
-    await expect(page).toHaveURL(/#work-role-0$/);
-    await expect(page.locator("#work-role-0")).toBeInViewport();
+    await jumpTo(page, link, "#work-role-0");
   });
 });
 
