@@ -1,4 +1,5 @@
 import { education, experiences, projects, socialLinks, EBAY_SEPARATION } from "./data";
+import { dateLabel } from "./liveness";
 import { notes } from "./notes";
 import { parseQuery, tokenize } from "./search";
 
@@ -164,11 +165,11 @@ export function spell(months: number): string {
 const ROLE = experiences[0];
 
 /**
- * ", as of 2026-11-11" while the role runs. From the separation day on it is left out: the date a build was made
+ * ", as of 11 Nov 2026" while the role runs. From the separation day on it is left out: the date a build was made
  * on is then the one thing a reader could subtract the end from, and the page says nothing of it but "Dec 2026".
  */
 function asOf(today: string): string {
-  return today >= EBAY_SEPARATION ? "" : `, as of ${today}`;
+  return today >= EBAY_SEPARATION ? "" : `, as of ${dateLabel(today)}`;
 }
 
 function tenure(terms: string[], today: string): Answer | null {
