@@ -19,7 +19,7 @@ describe("public app pages", () => {
 
   it("links Google Play only for apps that are live there", () => {
     expect(apps.shutup.playUrl).toMatch(/^https:\/\/play\.google\.com\/store\/apps\/details\?id=com\.laughingstock\.ritwick\.shutup$/);
-    expect(apps.sudostamp.playUrl).toBeNull();
+    expect(apps.sudostamp.playUrl).toBe("https://play.google.com/store/apps/details?id=com.ritwick.sudostamp");
   });
 
   it("keeps each app's own license", () => {

@@ -199,7 +199,7 @@ export default function SudoStampLanding({ app }: { app: PublicApp }) {
           { href: "#platforms", label: "Platforms" },
           { href: "#setup", label: "Set up" },
         ]}
-        cta={{ href: app.releasesUrl, label: "Download", external: true }}
+        cta={{ href: app.playUrl ?? app.releasesUrl, label: app.playUrl ? "Get it on Google Play" : "Download", external: true }}
         ctaClass={`${PRIMARY} min-h-9 px-4 text-sm`}
       />
 
@@ -230,7 +230,12 @@ export default function SudoStampLanding({ app }: { app: PublicApp }) {
                 password typed, nothing in the cloud.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                <a href={app.releasesUrl} className={PRIMARY} {...ext(true)}>
+                {app.playUrl ? (
+                  <a href={app.playUrl} className={PRIMARY} {...ext(true)}>
+                    Get it on Google Play
+                  </a>
+                ) : null}
+                <a href={app.releasesUrl} className={app.playUrl ? GHOST : PRIMARY} {...ext(true)}>
                   Download the APK
                 </a>
                 <a href={app.repoUrl} className={GHOST} {...ext(true)}>
@@ -545,11 +550,16 @@ export default function SudoStampLanding({ app }: { app: PublicApp }) {
                   <h3 className="text-xl font-medium text-[var(--fg)]">On the phone</h3>
                 </div>
                 <p className="mt-4 text-pretty text-[15px] leading-relaxed text-[var(--muted)]">
-                  Install the APK, open it and tap <span className="text-[var(--fg)]">Get started</span>. The phone waits for your
+                  Install it from Google Play or as an APK, open it and tap <span className="text-[var(--fg)]">Get started</span>. The phone waits for your
                   computer, and makes a key for it inside its secure hardware when you pair.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <a href={app.releasesUrl} className={PRIMARY} {...ext(true)}>
+                  {app.playUrl ? (
+                    <a href={app.playUrl} className={PRIMARY} {...ext(true)}>
+                      Get it on Google Play
+                    </a>
+                  ) : null}
+                  <a href={app.releasesUrl} className={app.playUrl ? GHOST : PRIMARY} {...ext(true)}>
                     Download the APK
                   </a>
                 </div>

@@ -188,7 +188,7 @@ export const apps: Record<string, PublicApp> = {
     repoUrl: "https://gitlab.com/ritwick7/sudostamp",
     releasesUrl: "https://gitlab.com/ritwick7/sudostamp/-/releases",
     issuesUrl: "https://gitlab.com/ritwick7/sudostamp/-/issues",
-    playUrl: null,
+    playUrl: "https://play.google.com/store/apps/details?id=com.ritwick.sudostamp",
     iconSrc: "/apps/sudostamp/icon.png",
     ogImage: {
       src: "/apps/sudostamp/og.png",
