@@ -42,6 +42,15 @@ export const RELATED_KINDS: readonly DocKind[] = ["Note", "Project", "eBay", "Ea
  * company it did not earn.
  */
 export const MIN_SCORE = 7;
+/**
+ * And a document must score at least this share of the best related document's score: 7 is a fixed line,
+ * and under a 35-point match an 8.8 that rests on one shared word (\"keys\") is not the same kind of
+ * neighbour. Measured over the nine notes' related scores (similar.test.ts prints them): 30% cut three more
+ * sections (the SudoStamp, Crush80 and Homelab notes, whose second rows are 7.6 to 8.8 under 27 to 35),
+ * 25% cuts only SudoStamp's, whose second row is 8.81 under 35.29. 25% is the larger share that keeps the
+ * two real second neighbours (Crush80's 7.60 under 29.88, Homelab's 7.68 under 26.91).
+ */
+export const MIN_SHARE = 0.25;
 export const MIN_ROWS = 2;
 export const MAX_ROWS = 4;
 
@@ -57,6 +66,8 @@ export interface SimilarOptions {
   terms?: number;
   /** Fewest score a returned document may have. Default 0. */
   minScore?: number;
+  /** Fewest share of the best returned document's score a later one may have, 0 to 1. Default 0. */
+  minShare?: number;
   /** Kinds that may be returned. Default RELATED_KINDS. */
   kinds?: readonly DocKind[];
   /** List only the best document of each note. Default true. */
@@ -156,7 +167,7 @@ export function topTerms(index: SearchIndex, source: SimilarSource, count: numbe
  */
 export function similar(index: SearchIndex, source: SimilarSource, options: SimilarOptions = {}): SimilarResult {
   const {
-    limit = MAX_ROWS, exclude, terms: count = TERMS_USED, minScore = 0,
+    limit = MAX_ROWS, exclude, terms: count = TERMS_USED, minScore = 0, minShare = 0,
     kinds = RELATED_KINDS, onePerNote = true, maxChars = MAX_QUERY_CHARS, config = TREATMENT,
   } = options;
   const ownIds = new Set("docIds" in source ? source.docIds : []);
@@ -175,6 +186,8 @@ export function similar(index: SearchIndex, source: SimilarSource, options: Simi
     const { doc } = hit;
     if (hit.score < minScore) break; // hits are sorted: nothing later clears it either
     if (ownIds.has(doc.id) || exclude?.(doc) || !kinds.includes(doc.kind)) continue;
+    // The first row kept is the best one; a later row must hold a share of its score.
+    if (hits.length > 0 && hit.score < minShare * hits[0].score) break;
     const key = parentKey(doc);
     if (onePerNote) {
       if (listed.has(key)) continue;
@@ -194,8 +207,21 @@ export function similar(index: SearchIndex, source: SimilarSource, options: Simi
 export function relatedToNote(index: SearchIndex, slug: string, options: SimilarOptions = {}): SimilarResult | null {
   const ids = noteDocIds(index, slug);
   if (ids.length === 0) return null;
-  const result = similar(index, { docIds: ids }, { minScore: MIN_SCORE, ...options });
+  const result = similar(index, { docIds: ids }, { minScore: MIN_SCORE, minShare: MIN_SHARE, ...options });
   return result.hits.length >= MIN_ROWS ? result : null;
+}
+
+/** Most terms of the query the note's foot prints; the rest are counted. */
+export const MAX_SHOWN_TERMS = 8;
+
+/**
+ * The query as the foot of a note shows it: the heaviest `max` terms as the words the pages spell (never the
+ * stems), and how many more the engine used. The \"Why?\" link carries all of them, so its scores are the ones
+ * the box gives.
+ */
+export function shownQuery(result: SimilarResult, max = MAX_SHOWN_TERMS): { words: string[]; more: number } {
+  const words = result.terms.slice(0, max).map((t) => t.word);
+  return { words, more: result.terms.length - words.length };
 }
 
 // ─── The leave-one-out check that chose TERMS_USED ──────────────────────────

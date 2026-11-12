@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   buildIndex, search, planQuery, parseQuery, tokenize, stem, highlight, snippet, WORD, editDistance, nearestTerms,
-  scoreLine, CONTROL, TREATMENT, PHRASE_BONUS, type SearchDoc,
+  scoreLine, CONTROL, TREATMENT, PHRASE_BONUS, QUESTION_WORDS, type SearchDoc, type SearchHit,
 } from "./search";
 import { buildCorpus } from "./corpus";
+import { notes } from "./notes";
+import { noteText } from "./notes.server";
 
 const doc = (id: string, title: string, text: string, keywords: string[] = [], kind: SearchDoc["kind"] = "Project"): SearchDoc => ({
   id,
@@ -37,6 +39,34 @@ describe("tokenize", () => {
 
   it("drops stopwords and splits on punctuation", () => {
     expect(tokenize("the per-request cache of the engine")).toEqual(["per", "request", "cach", "engin"]);
+  });
+});
+
+describe("question words are not terms", () => {
+  const index = buildIndex(buildCorpus(notes.map((n) => noteText(n.slug))));
+  const ASKED = ["how", "many", "where", "when", "what", "who", "which", "does", "did", "do", "he", "his", "him", "is", "are", "was"];
+
+  it("every word that only asks a question is dropped, in any case", () => {
+    expect(tokenize(ASKED.join(" "))).toEqual([]);
+    expect(tokenize("How Many Years Of C++, Where Does HE Work")).toEqual(["year", "cpp", "work"]);
+  });
+
+  it("the direct answers can read them back: `keep` leaves named stopwords in, and only those", () => {
+    expect(tokenize("how many years of c++", QUESTION_WORDS)).toEqual(["how", "mani", "year", "cpp"]);
+    expect(tokenize("what is the how", QUESTION_WORDS)).toEqual(["how"]);
+  });
+
+  it("the index holds none of them, so a page cannot be first for containing \"how\"", () => {
+    // By the words as the pages spell them: a stem like "do" can still be made by "doing".
+    const spelled = new Set([...index.forms.values()].flat());
+    for (const w of ASKED) expect(spelled.has(w), w).toBe(false);
+    expect(search(index, "how many years of c++").plan.map((t) => t.term)).toEqual(["year", "cpp"]);
+  });
+
+  it("\"many\" is not respelled to \"main\", and the query still finds the C++ work", () => {
+    const plan = search(index, "how many years of c++").plan;
+    expect(plan.some((t) => t.source === "fuzzy")).toBe(false);
+    expect(search(index, "how many years of c++").hits[0].doc.id).toMatch(/^work-/);
   });
 });
 
@@ -395,5 +425,26 @@ describe("scoreLine: the arithmetic as displayed", () => {
     const line = scoreLine(hit);
     expect(line.listedByFilter).toBe(false);
     expect(line.base).toMatch(/^\d+\.\d{3}$/);
+  });
+
+  it("a base on a rounding tie takes the neighbouring third decimal, not a fourth digit", () => {
+    // What the site's full index gave "fitment": 4.6002 x 1.625. The nearest third decimal, 4.600, makes exactly 7.475, which
+    // prints as neither 7.47 nor 7.48 for sure, so the line used to fall back to four digits (4.6002).
+    const hit = { score: 7.4753227509341285, explain: { terms: [{ score: 4.600198615959464 }], prior: 1.625, phrases: 0 } } as unknown as SearchHit;
+    const line = scoreLine(hit);
+    expect(line.total).toBe("7.48");
+    expect(line.base).toBe("4.601");
+    expect(product(line).toFixed(2)).toBe("7.48");
+    expect(Math.abs(Number(line.base) - 4.600198615959464)).toBeLessThan(0.001);
+    // Where the nearest value lands, it is the one printed.
+    const plain = { score: 4.600198615959464, explain: { terms: [{ score: 4.600198615959464 }], prior: 1, phrases: 0 } } as unknown as SearchHit;
+    expect(scoreLine(plain).base).toBe("4.600");
+  });
+
+  it("on the full index no line needs more than three decimals", () => {
+    const site = buildIndex(buildCorpus(notes.map((n) => noteText(n.slug))));
+    for (const q of ["fitment", "performance testing", "search engine", "c++", "plutus", "keys"]) {
+      for (const hit of search(site, q).hits.slice(0, 30)) expect(scoreLine(hit).base, `${q} / ${hit.doc.id}`).toMatch(/^\d+\.\d{3}$/);
+    }
   });
 });

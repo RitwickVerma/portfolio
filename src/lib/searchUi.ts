@@ -47,3 +47,15 @@ export function takesCompletion(
   if (mods.shift || mods.ctrl || mods.meta || mods.alt || mods.composing) return false;
   return caret.start === caret.length && caret.end === caret.length;
 }
+
+/** The tokenizer builds these out of punctuation; a visitor reads what they typed. */
+export const AS_TYPED: Record<string, string> = { cpp: "C++", csharp: "C#", dotnet: ".NET" };
+
+/**
+ * The word a term is shown as: the form the corpus uses most (index.forms, commonest first), never the stem
+ * ("mani", "queri"). The three terms built from punctuation are spelled as typed. Falls back to the term
+ * itself only when no indexed word produced it (a respelling nothing matched, a filter on an unknown stack).
+ */
+export function surfaceWord(forms: ReadonlyMap<string, string[]>, term: string): string {
+  return AS_TYPED[term] ?? forms.get(term)?.[0] ?? term;
+}

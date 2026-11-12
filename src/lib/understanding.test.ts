@@ -53,22 +53,38 @@ describe("the line says what the engine did, and only that", () => {
     expect(labels("replay -plutus")).toEqual(["leaving out: plutus"]);
   });
 
-  it("intent: how a question was read, with its subject when it has one", () => {
-    expect(labels("how many years of c++")).toEqual(["Read as: c++", "tenure question"]);
-    expect(labels("how long at ebay")).toEqual(["Read as: eBay", "tenure question"]);
-    expect(labels("how many projects")[0]).toBe("Read as: count question");
-    expect(labels("where is he based")[0]).toBe("Read as: location question");
-    expect(line("how many years of c++").map((u) => u.kind)).toEqual(["subject", "intent"]);
+  it("answer row showing: the line does not repeat the subject and intent the row already says", () => {
+    for (const q of ["how many years of c++", "how long at ebay", "how many projects", "where is he based"]) {
+      expect(answers(q, TODAY), q).not.toBeNull();
+      expect(labels(q), q).toEqual([]);
+    }
   });
 
-  it("intent: a question's own words are not reported as respelled (\"many\" is not in the record)", () => {
-    // Without the answer the engine does respell it; with one, the word was part of the question.
-    expect(labels("how many")).toEqual(["main, spelled from many"]);
-    expect(labels("how many projects")).toEqual(["Read as: count question"]);
+  it("answer row showing: what the engine did to the words stays (respelling, rewrite, filter, exclusion, phrase)", () => {
+    // answers() does not fire on a query with operators, so pair a real answer with each plan's result.
+    const row = answers("how many projects", TODAY);
+    expect(row).not.toBeNull();
+    const withRow = (q: string) => understand(index, search(index, q), row).map((u) => u.label);
+    expect(withRow("fitmen ")).toEqual(["fitment, spelled from fitmen"]);
+    expect(withRow("ir")[0]).toMatch(/^added: .+ \(rewrite of ir\)$/);
+    expect(withRow("kind:project")).toEqual(["filter kind:project"]);
+    expect(withRow("replay -plutus")).toEqual(["leaving out: plutus"]);
+    expect(withRow('"query transform" ')).toEqual(['phrase "query transform"']);
+  });
+
+  it("the guard can fail: with no answer row, a respelling still gets its line", () => {
+    expect(answers("fitmen ", TODAY)).toBeNull();
+    expect(labels("fitmen ")).toEqual(["fitment, spelled from fitmen"]);
+  });
+
+  it("a question's own words are not searched for, so many is never respelled to main", () => {
+    expect(labels("how many")).toEqual([]);
+    expect(search(index, "how many").plan).toEqual([]);
+    expect(labels("how many projects")).toEqual([]);
     expect(labels("how many years of c++").some((x) => x.includes("spelled"))).toBe(false);
   });
 
-  it("combines in a fixed order: intent, respelling, rewrite, filter, phrase, exclusion", () => {
+  it("combines in a fixed order: respelling, rewrite, filter, phrase, exclusion", () => {
     const kinds = line('hire him fitmen kind:note "query transform" -plutus').map((u) => u.kind);
     expect(kinds).toEqual([...kinds].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b)));
     expect(new Set(kinds).size).toBeGreaterThanOrEqual(4);
@@ -83,7 +99,7 @@ describe("the line says what the engine did, and only that", () => {
   });
 });
 
-const ORDER = ["subject", "intent", "respell", "rewrite", "filter", "phrase", "exclude"];
+const ORDER = ["respell", "rewrite", "filter", "phrase", "exclude"];
 
 describe("take it apart", () => {
   it("links to the engine room on the same query, encoded", () => {

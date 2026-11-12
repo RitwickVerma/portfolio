@@ -41,7 +41,7 @@ async function typeQuery(page: Page, q: string) {
 }
 
 test.describe("a typed question is answered above the results", () => {
-  test("how many years of c++: the tenure is computed from the dates, and the line says how it was read", async ({ page }) => {
+  test("how many years of c++: the tenure is computed from the dates, and the line does not repeat it", async ({ page }) => {
     await open(page);
     await typeQuery(page, "how many years of c++");
     const row = ANSWER(page);
@@ -50,8 +50,10 @@ test.describe("a typed question is answered above the results", () => {
     await expect(row.getByRole("heading", { level: 2 })).toHaveText(TENURE);
     await expect(page.getByTestId("answer-source")).toContainText("from the eBay dates on this page");
     await expect(row).toContainText("How long has he worked in C++?");
-    await expect(LINE(page)).toContainText("tenure");
-    await expect(LINE(page)).toContainText("Read as: c++");
+    // The row already says how the question was read; the line does not say it again.
+    await expect(LINE(page)).not.toContainText("Read as");
+    await expect(LINE(page)).not.toContainText("tenure");
+    await expect(LINE(page).getByRole("link")).toHaveCount(0);
     // The answer comes before the results in the page.
     const [answerY, listY] = await Promise.all([row.boundingBox().then((b) => b!.y), page.locator("#hits").boundingBox().then((b) => b!.y)]);
     expect(answerY).toBeLessThan(listY);
@@ -137,12 +139,13 @@ test.describe("the line under the box", () => {
   });
 
   test("Take it apart opens the engine room on the same query", async ({ page }) => {
-    await open(page, "how many years of c++");
+    // A query the answer row does not cover: the line is blank beside an answer, so it has no link there.
+    await open(page, "ir");
     const link = LINE(page).getByRole("link", { name: "Take it apart" });
-    await expect(link).toHaveAttribute("href", "/engine/?q=how%20many%20years%20of%20c%2B%2B#xray");
+    await expect(link).toHaveAttribute("href", "/engine/?q=ir#xray");
     await link.click();
-    await expect(page).toHaveURL(/\/engine\/\?q=how%20many%20years%20of%20c%2B%2B/);
-    await expect(page.locator("#xray-q")).toHaveValue("how many years of c++");
+    await expect(page).toHaveURL(/\/engine\/\?q=ir/);
+    await expect(page.locator("#xray-q")).toHaveValue("ir");
   });
 
   test("the longest rewrites still fit the room kept for the line on a phone", async ({ page }) => {

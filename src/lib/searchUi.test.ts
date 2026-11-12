@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { SHOWN, SHOWN_PHONE, rowsInView, nextSelection, firstRevealed, reselect, takesCompletion } from "./searchUi";
+import { buildCorpus } from "./corpus";
+import { notes } from "./notes";
+import { noteText } from "./notes.server";
+import { buildIndex, search } from "./search";
+import { AS_TYPED, surfaceWord, SHOWN, SHOWN_PHONE, rowsInView, nextSelection, firstRevealed, reselect, takesCompletion } from "./searchUi";
 
 describe("rowsInView: the rows a visitor can actually see", () => {
   it("a phone shows three before Show all, a wide screen six, and Show all shows every one", () => {
@@ -86,5 +90,29 @@ describe("takesCompletion: Tab or ArrowRight at the end of the box", () => {
   it("yields to a result row the visitor has arrowed to", () => {
     expect(takesCompletion("Tab", end, 3, {}, 2)).toBe(false);
     expect(takesCompletion("Tab", end, 3, {}, -1)).toBe(true);
+  });
+});
+
+describe("surfaceWord: a chip shows the word the corpus uses, not the stem", () => {
+  const index = buildIndex(buildCorpus(notes.map((n) => noteText(n.slug))));
+  const shown = (q: string) => search(index, q).plan.map((t) => surfaceWord(index.forms, t.term));
+
+  it("the three punctuation terms are spelled as typed", () => {
+    expect(surfaceWord(index.forms, "cpp")).toBe("C++");
+    expect(surfaceWord(index.forms, "csharp")).toBe("C#");
+    expect(surfaceWord(index.forms, "dotnet")).toBe(".NET");
+  });
+
+  it("a stem becomes the commonest word indexed as it", () => {
+    for (const [term, words] of index.forms) expect(surfaceWord(index.forms, term), term).toBe(AS_TYPED[term] ?? words[0]);
+    // "queri" is a stem; the corpus says query or queries.
+    expect(index.forms.has("queri")).toBe(true);
+    expect(surfaceWord(index.forms, "queri")).toMatch(/^quer(y|ies)$/);
+    expect(shown("queries")).not.toContain("queri");
+  });
+
+  it("falls back to the stem only when no indexed word produced it", () => {
+    expect(index.forms.has("zzzzqqqq")).toBe(false);
+    expect(surfaceWord(index.forms, "zzzzqqqq")).toBe("zzzzqqqq");
   });
 });

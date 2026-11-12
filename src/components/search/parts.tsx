@@ -4,6 +4,7 @@ import {
   highlight, snippet, tokenize, scoreLine, termLine,
   type DocKind, type ParsedQuery, type PlanTerm, type SearchDoc, type SearchHit, type SearchIndex,
 } from "@/lib/search";
+import { surfaceWord } from "@/lib/searchUi";
 
 // The pieces every search surface shares: the hero box, the command palette
 // and the engine room all draw results, plans and the corpus map the same way.
@@ -44,8 +45,13 @@ const SOURCE_NOTE: Record<PlanTerm["source"], (t: PlanTerm) => string> = {
   fuzzy: (t) => `nearest spelling of “${t.from}”`,
 };
 
-/** The query plan: every term searched for, how it got there and how many documents hold it. */
-export function PlanChips({ plan, parsed }: { plan: PlanTerm[]; parsed: ParsedQuery }) {
+/**
+ * The query plan: every term searched for, how it got there and how many documents hold it. With `forms` (the
+ * index's) a chip shows the word the corpus uses for the term, not its stem; the engine room, which is about the
+ * stems, leaves it out and shows the terms as the engine holds them.
+ */
+export function PlanChips({ plan, parsed, forms }: { plan: PlanTerm[]; parsed: ParsedQuery; forms?: ReadonlyMap<string, string[]> }) {
+  const word = (term: string) => (forms ? surfaceWord(forms, term) : term);
   return (
     <ul className="flex flex-wrap gap-1.5 min-w-0 max-w-full" aria-label="Query plan: the terms searched for">
       {plan.map((t) => (
@@ -54,9 +60,9 @@ export function PlanChips({ plan, parsed }: { plan: PlanTerm[]; parsed: ParsedQu
           className="term"
           data-source={t.source}
           data-empty={t.df === 0}
-          title={`${t.term}: ${SOURCE_NOTE[t.source](t)}, in ${t.df} document${t.df === 1 ? "" : "s"}, weight ${t.weight}`}
+          title={`${word(t.term)}${word(t.term) === t.term ? "" : ` (stem ${t.term})`}: ${SOURCE_NOTE[t.source](t)}, in ${t.df} document${t.df === 1 ? "" : "s"}, weight ${t.weight}`}
         >
-          <span className="term-t">{t.term}</span>
+          <span className="term-t">{word(t.term)}</span>
           {/* Seen as "search 17"; read as "search, in 17 documents". */}
           <span className="sr-only">, in </span>
           <span>{t.df}</span>
@@ -64,15 +70,15 @@ export function PlanChips({ plan, parsed }: { plan: PlanTerm[]; parsed: ParsedQu
         </li>
       ))}
       {parsed.excludedPhrases.map((p) => (
-        <li key={`-"${p.join(" ")}"`} className="term" data-source="excluded" title={`Documents containing the phrase ${p.join(" ")} are removed`}>
+        <li key={`-"${p.join(" ")}"`} className="term" data-source="excluded" title={`Documents containing the phrase ${p.map(word).join(" ")} are removed`}>
           <span className="sr-only">Excluded phrase: </span>
-          <span className="term-t">{p.join(" ")}</span>
+          <span className="term-t">{p.map(word).join(" ")}</span>
         </li>
       ))}
       {parsed.excluded.map((t) => (
-        <li key={`-${t}`} className="term" data-source="excluded" title={`Documents containing ${t} are removed`}>
+        <li key={`-${t}`} className="term" data-source="excluded" title={`Documents containing ${word(t)} are removed`}>
           <span className="sr-only">Excluded: </span>
-          <span className="term-t">{t}</span>
+          <span className="term-t">{word(t)}</span>
         </li>
       ))}
       {parsed.kinds.length > 0 && (
@@ -86,7 +92,7 @@ export function PlanChips({ plan, parsed }: { plan: PlanTerm[]; parsed: ParsedQu
         <li key={`tech-${t}`} className="term" data-source="filter" title="Only documents whose stack lists this">
           <span>tech</span>
           <span className="sr-only">: </span>
-          <span className="term-t">{t}</span>
+          <span className="term-t">{word(t)}</span>
         </li>
       ))}
     </ul>

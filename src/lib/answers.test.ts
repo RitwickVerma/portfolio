@@ -52,7 +52,7 @@ describe("tenure arithmetic, against fixed dates", () => {
   });
 
   it("leaves the as-of date out from the separation day on, so a build date cannot be subtracted from", () => {
-    expect(ask("how long at ebay", "2026-12-07")?.source).toContain("as of 2026-12-07");
+    expect(ask("how long at ebay", "2026-12-07")?.source).toContain("as of 7 Dec 2026");
     for (const today of [EBAY_SEPARATION, "2027-03-01"]) {
       for (const q of ["how long at ebay", "where is he based", "how many projects", "what does he do", "where did he study"]) {
         expect(ask(q, today)!.source, `${q} ${today}`).not.toMatch(/as of|\d{4}-\d{2}-\d{2}/);
@@ -70,11 +70,19 @@ describe("tenure arithmetic, against fixed dates", () => {
     expect(spell(0)).toBe("0 months");
   });
 
+  it("prints the as-of date as a reader writes it, never as an ISO string", () => {
+    for (const q of ["how long at ebay", "where is he based", "how many projects", "what does he do", "where did he study"]) {
+      const source = ask(q)!.source;
+      expect(source, q).toContain("as of 11 Nov 2026");
+      expect(source, q).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    }
+  });
+
   it("puts the computed figure in the answer and the as-of date in the source", () => {
     const a = ask("how many years of c++")!;
     expect(a.answer).toBe("5 years, 8 months, on eBay's C++ search engine.");
     expect(a.source).toContain("from the eBay dates on this page");
-    expect(a.source).toContain("as of 2026-11-11");
+    expect(a.source).toContain("as of 11 Nov 2026");
     expect(a.source).toContain("since Mar 2021");
     expect(ebaySince()).toBe("Mar 2021");
     expect(ask("how long at ebay", "2023-06-15")?.answer).toBe("2 years, 3 months at eBay.");
@@ -137,7 +145,7 @@ describe("what each answer is computed from", () => {
 
   it("every answer names the date it was computed as of or the page part it came from", () => {
     for (const q of ["how long at ebay", "where is he based", "where did he study", "how many projects", "what does he do"]) {
-      expect(ask(q)!.source, q).toContain("as of 2026-11-11");
+      expect(ask(q)!.source, q).toContain("as of 11 Nov 2026");
     }
   });
 });

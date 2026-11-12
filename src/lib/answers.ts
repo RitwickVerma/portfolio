@@ -1,6 +1,7 @@
 import { education, experiences, projects, socialLinks, EBAY_SEPARATION } from "./data";
+import { dateLabel } from "./liveness";
 import { notes } from "./notes";
-import { parseQuery, tokenize } from "./search";
+import { parseQuery, tokenize, QUESTION_WORDS } from "./search";
 
 // Direct answers for the hero box. A question the record can answer from its own dates, places and counts
 // is answered above the results, with where the answer came from. Nothing here is typed in: every figure is
@@ -37,9 +38,9 @@ export interface Answer {
   href: string;
 }
 
-/** The stems of a space-separated word list, as the engine reads them. */
+/** The stems of a space-separated word list, as the engine reads them, question words ("how", "many") kept: the intents are built from them. */
 function stems(words: string): Set<string> {
-  return new Set(words.split(" ").flatMap((w) => tokenize(w)));
+  return new Set(words.split(" ").flatMap((w) => tokenize(w, QUESTION_WORDS)));
 }
 
 /** What the record will not say, however it is asked: visas, pay, availability, the end date. Checked before anything. */
@@ -164,11 +165,11 @@ export function spell(months: number): string {
 const ROLE = experiences[0];
 
 /**
- * ", as of 2026-11-11" while the role runs. From the separation day on it is left out: the date a build was made
+ * ", as of 11 Nov 2026" while the role runs. From the separation day on it is left out: the date a build was made
  * on is then the one thing a reader could subtract the end from, and the page says nothing of it but "Dec 2026".
  */
 function asOf(today: string): string {
-  return today >= EBAY_SEPARATION ? "" : `, as of ${today}`;
+  return today >= EBAY_SEPARATION ? "" : `, as of ${dateLabel(today)}`;
 }
 
 function tenure(terms: string[], today: string): Answer | null {
@@ -322,7 +323,8 @@ function resumeAnswer(terms: string[]): Answer | null {
 export function answers(query: string, today: string): Answer | null {
   const parsed = parseQuery(query);
   if (parsed.phrases.length > 0 || parsed.excluded.length > 0 || parsed.excludedPhrases.length > 0 || parsed.kinds.length > 0 || parsed.tech.length > 0 || parsed.unknownKinds.length > 0) return null;
-  const terms = parsed.terms;
+  // The search leaves the question words out of the index; the answer is read from them, so keep them here.
+  const terms = tokenize(query, QUESTION_WORDS);
   if (terms.length === 0 || terms.length > 10) return null;
   if (!ymd(today)) return null;
   if (any(terms, REFUSED)) return null;

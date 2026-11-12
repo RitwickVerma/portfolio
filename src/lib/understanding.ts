@@ -1,12 +1,13 @@
 import { isQuestionWord, type Answer } from "./answers";
+import { AS_TYPED, surfaceWord } from "./searchUi";
 import { KIND_ALIASES, analyze, type PlanTerm, type SearchIndex, type SearchResult, tokenize } from "./search";
 
 // The one line under the box that says what the engine did with the words, and says nothing when it did
-// nothing. It reads the plan search() already made (rewrites, respellings), the parsed query (filters,
-// phrases, exclusions) and the answer's intent; it ranks nothing and changes nothing. Pure: Search.tsx
+// nothing. It reads the plan search() already made (rewrites, respellings) and the parsed query (filters,
+// phrases, exclusions), and knows whether an answer row is showing; it ranks nothing and changes nothing. Pure: Search.tsx
 // draws the list this returns.
 
-export type UnderstandingKind = "subject" | "intent" | "respell" | "rewrite" | "filter" | "phrase" | "exclude";
+export type UnderstandingKind = "respell" | "rewrite" | "filter" | "phrase" | "exclude";
 
 export interface Understanding {
   label: string;
@@ -15,21 +16,8 @@ export interface Understanding {
   found?: string;
 }
 
-/** The tokenizer builds these out of punctuation; a visitor reads what they typed. */
-const AS_TYPED: Record<string, string> = { cpp: "C++", csharp: "C#", dotnet: ".NET" };
-
 /** Most terms a rewrite may name before the line says "and N more": it is one line. */
 export const MAX_NAMED = 3;
-
-const INTENT_NAME: Record<Answer["intent"], string> = {
-  tenure: "tenure question",
-  location: "location question",
-  education: "education question",
-  contact: "contact question",
-  count: "count question",
-  role: "role question",
-  resume: "resume request",
-};
 
 /** The kind: value that selects exactly these kinds, as a visitor would type it ("project", "work"). */
 function filterValue(kinds: string[]): string {
@@ -57,16 +45,10 @@ export function understand(index: SearchIndex, result: SearchResult, answer: Ans
   for (const a of analyze(result.query)) if (!typed.has(a.term)) typed.set(a.term, AS_TYPED[a.term] ?? a.word);
   const typedWord = (term: string) => typed.get(term) ?? AS_TYPED[term] ?? index.forms.get(term)?.[0] ?? term;
   // The word a term is shown as: the form the corpus uses, never the stem.
-  const shown = (term: string) => AS_TYPED[term] ?? index.forms.get(term)?.[0] ?? term;
+  const shown = (term: string) => surfaceWord(index.forms, term);
 
-  if (answer) {
-    if (answer.subject) {
-      out.push({ label: `Read as: ${answer.subject}`, kind: "subject" });
-      out.push({ label: INTENT_NAME[answer.intent], kind: "intent" });
-    } else {
-      out.push({ label: `Read as: ${INTENT_NAME[answer.intent]}`, kind: "intent" });
-    }
-  }
+  // An answer row above the results already says how the question was read (its question, its headline), so
+  // the line leaves the subject and intent out and keeps only what the engine did to the words.
 
   const group = (source: PlanTerm["source"]) => {
     const by = new Map<string, PlanTerm[]>();

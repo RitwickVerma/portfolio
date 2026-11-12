@@ -273,6 +273,13 @@ export default function JudgeIt({ first }: { first: JudgeRow[] }) {
         </p>
       ) : null}
 
+      {/* Where the metrics table will appear: one line, in the server HTML too, until the first grade replaces it. */}
+      {graded === 0 ? (
+        <p className="fact mt-12 max-w-[68ch]" data-judge-placeholder>
+          Grade one row and P@1, MRR and nDCG@5 recompute here, yours beside mine.
+        </p>
+      ) : null}
+
       {result ? (
         <div className="mt-12" data-judge-result>
           <h3 className="wd-semi text-xl font-extrabold leading-tight max-w-[40ch]">

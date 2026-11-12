@@ -34,9 +34,17 @@ export interface SearchDoc {
 
 // ─── Tokenizer ──────────────────────────────────────────────────────────────
 
-const STOPWORDS = new Set(
-  "a an and are as at be but by for from has have i in is it its me my of on or so that the their then this to was were what which who with you your".split(" "),
-);
+const FUNCTION_WORDS = "a an and are as at be but by for from has have i in is it its me my of on or so that the their then this to was were what which who with you your";
+
+/**
+ * The words that ask or connect a question about a person ("how many years", "where does he work"). They say
+ * nothing about a document, so they are not indexed and not searched for: "how many years of c++" once put a
+ * page first because it contained "how", and "many" was respelled to "main". `answers()` reads them back
+ * through `tokenize(text, QUESTION_WORDS)`, since the direct answer is built from exactly these words.
+ */
+export const QUESTION_WORDS: ReadonlySet<string> = new Set("how many where when does did do he his him".split(" "));
+
+const STOPWORDS = new Set([...FUNCTION_WORDS.split(" "), ...QUESTION_WORDS]);
 
 /** Terms whose punctuation is the whole point. Rewritten before splitting. */
 // The C must start a word: "abc++" and "pc#" are not languages. (A captured lead, not a lookbehind.)
@@ -215,10 +223,10 @@ export function fold(text: string): string {
 /**
  * Lowercase, fold accents, keep C++/C#/.NET whole, drop thousands separators, split, drop stopwords, stem.
  * A comma is a thousands separator only before exactly three digits: "50,000" is one number,
- * "2020,2021" is two.
+ * "2020,2021" is two. `keep` names stopwords to leave in (QUESTION_WORDS, for the direct answers).
  */
-export function tokenize(text: string): string[] {
-  return analyze(text).map((t) => t.term);
+export function tokenize(text: string, keep?: ReadonlySet<string>): string[] {
+  return analyze(text, keep).map((t) => t.term);
 }
 
 /** A word as the page spells it (accents folded, lowercased) and the term it indexes as. */
@@ -228,12 +236,12 @@ export interface Analyzed {
 }
 
 /** `tokenize`, keeping each term's surface word: what the index needs to offer a completion as a word, not a stem. */
-export function analyze(text: string): Analyzed[] {
+export function analyze(text: string, keep?: ReadonlySet<string>): Analyzed[] {
   let s = fold(text).toLowerCase().replace(/(\d),(?=\d{3}(?:\D|$))/g, "$1");
   for (const [re, to] of LITERALS) s = s.replace(re, to);
   const out: Analyzed[] = [];
   for (const raw of s.split(/[^a-z0-9]+/)) {
-    if (!raw || STOPWORDS.has(raw)) continue;
+    if (!raw || (STOPWORDS.has(raw) && !keep?.has(raw))) continue;
     out.push({ word: raw, term: stem(raw) });
   }
   return out;
@@ -839,16 +847,28 @@ function roundsTo(product: number, total: string): boolean {
   return product.toFixed(2) === total;
 }
 
-function fewestDecimals(n: number, min: number, holds: (printed: number) => boolean): string {
+/**
+ * The shortest print of `n` that `holds`. With `neighbours` the
+ * neighbours of the nearest value at `min` decimals are tried too, nearest first and never further than one
+ * unit away, before a longer print is used: a base that sits where its product with the factors falls exactly
+ * on a rounding tie (4.600 x 1.625 = 7.475) is printed as 4.601, not as the four-digit 4.6002.
+ */
+function fewestDecimals(n: number, min: number, holds: (printed: number) => boolean, neighbours = false): string {
   for (let d = min; d <= 10; d++) {
     const printed = n.toFixed(d);
     if (holds(Number(printed))) return printed;
+    if (d === min && neighbours) {
+      const unit = 10 ** -min;
+      const near = Number(printed);
+      const next = [near + unit, near - unit].sort((a, b) => Math.abs(a - n) - Math.abs(b - n));
+      for (const c of next) if (Math.abs(c - n) < unit && holds(Number(c.toFixed(d)))) return c.toFixed(d);
+    }
   }
   return n.toFixed(10);
 }
 
 export interface ScoreLine {
-  /** The sum over terms, to three decimals or as many more as the line needs; "1" for a hit listed by a filter alone. */
+  /** The sum over terms, to three decimals (the neighbouring value when the nearest sits on a rounding tie) or as many more as the line needs; "1" for a hit listed by a filter alone. */
   base: string;
   /** True when no term scored and the filters alone listed the document: its base is 1. */
   listedByFilter: boolean;
@@ -875,7 +895,7 @@ export function scoreLine(hit: SearchHit): ScoreLine {
   const total = hit.score.toFixed(2);
   const rest = factors.reduce((p, f) => p * Number(f.value), 1);
   const lands = (base: number) => roundsTo(base * rest, total);
-  const base = listedByFilter ? "1" : fewestDecimals(sum, 3, lands);
+  const base = listedByFilter ? "1" : fewestDecimals(sum, 3, lands, true);
   return { base, listedByFilter, factors, total, exact: lands(Number(base)) };
 }
 
