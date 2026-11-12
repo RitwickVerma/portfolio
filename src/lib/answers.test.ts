@@ -80,7 +80,8 @@ describe("tenure arithmetic, against fixed dates", () => {
 
   it("puts the computed figure in the answer and the as-of date in the source", () => {
     const a = ask("how many years of c++")!;
-    expect(a.answer).toBe("5 years, 8 months, on eBay's C++ search engine.");
+    expect(a.answer).toBe("5 years, 8 months professionally, on eBay's C++ search engine; writing C++ since 2013.");
+    expect(a.source).toContain("2013 is 11th class at school");
     expect(a.source).toContain("from the eBay dates on this page");
     expect(a.source).toContain("as of 11 Nov 2026");
     expect(a.source).toContain("since Mar 2021");

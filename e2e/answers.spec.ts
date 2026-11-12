@@ -9,7 +9,7 @@ const ANSWER = (page: Page) => page.getByTestId("answer");
 const LINE = (page: Page) => page.getByTestId("understanding");
 
 /** "5 years, 8 months", "1 year", "11 months": the shape of a computed tenure, whatever the number. */
-const TENURE = /^(\d+ years?(, \d+ months?)?|\d+ months?), on eBay's C\+\+ search engine\.$/;
+const TENURE = /^(\d+ years?(, \d+ months?)?|\d+ months?) professionally, on eBay's C\+\+ search engine; writing C\+\+ since \d{4}\.$/;
 
 async function open(page: Page, q = "", width = 1440) {
   await page.emulateMedia({ reducedMotion: "reduce" });

@@ -1,4 +1,4 @@
-import { education, experiences, projects, socialLinks, EBAY_SEPARATION } from "./data";
+import { CPP_SINCE, education, experiences, projects, socialLinks, EBAY_SEPARATION } from "./data";
 import { dateLabel } from "./liveness";
 import { notes } from "./notes";
 import { parseQuery, tokenize, QUESTION_WORDS } from "./search";
@@ -187,8 +187,8 @@ function tenure(terms: string[], today: string): Answer | null {
       intent: "tenure",
       subject: "c++",
       question: "How long has he worked in C++?",
-      answer: `${t}, on eBay's C++ search engine.`,
-      source: `${from}${asOf(today)}. The engine is C++, so the C++ tenure is the eBay tenure.`,
+      answer: `${t} professionally, on eBay's C++ search engine; writing C++ since ${CPP_SINCE}.`,
+      source: `${from}${asOf(today)}. ${CPP_SINCE} is 11th class at school, two years before the BTech.`,
       href: "/#work",
     };
   }
