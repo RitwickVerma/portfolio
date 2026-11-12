@@ -41,7 +41,7 @@ async function typeQuery(page: Page, q: string) {
 }
 
 test.describe("a typed question is answered above the results", () => {
-  test("how many years of c++: the tenure is computed from the dates, and the line says how it was read", async ({ page }) => {
+  test("how many years of c++: the tenure is computed from the dates, and the line does not repeat it", async ({ page }) => {
     await open(page);
     await typeQuery(page, "how many years of c++");
     const row = ANSWER(page);
@@ -50,8 +50,10 @@ test.describe("a typed question is answered above the results", () => {
     await expect(row.getByRole("heading", { level: 2 })).toHaveText(TENURE);
     await expect(page.getByTestId("answer-source")).toContainText("from the eBay dates on this page");
     await expect(row).toContainText("How long has he worked in C++?");
-    await expect(LINE(page)).toContainText("tenure");
-    await expect(LINE(page)).toContainText("Read as: c++");
+    // The row already says how the question was read; the line does not say it again.
+    await expect(LINE(page)).not.toContainText("Read as");
+    await expect(LINE(page)).not.toContainText("tenure");
+    await expect(LINE(page).getByRole("link")).toHaveCount(0);
     // The answer comes before the results in the page.
     const [answerY, listY] = await Promise.all([row.boundingBox().then((b) => b!.y), page.locator("#hits").boundingBox().then((b) => b!.y)]);
     expect(answerY).toBeLessThan(listY);
