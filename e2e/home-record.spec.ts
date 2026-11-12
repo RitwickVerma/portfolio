@@ -1,4 +1,5 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
+import { unfold } from "./helpers";
 
 // The home page's record sections, operated. Each test reads a number off the page and checks the
 // figure beside it was drawn from it, not just that something is on screen.
@@ -114,7 +115,7 @@ test.describe("before eBay", () => {
     const fold = earlier.locator("details");
     await expect(fold).not.toHaveAttribute("open", "");
     await expect(earlier.getByText("with 2 ms response times")).toBeHidden();
-    await fold.locator("summary").click();
+    await unfold(fold.locator("summary"));
     await expect(earlier.getByText("with 2 ms response times")).toBeVisible();
     await expect(earlier.getByText("Extracted SQL data from Django models")).toBeVisible();
     await expect(earlier.getByText("Room (SQLite)")).toBeVisible();
@@ -262,7 +263,7 @@ test.describe("homelab", () => {
     const fold = page.locator("#homelab details").first();
     await expect(fold.locator("summary")).toContainText("All 16 guests");
     await expect(fold.locator("li").first()).toBeHidden();
-    await fold.locator("summary").click();
+    await unfold(fold.locator("summary"));
     await expect(fold.locator("li")).toHaveCount(16);
     await expect(page.locator("#homelab")).toContainText("OpenTofu declares 14 of the 16");
     await expect(page.locator("#homelab figure").first()).toContainText("declares 14 of 16 guests");

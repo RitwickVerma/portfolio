@@ -1,10 +1,23 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { sidewaysOverflow } from "./helpers";
+import { sidewaysOverflow, unfold } from "./helpers";
 
 // Smoke tests over the built site. Each one guards a promise the site makes
 // in its own copy (colophon, /design): no errors, no third-party requests,
 // complete without JavaScript, still under reduced motion, one printed page.
+
+/**
+ * Press a toggle (a preset, a range) and wait until it reports the state. `networkidle` is not
+ * hydration: a click that lands before React attaches is lost, and the old one-shot click + check
+ * failed that way on WebKit (pipeline 3059062910, "Full chart"). Clicks only while the state is
+ * wrong, so an already-pressed toggle is never flipped back. Same assertion as before.
+ */
+async function press(button: Locator, pressed: "true" | "false" = "true") {
+  await expect(async () => {
+    if ((await button.getAttribute("aria-pressed")) !== pressed) await button.click();
+    await expect(button).toHaveAttribute("aria-pressed", pressed, { timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+}
 
 const NOTE = "/notes/tizen-video-plane-ambilight/";
 const PLUTUS = "/notes/plutus-what-the-backtest-cannot-tell-you/";
@@ -237,7 +250,7 @@ test.describe("the frame-authority figure", () => {
     await expect(verdict).toContainText("The canvas puts it back");
 
     // A preset is a whole case: a move between two places on the screen is the window's own.
-    await first.getByRole("button", { name: "A move on the screen" }).click();
+    await press(first.getByRole("button", { name: "A move on the screen" }));
     await expect(verdict).toContainText("The canvas keeps it");
     await expect(first.getByRole("button", { name: "A move on the screen" })).toHaveAttribute("aria-pressed", "true");
 
@@ -635,7 +648,7 @@ test.describe("the SudoStamp note's figures", () => {
 
 test.describe("the ShutUp figure", () => {
   const figure = (page: Page) => page.getByRole("figure", { name: /A hand reaching to decline a call looks like a wave/ });
-  const open = (fig: ReturnType<typeof figure>, summary: string) => fig.locator("summary", { hasText: summary }).click();
+  const open = (fig: ReturnType<typeof figure>, summary: string) => unfold(fig.locator("summary", { hasText: summary }));
 
   test("opens on the claim, a preset and the reach, and the first screen holds the drawing and the verdict", async ({ page }) => {
     const problems = watch(page);
@@ -695,8 +708,7 @@ test.describe("the ShutUp figure", () => {
     const fig = figure(page);
     const status = fig.getByRole("status").first();
     const preset = (name: string) => fig.getByRole("button", { name, exact: true });
-    await preset("A deliberate wave").click();
-    await expect(preset("A deliberate wave")).toHaveAttribute("aria-pressed", "true");
+    await press(preset("A deliberate wave"));
     await expect(status).toContainText("The call is not answered.");
     await expect(status).toContainText("silences the ringer at 3.20 s");
     // The same wave answers the moment it is seen once the single-wave rule is off.
@@ -781,9 +793,7 @@ test.describe("alignment figure", () => {
   const lostCells = (page: Page) => drawing(page).getByRole("cell").filter({ hasText: /^lost/ });
   const preset = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
   const fold = (page: Page, name: string) => page.locator("summary").filter({ hasText: name });
-  const openFold = async (page: Page, name: string) => {
-    await fold(page, name).click();
-  };
+  const openFold = (page: Page, name: string) => unfold(fold(page, name));
 
   test("opens on the failure, and is meaningful before it hydrates: the claim, both methods, the verdict, the rows and the matrix are in the HTML", async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
@@ -819,8 +829,7 @@ test.describe("alignment figure", () => {
     const problems = watch(page);
     await page.goto(ALIGN_NOTE);
     await page.waitForLoadState("networkidle");
-    await preset(page, "Full chart").click();
-    await expect(preset(page, "Full chart")).toHaveAttribute("aria-pressed", "true");
+    await press(preset(page, "Full chart"));
     await expect(verdict(page)).toContainText("Both methods give all 12 rows the same lines.");
     await expect(verdict(page)).toHaveAttribute("data-tone", "ok");
     await expect(drawing(page)).toContainText("12 of 12");
@@ -978,8 +987,7 @@ test.describe("plutus note figures", () => {
     await page.waitForLoadState("networkidle");
     const fig = page.getByRole("figure", { name: /Same rule, same prices/ });
     await expect(fig.getByRole("status")).toContainText("21.3% a year");
-    await fig.getByRole("button", { name: "Members at the time" }).click();
-    await expect(fig.getByRole("button", { name: "Members at the time" })).toHaveAttribute("aria-pressed", "true");
+    await press(fig.getByRole("button", { name: "Members at the time" }));
     await expect(fig.getByRole("status")).toContainText("3.1% a year");
     await expect(fig.getByRole("status")).toContainText("behind SPY");
     await expect(fig.getByRole("status")).toContainText("18.2");
@@ -1016,8 +1024,7 @@ test.describe("plutus note figures", () => {
     await fig.scrollIntoViewIfNeeded();
     await expect(fig.getByRole("status")).toContainText("yearly returns from");
     const before = await fig.getByRole("status").innerText();
-    await fig.getByRole("button", { name: "6 months" }).click();
-    await expect(fig.getByRole("button", { name: "6 months" })).toHaveAttribute("aria-pressed", "true");
+    await press(fig.getByRole("button", { name: "6 months" }));
     await expect.poll(async () => fig.getByRole("status").innerText()).not.toBe(before);
     await fig.getByRole("radio", { name: "Worst fall" }).click();
     await expect(fig.getByRole("status")).toContainText("worst falls from");
@@ -1047,8 +1054,7 @@ test.describe("the Tizen note's figures", () => {
     await expect(fig.locator("[role=status][data-tone]")).toContainText("darker");
     await expect(fig.locator("[role=status][data-tone]")).toContainText("The app sends");
     const before = await fig.locator("[role=status][data-tone]").innerText();
-    await fig.getByRole("button", { name: /A dark film/ }).click();
-    await expect(fig.getByRole("button", { name: /A dark film/ })).toHaveAttribute("aria-pressed", "true");
+    await press(fig.getByRole("button", { name: /A dark film/ }));
     expect(await fig.locator("[role=status][data-tone]").innerText()).not.toBe(before);
     await fig.getByText("More controls").click();
     await fig.getByRole("radio", { name: "Deep green" }).click();
