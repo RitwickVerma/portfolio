@@ -91,6 +91,9 @@ test.describe("timeline is navigation", () => {
   test("on a phone the rows are links too", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
+    // The link is a plain anchor and works before hydration, but hydration and the in-tab index build change
+    // the page's height under the scroll position; on the CI runner that undid the jump once. Settle first.
+    await expect(page.getByText(/indexed in this tab in/)).toBeVisible({ timeout: 30_000 });
     const link = page.locator("#work figure a[href='#work-role-0']:visible");
     await expect(link).toHaveCount(1);
     expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
