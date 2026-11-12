@@ -408,7 +408,7 @@ export default function Search() {
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pb-3 min-h-11 max-sm:min-h-[5.0625rem]">
           {result ? (
             <>
-              <PlanChips plan={result.plan} parsed={result.parsed} />
+              <PlanChips plan={result.plan} parsed={result.parsed} forms={index.forms} />
               <p className="font-mono text-[0.7rem] text-muted">
                 {result.hits.length} of {result.total} documents, {run!.ms < 0.01 ? "under 0.01" : run!.ms.toFixed(2)} ms, ranked in your browser
               </p>

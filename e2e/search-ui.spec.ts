@@ -204,6 +204,17 @@ test.describe("plan chips for a screen reader", () => {
     await expect(first).toHaveText(/^search, in \d+ documents?$/);
   });
 
+  test("a chip reads the word the corpus uses, never the stem", async ({ page }) => {
+    await open(page, "c++ queries ");
+    const chips = page.locator('ul[aria-label^="Query plan"] li[data-source="typed"]');
+    await expect(chips.first()).toHaveText(/^C\+\+, in \d+ documents?$/);
+    // "queries" is stemmed to "queri"; the chip says "query" or "queries", the stem only in the tooltip.
+    const second = chips.nth(1);
+    await expect(second).toHaveText(/^quer(y|ies), in \d+ documents?$/);
+    await expect(second).toHaveAttribute("title", /^quer(y|ies) \(stem queri\): /);
+    await expect(page.locator('ul[aria-label^="Query plan"]')).not.toContainText("queri,");
+  });
+
   test("a filter chip reads kind and its value apart", async ({ page }) => {
     await open(page, "kind:note ");
     await expect(page.locator('ul[aria-label^="Query plan"] li[data-source="filter"]')).toHaveText("kind: Note");

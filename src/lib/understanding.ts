@@ -1,4 +1,5 @@
 import { isQuestionWord, type Answer } from "./answers";
+import { AS_TYPED, surfaceWord } from "./searchUi";
 import { KIND_ALIASES, analyze, type PlanTerm, type SearchIndex, type SearchResult, tokenize } from "./search";
 
 // The one line under the box that says what the engine did with the words, and says nothing when it did
@@ -14,9 +15,6 @@ export interface Understanding {
   /** For a respelling: the words the engine searched for instead, so the line can mark them as the match. */
   found?: string;
 }
-
-/** The tokenizer builds these out of punctuation; a visitor reads what they typed. */
-const AS_TYPED: Record<string, string> = { cpp: "C++", csharp: "C#", dotnet: ".NET" };
 
 /** Most terms a rewrite may name before the line says "and N more": it is one line. */
 export const MAX_NAMED = 3;
@@ -47,7 +45,7 @@ export function understand(index: SearchIndex, result: SearchResult, answer: Ans
   for (const a of analyze(result.query)) if (!typed.has(a.term)) typed.set(a.term, AS_TYPED[a.term] ?? a.word);
   const typedWord = (term: string) => typed.get(term) ?? AS_TYPED[term] ?? index.forms.get(term)?.[0] ?? term;
   // The word a term is shown as: the form the corpus uses, never the stem.
-  const shown = (term: string) => AS_TYPED[term] ?? index.forms.get(term)?.[0] ?? term;
+  const shown = (term: string) => surfaceWord(index.forms, term);
 
   // An answer row above the results already says how the question was read (its question, its headline), so
   // the line leaves the subject and intent out and keeps only what the engine did to the words.
