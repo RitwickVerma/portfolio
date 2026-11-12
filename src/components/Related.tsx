@@ -1,5 +1,5 @@
 import { snippet } from "@/lib/search";
-import type { SimilarResult } from "@/lib/similar";
+import { shownQuery, type SimilarResult } from "@/lib/similar";
 import { Marked, ResultLink, hrefFor } from "@/components/search/parts";
 
 /**
@@ -11,13 +11,16 @@ import { Marked, ResultLink, hrefFor } from "@/components/search/parts";
 export default function Related({ result }: { result: SimilarResult }) {
   const { query, hits } = result;
   const why = `/?q=${encodeURIComponent(query)}`;
+  // The heaviest few, as words; the link carries the whole query, so the scores it shows are the ones above.
+  const { words, more } = shownQuery(result);
   return (
     <section aria-labelledby="related-title" data-related className="mt-16 pt-6 border-t-2 border-fg max-w-[44rem]">
       <h2 id="related-title" className="wd-semi text-[clamp(1.4rem,3vw,1.9rem)] font-extrabold leading-[1.1]">
         What else here is about the same things, by the engine&apos;s reckoning.
       </h2>
       <p className="fact mt-3 max-w-[60ch]">
-        The engine used this note as the query: <span className="font-mono text-[0.8em] break-words">{query}</span>.
+        The engine used this note as the query: <span className="font-mono text-[0.8em] break-words">{words.join(" ")}</span>
+        {more > 0 ? `, and ${more} more terms (Why? carries them all)` : ""}.
       </p>
       <ol className="mt-6 border-b border-border">
         {hits.map(({ doc, score, matched }) => (

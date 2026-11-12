@@ -28,15 +28,20 @@ async function readRelated(page: Page) {
   const section = page.locator("[data-related]");
   const rows = section.locator("[data-related-row]");
   const caption = (await section.locator("p.fact").first().innerText()).trim();
-  const query = caption.replace(/^The engine used this note as the query:\s*/, "").replace(/\.$/, "");
+  // The caption prints the heaviest few words; the Why? links carry the whole query.
+  const printed = /^The engine used this note as the query:\s*(.*?)(?:, and (\d+) more terms \(Why\? carries them all\))?\.$/.exec(caption);
+  const shown = (printed?.[1] ?? "").split(" ").filter(Boolean);
+  const more = Number(printed?.[2] ?? 0);
+  const why0 = await rows.first().getByRole("link", { name: /^Why\?/ }).getAttribute("href");
+  const query = decodeURIComponent((why0 ?? "").replace(/^\/\?q=/, ""));
   const links = await rows.locator("h3 a").evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute("href") ?? ""));
   const scores = (await rows.locator("[data-related-score]").allInnerTexts()).map((s) => s.trim());
-  return { section, rows, caption, query, links, scores };
+  return { section, rows, caption, query, shown, more, links, scores };
 }
 
 /** The shape every page with the section must have. */
 async function expectWellFormed(page: Page, path: string) {
-  const { section, rows, caption, query, links, scores } = await readRelated(page);
+  const { section, rows, caption, query, shown, more, links, scores } = await readRelated(page);
   await expect(section).toHaveCount(1);
   await expect(section.getByRole("heading", { level: 2 })).toHaveText(HEADING);
   const n = await rows.count();
@@ -53,7 +58,13 @@ async function expectWellFormed(page: Page, path: string) {
   const where = links.map((h) => new URL(h, "http://x"));
   for (const u of where) expect(u.pathname).not.toBe(path);
   expect(new Set(where.map((u) => u.pathname + u.hash)).size).toBe(links.length);
-  expect(caption).toMatch(/^The engine used this note as the query: \S+( \S+)+\.$/);
+  expect(caption).toMatch(/^The engine used this note as the query: \S+( \S+)+(, and \d+ more terms \(Why\? carries them all\))?\.$/);
+  // At most eight words are printed, the heaviest first, as the words the query itself holds (never stems); the rest are counted.
+  const words = query.split(" ");
+  expect(shown.length).toBeGreaterThanOrEqual(2);
+  expect(shown.length).toBeLessThanOrEqual(8);
+  expect(shown).toEqual(words.slice(0, shown.length));
+  expect(shown.length + more).toBe(words.length);
   expect(query.length).toBeLessThanOrEqual(120);
 }
 

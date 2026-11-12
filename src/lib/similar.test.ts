@@ -4,7 +4,7 @@ import { buildCorpus } from "./corpus";
 import { notes } from "./notes";
 import { noteText } from "./notes.server";
 import {
-  leaveOneOut, MAX_QUERY_CHARS, MAX_ROWS, MIN_ROWS, MIN_SCORE, noteDocIds, parentKey, relatedToNote, RELATED_KINDS, similar, TERMS_USED, topTerms,
+  leaveOneOut, MAX_QUERY_CHARS, MAX_ROWS, MAX_SHOWN_TERMS, MIN_ROWS, MIN_SCORE, MIN_SHARE, noteDocIds, parentKey, relatedToNote, RELATED_KINDS, shownQuery, similar, TERMS_USED, topTerms,
 } from "./similar";
 
 const doc = (id: string, kind: SearchDoc["kind"], title: string, text: string, keywords?: string[]): SearchDoc => ({
@@ -140,18 +140,51 @@ describe("similar: the result", () => {
 });
 
 describe("relatedToNote: the threshold", () => {
-  it("lists only rows that clear MIN_SCORE, 2 to 4 of them, or nothing", () => {
+  it("lists only rows that clear MIN_SCORE and MIN_SHARE of the best row, 2 to 4 of them, or nothing", () => {
     for (const slug of slugs) {
-      const clearing = similar(site, { docIds: noteDocIds(site, slug) }, { limit: 50 }).hits.filter((h) => h.score >= MIN_SCORE);
+      const all = similar(site, { docIds: noteDocIds(site, slug) }, { limit: 50 }).hits;
+      const top = all[0]?.score ?? 0;
+      const clearing = all.filter((h) => h.score >= MIN_SCORE && h.score >= MIN_SHARE * top);
       const r = relatedToNote(site, slug);
       if (clearing.length < MIN_ROWS) {
-        expect(r).toBeNull();
+        expect(r, slug).toBeNull();
       } else {
-        expect(r).not.toBeNull();
-        expect(r!.hits.length).toBe(Math.min(MAX_ROWS, clearing.length));
-        for (const h of r!.hits) expect(h.score).toBeGreaterThanOrEqual(MIN_SCORE);
+        expect(r, slug).not.toBeNull();
+        expect(r!.hits.length, slug).toBe(Math.min(MAX_ROWS, clearing.length));
+        for (const h of r!.hits) {
+          expect(h.score).toBeGreaterThanOrEqual(MIN_SCORE);
+          expect(h.score).toBeGreaterThanOrEqual(MIN_SHARE * r!.hits[0].score);
+        }
       }
     }
+  });
+
+  it("a weak second row under a strong first is dropped: the SudoStamp note lists no section, though 7 and 8.8 clear the fixed line", () => {
+    const all = similar(site, { docIds: noteDocIds(site, "sudostamp-refuse-before-asking") }, { limit: 50 }).hits;
+    expect(all[0].score).toBeGreaterThan(30);
+    // The rows the live review saw: a keys-only match at 8.8 and a one-word match at 7.0, both over MIN_SCORE.
+    const weak = all.slice(1, 3);
+    expect(weak.every((h) => h.score >= MIN_SCORE)).toBe(true);
+    expect(weak.every((h) => h.score < MIN_SHARE * all[0].score)).toBe(true);
+    expect(relatedToNote(site, "sudostamp-refuse-before-asking")).toBeNull();
+    // The guard can fail: with no relative floor the same note shows three rows.
+    expect(relatedToNote(site, "sudostamp-refuse-before-asking", { minShare: 0 })?.hits.length).toBe(3);
+  });
+
+  it("the share is measured from the best row kept, and rows under it are dropped", () => {
+    const loose = similar(small, { docIds: noteDocIds(small, "a") }, { limit: 10 }).hits;
+    const r = similar(small, { docIds: noteDocIds(small, "a") }, { limit: 10, minShare: 0.5 });
+    expect(r.hits[0].score).toBe(loose[0].score);
+    for (const h of r.hits) expect(h.score).toBeGreaterThanOrEqual(0.5 * r.hits[0].score);
+    expect(r.hits).toHaveLength(loose.filter((h) => h.score >= 0.5 * loose[0].score).length);
+  });
+
+  it("prints how many notes keep a Related section, and the notes that keep one keep 2 or more rows", () => {
+    const kept = slugs.map((slug) => ({ slug, rows: relatedToNote(site, slug)?.hits ?? [] })).filter((n) => n.rows.length > 0);
+    console.log(`related at ${MIN_SHARE * 100}%: ${kept.length} of ${slugs.length} notes keep the section\n${slugs.map((s) => `${s}: ${(relatedToNote(site, s)?.hits ?? []).map((h) => h.score.toFixed(2)).join(", ") || "none"}`).join("\n")}`);
+    for (const n of kept) expect(n.rows.length, n.slug).toBeGreaterThanOrEqual(MIN_ROWS);
+    // At 25% six of nine keep it; at 30% four would. Losing more than two notes' sections moves the share down, not up.
+    expect(slugs.length - kept.length).toBeLessThanOrEqual(3);
   });
 
   it("is null when only one row clears the line, and appears when two do", () => {
@@ -175,6 +208,30 @@ describe("relatedToNote: the threshold", () => {
     expect(MIN_SCORE).toBeLessThan(10);
     expect(MIN_ROWS).toBe(2);
     expect(MAX_ROWS).toBe(4);
+    expect(MIN_SHARE).toBe(0.25);
+  });
+});
+
+describe("shownQuery: the caption prints a few words, not the whole query", () => {
+  const r = similar(site, { docIds: noteDocIds(site, "sudostamp-refuse-before-asking") });
+
+  it("is the heaviest eight terms as words, and counts the rest", () => {
+    expect(r.terms.length).toBeGreaterThan(MAX_SHOWN_TERMS);
+    const shown = shownQuery(r);
+    expect(shown.words).toHaveLength(MAX_SHOWN_TERMS);
+    expect(shown.words).toEqual(r.terms.slice(0, 8).map((t) => t.word));
+    expect(shown.more).toBe(r.terms.length - 8);
+    expect(r.query.split(" ").slice(0, 8)).toEqual(shown.words);
+  });
+
+  it("shows words the pages spell, never stems", () => {
+    for (const t of r.terms) {
+      expect(site.forms.get(t.term)).toContain(t.word);
+    }
+  });
+
+  it("a short query is shown whole, with nothing counted", () => {
+    expect(shownQuery(r, 99)).toEqual({ words: r.terms.map((t) => t.word), more: 0 });
   });
 });
 
