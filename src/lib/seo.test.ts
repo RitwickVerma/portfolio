@@ -4,11 +4,10 @@ import { join } from "node:path";
 import { personJsonLd, jsonLdString, noteJsonLd, fitDescription, cardMetadata, ogAlt, OG_CARDS, TITLE_MAX, DESCRIPTION_MAX, SITE_TITLE, SITE_DESCRIPTION } from "./seo";
 import { EBAY_ENDED, SITE_URL } from "./data";
 import { notes, noteUrl } from "./notes";
-import { apps, policySlugs } from "./apps";
+import { apps } from "./apps";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
 import { metadata as notFoundMetadata } from "@/app/not-found";
-import { generateMetadata as privacyMetadata } from "@/app/apps/[slug]/privacy-policy/page";
 
 const APP_DIR = join(__dirname, "..", "app");
 const read = (...p: string[]) => readFileSync(join(APP_DIR, ...p), "utf8");
@@ -187,7 +186,6 @@ describe("sitemap.xml", () => {
     const expected = pageRoutes(APP_DIR).flatMap((r) => {
       if (r === "/notes/[slug]") return notes.map((n) => noteUrl(n));
       if (r === "/apps/[slug]") return Object.values(apps).map((a) => `/apps/${a.slug}/`);
-      if (r.endsWith("/privacy-policy")) return [];
       return [r === "/" ? "/" : `${r}/`];
     });
     expect(expected.length).toBeGreaterThan(5);
@@ -196,9 +194,8 @@ describe("sitemap.xml", () => {
     for (const u of urls) expect(u.endsWith("/"), u).toBe(true);
   });
 
-  it("leaves the noindex privacy-policy pages out, and they stay noindex,nofollow", () => {
+  it("lists no privacy-policy page: each app's policy lives on its own site", () => {
     for (const u of urls) expect(u).not.toContain("privacy-policy");
-    expect(read("apps", "[slug]", "privacy-policy", "page.tsx")).toContain("robots: { index: false, follow: false }");
   });
 
   it("gives lastmod only where the repo has a date, as YYYY-MM-DD, never in the future", () => {
@@ -252,8 +249,6 @@ describe("TechArticle JSON-LD", () => {
 });
 
 describe("pages that must not inherit the home page's metadata", () => {
-  const HOME = "/";
-
   it("the 404 has its own description and no og:url at all", () => {
     const og = notFoundMetadata.openGraph as { url?: unknown; description?: string; title?: string } | null | undefined;
     expect(og, "an openGraph of its own, or it inherits the home page's").toBeTruthy();
@@ -264,21 +259,6 @@ describe("pages that must not inherit the home page's metadata", () => {
     expect((notFoundMetadata.twitter as { description?: string } | null)?.description).toBe(notFoundMetadata.description);
     expect(notFoundMetadata.robots).toMatchObject({ index: false });
   });
-
-  for (const slug of policySlugs()) {
-    it(`/apps/${slug}/privacy-policy/ names itself in og:url, stays noindex,nofollow, and has a description a card can carry`, async () => {
-      const m = await privacyMetadata({ params: Promise.resolve({ slug }) });
-      const og = m.openGraph as { url?: string; description?: string; title?: string } | null | undefined;
-      expect(og?.url).toBe(`/apps/${slug}/privacy-policy/`);
-      expect(og?.url).not.toBe(HOME);
-      expect(m.alternates?.canonical).toBe(og?.url);
-      expect(m.robots).toEqual({ index: false, follow: false });
-      expect(String(m.description).length).toBeGreaterThan(49);
-      expect(String(m.description).length).toBeLessThanOrEqual(DESCRIPTION_MAX);
-      expect(og?.description).toBe(m.description);
-      expect(String(og?.title)).toContain(apps[slug].name);
-    });
-  }
 
   it("fitDescription keeps whole sentences within the limit, and cuts at a word with an ellipsis only when it must", () => {
     expect(fitDescription("One. Two. Three.", 10)).toBe("One. Two.");

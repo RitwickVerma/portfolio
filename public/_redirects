@@ -5,3 +5,6 @@
 # older links still point here.
 /apps/sudostamp/privacy-policy/ https://sudostamp.ritwickverma.dev/privacy-policy/ 301
 /apps/sudostamp/privacy-policy https://sudostamp.ritwickverma.dev/privacy-policy/ 301
+# ShutUp!'s privacy policy lives on its own site too (https://shutup.ritwickverma.dev, docs/SITE.md in its repo).
+/apps/shutup/privacy-policy/ https://shutup.ritwickverma.dev/privacy-policy/ 301
+/apps/shutup/privacy-policy https://shutup.ritwickverma.dev/privacy-policy/ 301

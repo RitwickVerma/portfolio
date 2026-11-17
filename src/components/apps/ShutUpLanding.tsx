@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { PublicApp } from "@/lib/apps";
+import { privacyHref } from "@/lib/apps";
 import PhoneShot from "./PhoneShot";
 import ShutUpWave from "./ShutUpWave";
 import { AppHeader, AppFooter, ext } from "./AppChrome";
@@ -230,7 +231,7 @@ export default function ShutUpLanding({ app }: { app: PublicApp }) {
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <a
-                    href={`/apps/${app.slug}/privacy-policy/`}
+                    href={privacyHref(app)}
                     className={`${BTN} bg-[var(--inverse-primary)] text-[#003354] hover:bg-[#B5D8FC]`}
                   >
                     Read the privacy policy
