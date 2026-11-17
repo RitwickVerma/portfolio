@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import AppIcon from "@/components/AppIcon";
-import type { PublicApp } from "@/lib/apps";
+import { privacyHref, type PublicApp } from "@/lib/apps";
 
 // Header and footer shared by every app page. Everything is styled off the
 // app's own CSS variables (set by the route), so the same markup reads as a
@@ -80,7 +80,7 @@ export function AppFooter({ app, extra }: { app: PublicApp; extra?: ReactNode })
     {
       title: "Legal",
       links: [
-        { href: `/apps/${app.slug}/privacy-policy/`, label: "Privacy policy" },
+        { href: privacyHref(app), label: "Privacy policy" },
         { href: app.repoUrl, label: `${app.license} licence`, external: true },
       ],
     },

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { personJsonLd, jsonLdString, noteJsonLd, fitDescription, cardMetadata, ogAlt, OG_CARDS, TITLE_MAX, DESCRIPTION_MAX, SITE_TITLE, SITE_DESCRIPTION } from "./seo";
 import { EBAY_ENDED, SITE_URL } from "./data";
 import { notes, noteUrl } from "./notes";
-import { apps } from "./apps";
+import { apps, policySlugs } from "./apps";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
 import { metadata as notFoundMetadata } from "@/app/not-found";
@@ -265,7 +265,7 @@ describe("pages that must not inherit the home page's metadata", () => {
     expect(notFoundMetadata.robots).toMatchObject({ index: false });
   });
 
-  for (const slug of Object.keys(apps)) {
+  for (const slug of policySlugs()) {
     it(`/apps/${slug}/privacy-policy/ names itself in og:url, stays noindex,nofollow, and has a description a card can carry`, async () => {
       const m = await privacyMetadata({ params: Promise.resolve({ slug }) });
       const og = m.openGraph as { url?: string; description?: string; title?: string } | null | undefined;

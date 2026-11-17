@@ -1,3 +1,7 @@
 # Cloudflare Pages redirects (https://developers.cloudflare.com/pages/configuration/redirects/)
 # A stable, memorable address for the PDF; the file keeps its descriptive name for downloads.
 /resume.pdf /Ritwick_Verma_Resume.pdf 302
+# SudoStamp's privacy policy lives on its own site, deployed from its repository; Google Play and
+# older links still point here.
+/apps/sudostamp/privacy-policy/ https://sudostamp.ritwickverma.dev/privacy-policy/ 301
+/apps/sudostamp/privacy-policy https://sudostamp.ritwickverma.dev/privacy-policy/ 301

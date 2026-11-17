@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
-import { apps, appSlugs, appCssVars, appBaseCss } from "@/lib/apps";
+import { apps, policySlugs, appCssVars, appBaseCss } from "@/lib/apps";
 import { AppHeader, AppFooter } from "@/components/apps/AppChrome";
 import { fitDescription } from "@/lib/seo";
 
@@ -11,7 +11,7 @@ import { fitDescription } from "@/lib/seo";
 // Policy text lives in src/lib/apps.ts, copied from each repo's own
 // docs/PRIVACY_POLICY.md.
 export async function generateStaticParams() {
-  return appSlugs().map((slug) => ({ slug }));
+  return policySlugs().map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -21,7 +21,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const app = apps[slug];
-  if (!app) return {};
+  if (!app?.privacyPolicy) return {};
   const path = `/apps/${slug}/privacy-policy/`;
   const title = `Privacy Policy \u00b7 ${app.name}`;
   // The policy's own summary is longer than a description may be; the page's openGraph is its own,
@@ -45,7 +45,7 @@ export async function generateViewport({
 }): Promise<Viewport> {
   const { slug } = await params;
   const app = apps[slug];
-  if (!app) return {};
+  if (!app?.privacyPolicy) return {};
   return { themeColor: app.palette.bg, colorScheme: app.scheme };
 }
 
@@ -55,8 +55,8 @@ const H2 = "text-xl font-semibold tracking-tight text-[var(--fg)]";
 export default async function PrivacyPolicyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const app = apps[slug];
-  if (!app) notFound();
-  const pp = app.privacyPolicy;
+  const pp = app?.privacyPolicy;
+  if (!app || !pp) notFound();
   const toc = [
     { id: "summary", label: "The short version" },
     { id: "data", label: "What the app handles" },

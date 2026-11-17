@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { apps, appSlugs, appCssVars } from "./apps";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { apps, appSlugs, appCssVars, policySlugs, privacyHref } from "./apps";
 import { LANDINGS } from "@/components/apps/landings";
 
 describe("public app pages", () => {
@@ -20,6 +22,19 @@ describe("public app pages", () => {
   it("links Google Play only for apps that are live there", () => {
     expect(apps.shutup.playUrl).toMatch(/^https:\/\/play\.google\.com\/store\/apps\/details\?id=com\.laughingstock\.ritwick\.shutup$/);
     expect(apps.sudostamp.playUrl).toBe("https://play.google.com/store/apps/details?id=com.ritwick.sudostamp");
+  });
+
+  it("links an app with its own site to the policy there, and redirects the old address", () => {
+    // SudoStamp's policy is owned and deployed by its own repository (site/ there): nothing of the
+    // app depends on this portfolio, which only links out.
+    expect(privacyHref(apps.sudostamp)).toBe("https://sudostamp.ritwickverma.dev/privacy-policy/");
+    expect(apps.sudostamp.privacyPolicy).toBeUndefined();
+    expect(policySlugs()).not.toContain("sudostamp");
+    expect(privacyHref(apps.shutup)).toBe("/apps/shutup/privacy-policy/");
+    const redirects = readFileSync(join(process.cwd(), "public", "_redirects"), "utf8");
+    for (const from of ["/apps/sudostamp/privacy-policy/", "/apps/sudostamp/privacy-policy"]) {
+      expect(redirects).toMatch(new RegExp(`^${from.replace(/\//g, "\\/")} https://sudostamp\\.ritwickverma\\.dev/privacy-policy/ 301$`, "m"));
+    }
   });
 
   it("keeps each app's own license", () => {
