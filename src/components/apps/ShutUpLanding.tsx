@@ -42,7 +42,7 @@ const I = {
 const gestures: { title: string; tone: string; icon: string; items: { g: string; a: ReactNode }[] }[] = [
   {
     title: "While the phone rings",
-    tone: "bg-[var(--accent-soft)] text-[var(--on-accent-soft)]",
+    tone: "bg-[var(--tertiary-soft)] text-[var(--on-tertiary-soft)]", // amber: the app's ringing colour
     icon: I.wave,
     items: [
       { g: "Single wave", a: "Silence. It can only silence, so reaching to decline never answers." },
@@ -61,7 +61,7 @@ const gestures: { title: string; tone: string; icon: string; items: { g: string;
   },
   {
     title: "Any time",
-    tone: "bg-[var(--tertiary-soft)] text-[var(--on-tertiary-soft)]",
+    tone: "bg-[var(--accent-soft)] text-[var(--on-accent-soft)]",
     icon: I.clock,
     items: [
       { g: "Scheduled calls", a: "It buzzes, says the name out loud and dials on the minute. Repeatable, cancellable, on the SIM you pick." },
@@ -72,10 +72,10 @@ const gestures: { title: string; tone: string; icon: string; items: { g: string;
 ];
 
 const screens = [
-  { src: "ringing", title: "Ringing", body: "Listening for a wave", alt: "An incoming call with ShutUp! showing Ringing, listening for a wave, and the single and double wave settings" },
-  { src: "schedules", title: "Schedules", body: "Calls it will place for you", alt: "Schedules: calls to Dad today and Amy tomorrow, repeating every 24 hours" },
-  { src: "editor", title: "Schedule a call", body: "Quick chips for the usual times", alt: "Schedule a call: pick a contact, a phone number, and when, with quick chips such as In 15 min and Tonight 8 PM" },
-  { src: "settings", title: "Settings", body: "Double-wave window, haptics, theme", alt: "Settings: Try your gestures, a double-wave window of 1.2 seconds, haptics, a Quick Settings tile and theme" },
+  { src: "ringing", title: "Ringing", body: "Listening for a wave", alt: "An incoming call: ShutUp!'s block turns amber, the wide-eyed mascot shows Ringing, listening for a wave, above the single and double wave choices" },
+  { src: "schedules", title: "Schedules", body: "Calls it will place for you", alt: "Schedules: the next call, to Dad today, as a big card with the time in large numerals, and Amy tomorrow, repeating every 24 hours" },
+  { src: "editor", title: "Schedule a call", body: "The time in big numerals", alt: "Schedule a call: pick a contact or type a number, then the time shown as a big clock face with the date under it, and quick chips such as In 15 min and Tonight 8 PM" },
+  { src: "settings", title: "Settings", body: "Double-wave window, haptics, theme", alt: "Settings: a Try your gestures card with the mascot, a double-wave window of 1.2 seconds, haptics, a Quick Settings tile, and theme as System, Light and Dark tiles" },
 ];
 
 const trust = [
@@ -148,7 +148,7 @@ export default function ShutUpLanding({ app }: { app: PublicApp }) {
             {[
               ["0", "trackers or network requests"],
               ["10", "languages"],
-              ["~4.4 MB", "release APK"],
+              ["~5.2 MB", "release APK"],
               ["Android 9+", "phones, tablets and foldables"],
             ].map(([v, l]) => (
               <div key={l} className="rounded-[var(--r-card)] bg-[var(--surface)] px-6 py-6">
@@ -194,9 +194,10 @@ export default function ShutUpLanding({ app }: { app: PublicApp }) {
         <section id="screens" className="scroll-mt-20 bg-[var(--surface-low)]">
           <div className={SECTION}>
             <p className={EYEBROW}>Screens</p>
-            <h2 className={H2}>Material 3 Expressive, with dynamic colour.</h2>
+            <h2 className={H2}>Its own look, taken from its icon.</h2>
             <p className={LEAD}>
-              Light and dark themes, predictive back and adaptive layouts for tablets and foldables.
+              The icon&apos;s cornflower blue, the rounded Nunito, and a phone with a face that shows what the watcher
+              is doing. Light and dark themes, predictive back and adaptive layouts for tablets and foldables.
             </p>
           </div>
           <ul className="-mt-6 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-20 [scrollbar-width:thin] sm:px-8 lg:mx-auto lg:grid lg:max-w-6xl lg:grid-cols-4 lg:gap-8 lg:overflow-visible lg:pb-28">
