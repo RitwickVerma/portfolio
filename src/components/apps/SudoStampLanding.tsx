@@ -88,6 +88,12 @@ const moreShots = [
     alt: "Onboarding: Approve sudo with a touch, three steps, Get started",
   },
   {
+    src: "pair-qr",
+    title: "Pair by scanning",
+    body: "The desktop app shows a code; the phone's camera opens it here. One tap, and the computer finds the phone. Nothing to type.",
+    alt: "The phone after scanning: Pair with edith? with a Pair button and Cancel",
+  },
+  {
     src: "ready",
     title: "Setup checklist",
     body: "Listener, notifications, battery and Do Not Disturb. It says Ready only when all pass.",
@@ -325,7 +331,7 @@ export default function SudoStampLanding({ app }: { app: PublicApp }) {
           <p className="mt-10 max-w-2xl text-sm text-[var(--muted)]">
             Android&apos;s fingerprint sheet is a secure window, so it never appears in screenshots. Screenshots from a Pixel 7 emulator.
           </p>
-          <ul className="mt-14 grid gap-4 md:grid-cols-3">
+          <ul className="mt-14 grid gap-4 md:grid-cols-2">
             {moreShots.map((s) => (
               <li key={s.src} className={`${CARD} flex items-start gap-5 p-5`}>
                 <PhoneShot
@@ -592,8 +598,13 @@ export default function SudoStampLanding({ app }: { app: PublicApp }) {
                   <h3 className="text-xl font-medium text-[var(--fg)]">On the computer</h3>
                 </div>
                 <p className="mt-4 text-pretty text-[15px] leading-relaxed text-[var(--muted)]">
-                  No clone needed. Download the installer and its signature, check the signature, and only then run it. The app shows
-                  the same lines, with a Copy button.
+                  <span className="text-[var(--fg)]">Easiest, on a Linux desktop:</span> install the desktop app (on Arch:{" "}
+                  <code className={`${CODE} whitespace-nowrap`}>yay -S sudostamp-desktop</code>, which brings the installer along), open SudoStamp, choose{" "}
+                  <span className="text-[var(--fg)]">Pair a phone</span> and point the phone&apos;s camera at the code it shows. Nothing to type.
+                </p>
+                <p className="mt-4 text-pretty text-[15px] leading-relaxed text-[var(--muted)]">
+                  From a terminal, or on a server: no clone needed. Download the installer and its signature, check the signature, and
+                  only then run it. The app shows the same lines, with a Copy button.
                 </p>
                 <div className="mt-5">
                   <CodeBlock code={SETUP} label="Linux" />
