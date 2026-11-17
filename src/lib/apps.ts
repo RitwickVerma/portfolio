@@ -80,38 +80,38 @@ export const apps: Record<string, PublicApp> = {
     playUrl: "https://play.google.com/store/apps/details?id=com.laughingstock.ritwick.shutup",
     iconSrc: "/apps/shutup/icon-fg.png",
     iconBackdropSrc: "/apps/shutup/icon-bg.png",
-    iconBadgeBg: "#5D9CEC",
+    iconBadgeBg: "#6699ED",
     ogImage: {
       src: "/apps/shutup/og.png",
       width: 1024,
       height: 500,
-      alt: "ShutUp! on three phones: the gesture playground, an incoming call with the watcher listening for a wave, and scheduled calls",
+      alt: "ShutUp! on three phones: the gesture playground with the phone mascot, an incoming call with the watcher listening for a wave, and scheduled calls in dark theme",
     },
     scheme: "light",
-    // Material 3, tonal spot from the legacy seed #2C3E50, light scheme
-    // (ui/theme/Color.kt, ShutUpLightColors).
+    // Material 3, fidelity from the launcher icon's cornflower #6699ED, light scheme
+    // (ui/theme/Color.kt, ShutUpLightColors; ShutUp! 2.2).
     palette: {
-      bg: "#F7F9FF",
-      surface: "#ECEEF4", // surfaceContainer
-      surfaceHi: "#E0E2E8", // surfaceContainerHighest
-      surfaceLow: "#F1F3F9", // surfaceContainerLow
+      bg: "#F9F9FF",
+      surface: "#EDEDF5", // surfaceContainer
+      surfaceHi: "#E1E2E9", // surfaceContainerHighest
+      surfaceLow: "#F3F3FA", // surfaceContainerLow
       surfaceLowest: "#FFFFFF",
-      outline: "#C2C7CF", // outlineVariant
-      outlineStrong: "#72777F",
-      fg: "#181C20",
-      muted: "#42474E",
-      accent: "#30628C",
+      outline: "#C2C6D3", // outlineVariant
+      outlineStrong: "#737783",
+      fg: "#191C21",
+      muted: "#424751",
+      accent: "#215DAD",
       onAccent: "#FFFFFF",
-      accentSoft: "#CEE5FF", // primaryContainer
-      onAccentSoft: "#104A73",
-      secondarySoft: "#D5E4F7",
-      onSecondarySoft: "#3A4857",
-      tertiarySoft: "#EFDBFF",
-      onTertiarySoft: "#504061",
-      inverse: "#2D3135",
-      onInverse: "#EFF1F6",
-      inversePrimary: "#9CCBFB",
-      brand: "#5D9CEC", // launcher and splash blue
+      accentSoft: "#D6E3FF", // primaryFixed: a light tint (the icon blue is `brand`; as a panel colour it fails 80 % text)
+      onAccentSoft: "#00458D", // onPrimaryFixedVariant, 7.3:1
+      secondarySoft: "#C9DAFF", // secondaryContainer
+      onSecondarySoft: "#354766", // onSecondaryFixedVariant, 6.9:1 (the scheme's onSecondaryContainer is 4.6:1)
+      tertiarySoft: "#FFDCC1", // tertiaryFixed (the container is a saturated amber, too loud for page chips)
+      onTertiarySoft: "#6C3A00",
+      inverse: "#2E3036",
+      onInverse: "#F0F0F8",
+      inversePrimary: "#AAC7FF",
+      brand: "#6699ED", // launcher icon blue
     },
     shape: { card: "28px", button: "9999px", icon: "26%" },
     privacyPolicy: {
