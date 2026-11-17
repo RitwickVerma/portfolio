@@ -1,11 +1,11 @@
-// Public Android apps: one landing page at /apps/<slug>/ and one privacy
-// policy at /apps/<slug>/privacy-policy/. Both routes sit outside the (site)
-// group (same reason /resume does) and wear the app's own design system,
+// Public Android apps: one showcase page at /apps/<slug>/. The route sits outside the (site)
+// group (same reason /resume does) and wears the app's own design system,
 // taken from the app's real source, not the portfolio's. Shared facts live
 // here; each landing page body is its own component under
-// src/components/apps/ because the two apps share nothing visually. The
-// policy text is the source of truth in each app's repository
-// (docs/PRIVACY_POLICY.md); the Play Console points at the nested URL.
+// src/components/apps/ because the two apps share nothing visually. Each app's
+// privacy policy lives on that app's own site, built and deployed by its repository
+// (privacyUrl); nothing an app needs to work or ship lives on this portfolio, which only links out.
+// Old /apps/<slug>/privacy-policy/ addresses redirect there (public/_redirects).
 
 /**
  * The app's colours as CSS custom properties (`--<key>`). The privacy page
@@ -25,19 +25,6 @@ export type Palette = {
   accentSoft: string;
   onAccentSoft: string;
   [extra: string]: string;
-};
-
-export type PrivacyPolicy = {
-  effectiveDate: string; // human-readable, matches the source-of-truth doc
-  /** Short lead-in shown under the title, one or two sentences. */
-  summary: string;
-  /** Row-per-concern table: what the app handles, why, where it goes. */
-  dataTable: { what: string; why: string; whereItGoes: string }[];
-  /** Plain-prose sections after the table, in order. */
-  sections: { heading: string; body: string }[];
-  contactEmail: string;
-  /** Extra contact route named by the source policy, when it names one. */
-  issuesUrl?: string;
 };
 
 export type PublicApp = {
@@ -64,23 +51,13 @@ export type PublicApp = {
   palette: Palette;
   /** Corner radius of cards and of buttons in the app's own UI. */
   shape: { card: string; button: string; icon: string };
-  /**
-   * The policy, rendered here at /apps/<slug>/privacy-policy/. An app with its own site keeps its
-   * policy there instead (privacyUrl), owned by its repository: nothing of the app depends on this
-   * portfolio, which only links to it.
-   */
-  privacyPolicy?: PrivacyPolicy;
-  privacyUrl?: string;
+  /** The privacy policy on the app's own site, owned and deployed by its repository. */
+  privacyUrl: string;
 };
 
-/** Where an app's privacy policy lives: its own site's, or the page under /apps/<slug>/. */
+/** Where an app's privacy policy lives: always the app's own site. */
 export function privacyHref(app: PublicApp): string {
-  return app.privacyUrl ?? `/apps/${app.slug}/privacy-policy/`;
-}
-
-/** The apps whose policy this site renders. */
-export function policySlugs(): string[] {
-  return appSlugs().filter((slug) => apps[slug].privacyPolicy !== undefined);
+  return app.privacyUrl;
 }
 
 export const apps: Record<string, PublicApp> = {
@@ -130,70 +107,8 @@ export const apps: Record<string, PublicApp> = {
       brand: "#6699ED", // launcher icon blue
     },
     shape: { card: "28px", button: "9999px", icon: "26%" },
-    privacyPolicy: {
-      effectiveDate: "15 October 2026 (applies to ShutUp! 2.0 and later)",
-      summary:
-        "ShutUp! does not collect, store off-device, or share any personal data. Everything it needs stays on your phone. There are no ads, no analytics, no crash-reporting services and no network requests.",
-      dataTable: [
-        {
-          what: "Phone state (READ_PHONE_STATE)",
-          why: "To know when a call is ringing, active or ended, so gestures work only during calls.",
-          whereItGoes: "Stays on the device; never stored.",
-        },
-        {
-          what: "Answer / end calls (ANSWER_PHONE_CALLS)",
-          why: "To answer or end a call when you wave or flip the phone.",
-          whereItGoes: "Nothing is recorded.",
-        },
-        {
-          what: "Place calls (CALL_PHONE)",
-          why: "To dial a call you scheduled, at the time you chose.",
-          whereItGoes: "Only the number you entered is stored, on the device.",
-        },
-        {
-          what: "Phone number picker",
-          why: "When you schedule a call you may pick a number with the system picker. ShutUp! receives that one name and number only; it has no contacts permission and cannot read your address book.",
-          whereItGoes:
-            "Stored on the device in your schedule list; deleted when you delete the schedule.",
-        },
-        {
-          what: "Proximity and accelerometer sensors",
-          why: "To detect waves, pick-ups and face-down only while a call is ringing or active.",
-          whereItGoes: "Processed in memory; never stored.",
-        },
-        {
-          what: "Do Not Disturb access (optional)",
-          why: "To fully silence the ringer. Without it the app switches to vibrate instead.",
-          whereItGoes: "\u2014",
-        },
-        {
-          what: "Alarms & reminders (optional)",
-          why: "To place scheduled calls at the exact minute.",
-          whereItGoes: "\u2014",
-        },
-        {
-          what: "Notifications",
-          why: "An ongoing, silent notification while the master switch is on (required by Android for the call watcher), countdown and missed-call notifications for scheduled calls.",
-          whereItGoes: "\u2014",
-        },
-      ],
-      sections: [
-        {
-          heading: "Backups",
-          body: "Your settings and scheduled calls are stored in the app's private storage and may be included in Android's device backup if you have backup enabled on your phone; that backup is handled by Google under Google's privacy policy, not by ShutUp!.",
-        },
-        {
-          heading: "Children",
-          body: "ShutUp! is a utility for people who make phone calls and is not directed at children under 13.",
-        },
-        {
-          heading: "Changes",
-          body: "Changes to this policy are published at the URL shown in the Play listing and inside the app (About \u2192 Privacy policy), with a new effective date.",
-        },
-      ],
-      contactEmail: "verma1997@gmail.com",
-      issuesUrl: "https://gitlab.com/ritwick7/shutup/-/issues",
-    },
+    // ShutUp!'s policy lives on its own site, built from docs/PRIVACY_POLICY.md and deployed by its repository.
+    privacyUrl: "https://shutup.ritwickverma.dev/privacy-policy/",
   },
   sudostamp: {
     slug: "sudostamp",
